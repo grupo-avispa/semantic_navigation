@@ -32,8 +32,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+ 
+#ifndef SEMANTICGOALSGENERATOR_H
+#define SEMANTICGOALSGENERATOR_H
+ 
+//#include <algorithm>
+//#include <iostream>
+#include <cmath>
+#include <random>
 
-#include "polygon.h"
+#include <ros/ros.h>
+#include <tf/tf.h>
+#include <std_srvs/Empty.h>
+#include <geometry_msgs/Pose.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <visualization_msgs/MarkerArray.h>
+
+#include "semantic_goals_generator/polygon.h"
+#include "semantic_goals_generator/SemanticGoals.h"
 
 class SemanticGoalsGenerator{
      public:
@@ -45,10 +61,11 @@ class SemanticGoalsGenerator{
         ros::Publisher navGoalsPub_, visNavGoalsPub_;
         ros::ServiceServer paramsSrv_, navsGenSrv_;
         bool isCostmap_;
-        int markersLen_, mapData_, width_, height_, inflatedFootprintSize_;
+        int markersLen_, width_, height_, inflatedFootprintSize_;
         int mapMinX_, mapMaxX_, mapMinY_, mapMaxY_;
         int bBoxMinX_, bBoxMaxX_, bBoxMinY_, bBoxMaxY_;
         int cellMinX_, cellMaxX_, cellMinY_, cellMaxY_;
+        //std::vector<int8_t>& mapData_;
         float resolution_, inflationRadius_;
         std::string mapFrame_;
         geometry_msgs::Pose origin_;
@@ -57,13 +74,14 @@ class SemanticGoalsGenerator{
 
         void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
         bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-        bool SemanticGoalsService(semantic_goals::SemanticGoals::Request& req, semantic_goals::SemanticGoals::Response& res);
+        bool SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res);
         void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap);
         std::vector<Polygon> getROIParams();
-        void createMarker(visualization_msgs::MarkerArray markerArray, int markerId, geometry_msgs::Pose pose);
+        void createMarker(visualization_msgs::MarkerArray& markerArray, int markerId, geometry_msgs::Pose pose);
         void deleteMarkers();
-        void processArguments();
+        void processBoundingBox();
         int cell(int x, int y);
         bool inROI(int x, int y);
         bool inCollision(int x, int y);
 };
+#endif
