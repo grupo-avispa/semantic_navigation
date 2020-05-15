@@ -33,6 +33,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <map>
+
 #include <geometry_msgs/Point.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <visualization_msgs/Marker.h>
@@ -47,11 +49,9 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
     initialize();
 
     navGoalsPub_ = node_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1);
-    visNavGoalsPub_ = node_.advertise<visualization_msgs::MarkerArray>("vis_semantic_goals", 1);
+    roiPub_ = node_.advertise<geometry_msgs::PolygonStamped>("roi_visualization", 1);
 
     navsGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
-
-    markersLen_ = 0;
 }
 
 /* Delete all parameteres */
@@ -73,12 +73,12 @@ bool SemanticGoalsGenerator::updateParams(std_srvs::Empty::Request &req, std_srv
 }
 
 /* Map callback */
-void SemanticGoalsGenerator::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap){
+void SemanticGoalsGenerator::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap){	
     resolution_ = msgMap->info.resolution;
     width_ = msgMap->info.width;
     height_ = msgMap->info.height;
     origin_ = msgMap->info.origin;
-   // mapData_ = msgMap->data;
+    mapData_ = msgMap->data;
 
     mapMinX_ = origin_.position.x;
     mapMaxX_ = origin_.position.x + width_ * resolution_;
@@ -88,44 +88,41 @@ void SemanticGoalsGenerator::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr
 
 /* Get rois from YAML file */
 std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
-    XmlRpc::XmlRpcValue xmlRoiList;
-    std::vector<Polygon> rois;
-
-    nodePrivate_.getParam("rois", xmlRoiList);
-    if(xmlRoiList.getType() != XmlRpc::XmlRpcValue::TypeArray ){
-        ROS_ERROR("Param '[%s]' not a list", xmlRoiList);
-    }else{
-        for(int roi = 0; roi < xmlRoiList.size(); ++roi){
-            if(xmlRoiList[roi].getType() != XmlRpc::XmlRpcValue::TypeArray){
-                ROS_ERROR("Param [%s] is not a list", roi);
-            }else{
-                if(xmlRoiList[roi][0].getType() != XmlRpc::XmlRpcValue::TypeString){
-                    ROS_ERROR("[%s] is not a label", xmlRoiList[roi][0]);
-                }else{
-                    Polygon poly;
-                    poly.name = static_cast<std::string>(xmlRoiList[roi][0]);
-                    for(int point = 0; point < xmlRoiList[roi].size()-1; ++point){
-                        if(xmlRoiList[roi][point].size() != 2){
-                            ROS_ERROR("[%d] is not a pair", point);
-                        }else if(xmlRoiList[roi][point][0].getType() != XmlRpc::XmlRpcValue::TypeDouble || xmlRoiList[roi][point][1].getType() != XmlRpc::XmlRpcValue::TypeDouble){
-                            ROS_ERROR("[%d] is not a pair of doubles", point);
-                        }else{
-                            Edge edge;
-                            edge.a = (static_cast<double>(xmlRoiList[roi][point][0]), static_cast<double>(xmlRoiList[roi][point][1]));
-                            edge.b = (static_cast<double>(xmlRoiList[roi][point+1][0]), static_cast<double>(xmlRoiList[roi][point+1][1]));
-                            poly.edges.push_back(edge);
-                        }
-                    }
-                    // Add the last edge
-                    Edge edge;
-                    edge.a = (static_cast<double>(xmlRoiList[roi][xmlRoiList[roi].size()-1][0]), static_cast<double>(xmlRoiList[roi][xmlRoiList[roi].size()-1][1]));
-                    edge.b = (static_cast<double>(xmlRoiList[roi][0][0]), static_cast<double>(xmlRoiList[roi][0][1]));
-                    poly.edges.push_back(edge);
-                    rois.push_back(poly);
-                }
-            }
-        }
-    }
+	XmlRpc::XmlRpcValue xmlRoiList;
+	std::vector<Polygon> rois;
+	std::vector<std::string> roomNames;
+	
+	if(nodePrivate_.hasParam("rois/room_names")){
+		nodePrivate_.getParam("rois/room_names", roomNames);
+		
+		for(int roi = 0; roi < roomNames.size(); roi++){
+			if(nodePrivate_.hasParam("rois/" + roomNames[roi])){
+				nodePrivate_.getParam("rois/" + roomNames[roi], xmlRoiList);
+				
+				Polygon poly;
+				poly.name = roomNames[roi];
+								
+				for(int p = 0; p < xmlRoiList.size()-1; p++){
+					Point a(static_cast<double>(xmlRoiList[p][0]), static_cast<double>(xmlRoiList[p][1]));
+					Point b(static_cast<double>(xmlRoiList[p+1][0]), static_cast<double>(xmlRoiList[p+1][1]));
+					Edge edge; edge.a = a; edge.b = b;					
+					poly.edges.push_back(edge);
+				}
+				// Add the last edge
+				Point a(static_cast<double>(xmlRoiList[xmlRoiList.size()-1][0]), static_cast<double>(xmlRoiList[xmlRoiList.size()-1][1]));
+				Point b(static_cast<double>(xmlRoiList[0][0]), static_cast<double>(xmlRoiList[0][1]));
+				Edge edge; edge.a = a; edge.b = b;
+				poly.edges.push_back(edge);
+				rois.push_back(poly);								
+			}else{
+				ROS_ERROR("Room 'rois/%s' not defined", roomNames[roi].c_str());
+			}
+		}
+	}else{
+		ROS_ERROR("Param 'rois/room_names' not exist");
+	}
+	
+	ROS_INFO("[SemanticGoalsGenerator]: ROIs readed");
     return rois;
 }
 
@@ -138,7 +135,7 @@ void SemanticGoalsGenerator::processBoundingBox(){
 
     // Region of interest (ROI) must lie inside the map boundaries
     // If ROI is empty, the whole map is treated as ROI by default
-    if(roi_.edges.size() == 0){
+    if(roi_.empty()){
         bBoxMinX_ = mapMinX_;
         bBoxMaxX_ = mapMaxX_;
         bBoxMinY_ = mapMinY_;
@@ -152,55 +149,37 @@ void SemanticGoalsGenerator::processBoundingBox(){
         bBoxMaxX_ = -std::numeric_limits<int>::infinity();
         bBoxMinY_ = std::numeric_limits<int>::infinity();
         bBoxMaxY_ = -std::numeric_limits<int>::infinity();
-        for(int e = 0; e < roi_.edges.size(); e++){
-            if(roi_.edges[e].a.x < mapMinX_){
-                roi_.edges[e].a.x = mapMinX_;
-                if(e == 0) roi_.edges[roi_.edges.size()-1].b.x = mapMinX_;
-                else roi_.edges[e-1].b.x = mapMinX_;
-            }
-            if(roi_.edges[e].a.x > mapMaxX_){
-                roi_.edges[e].a.x = mapMaxX_;
-                if(e == 0) roi_.edges[roi_.edges.size()-1].b.x = mapMaxX_;
-                else roi_.edges[e-1].b.x = mapMaxX_;
-
-            }
-            if(roi_.edges[e].a.x < bBoxMinX_) bBoxMinX_ = roi_.edges[e].a.x;
-            if(roi_.edges[e].a.x > bBoxMaxX_) bBoxMaxX_ = roi_.edges[e].a.x;
-
-            if(roi_.edges[e].a.y < mapMinY_){
-                roi_.edges[e].a.y = mapMinY_;
-                if(e == 0) roi_.edges[roi_.edges.size()-1].b.y = mapMinY_;
-                else roi_.edges[e-1].b.y = mapMinY_;
-            }
-            if(roi_.edges[e].a.y > mapMaxY_){
-                roi_.edges[e].a.y = mapMaxY_;
-                if(e == 0) roi_.edges[roi_.edges.size()-1].b.y = mapMaxY_;
-                else roi_.edges[e-1].b.y = mapMaxY_;
-            }
-            if(roi_.edges[e].a.y < bBoxMinY_) bBoxMinY_ = roi_.edges[e].a.y;
-            if(roi_.edges[e].a.y > bBoxMaxY_) bBoxMaxY_ = roi_.edges[e].a.y;
+       
+        for(int e = 0; e < roi_.size(); e++){
+			Point p = roi_.edges[e].a;
+			
+			if(p.x < mapMinX_) p.x = mapMinX_;
+			if(p.x > mapMaxX_) p.x = mapMaxX_;
+			
+			if(p.x < bBoxMinX_) bBoxMinX_ = p.x;
+            if(p.x > bBoxMaxX_) bBoxMaxX_ = p.x;
+            
+            if(p.y < mapMinY_) p.y = mapMinY_;
+			if(p.y > mapMaxY_) p.y = mapMaxY_;
+			
+			if(p.y < bBoxMinY_) bBoxMinY_ = p.y;
+            if(p.y > bBoxMaxY_) bBoxMaxY_ = p.y;
         }
-
+		
         // Calculate bounding box for cell array
         cellMinX_ = int((bBoxMinX_ - origin_.position.x) / resolution_);
         cellMaxX_ = int((bBoxMaxX_ - origin_.position.x) / resolution_);
         cellMinY_ = int((bBoxMinY_ - origin_.position.y) / resolution_);
         cellMaxY_ = int((bBoxMaxY_ - origin_.position.y) / resolution_);
 
-        ROS_INFO("ROI bounding box (meters): (%s,%s) (%s,%s)", bBoxMinX_, bBoxMinY_, bBoxMaxX_, bBoxMaxY_);
-        ROS_INFO("ROI bounding box (cells): (%s,%s) (%s,%s)", cellMinX_, cellMinY_, cellMaxX_, cellMaxY_);
+        ROS_INFO("[SemanticGoalsGenerator]: ROI bounding box (meters): (%f,%f) (%f,%f)", bBoxMinX_, bBoxMinY_, bBoxMaxX_, bBoxMaxY_);
+        ROS_INFO("[SemanticGoalsGenerator]: ROI bounding box (cells): (%i,%i) (%i,%i)", cellMinX_, cellMinY_, cellMaxX_, cellMaxY_);
     }
 }
 
 /* Service for sending random goals based on labeled rois */
-bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res){
-    visualization_msgs::MarkerArray markerArray;
-	std::default_random_engine generator;
-	std::uniform_real_distribution<double> distributionPI(0.0, 2 * M_PI);
-	std::uniform_int_distribution<int> distributionX(cellMinX_, cellMaxX_);  
-	std::uniform_int_distribution<int> distributionY(cellMinY_, cellMaxY_);
-	
-    ROS_INFO("[SemanticGoalsGenerator]: Incoming service request: %s", req);
+bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res){	
+    ROS_INFO("[SemanticGoalsGenerator]: Incoming service request: %i, %s", req.n, req.roi_name.c_str());
 
     // Get arguments
     int n = req.n;
@@ -208,14 +187,15 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
         if(roiVector_[r].name == req.roi_name){
             roi_ = roiVector_[r];
             break;
-        }
+        }else if (req.roi_name.empty()){
+			roi_.clear();
+		}
     }
 
     try{
         nav_msgs::OccupancyGrid::ConstPtr msgMap;
         msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapFrame_, ros::Duration(10));
         mapCallback(msgMap);
-
     }catch(...){
 		ROS_FATAL("[SemanticGoalsGenerator]: Failed to get %s", mapFrame_.c_str());
 		return false;
@@ -227,15 +207,20 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	// Generate response
 	res.goals.header.frame_id = mapFrame_;
 
-	deleteMarkers();
-
 	// Generate random goal pose
-    int upperBound = n * (2 + inflationRadius_ / 0.01);
-    int goalCount = 0;
-    while(res.goals.poses.size() < n  && goalCount < upperBound){
-        goalCount += 1;
-        int cellX = distributionX(generator);
-        int cellY = distributionY(generator);
+	std::random_device rd; // obtain a random number from hardware
+    std::mt19937 eng(rd()); // seed the generator
+    std::uniform_int_distribution<> distX(cellMinX_, cellMaxX_); // define the range
+    std::uniform_int_distribution<> distY(cellMinY_, cellMaxY_); // define the range
+    std::uniform_real_distribution<double> distPI(0.0, 2 * M_PI);
+    
+    int upperBound = n  * ( 2 +  inflationRadius_ / 0.01);
+    int count = 0;
+    //while( (res.goals.poses.size() < n) && (count < upperBound) ){
+	while( res.goals.poses.size() < n){	
+		count += 1;
+        int cellX = distX(eng);
+        int cellY = distY(eng);     
 
         geometry_msgs::Pose pose;
         pose.position.x = cellX * resolution_ + origin_.position.x;
@@ -243,18 +228,17 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
         // If the point lies within ROI and is not in collision
         if(inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY)){
-            double yaw = distributionPI(generator);            
+            double yaw = distPI(eng);            
             tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.orientation);         
 
-            ROS_INFO("[SemanticGoalsGenerator]: Pose (x: %f, y: %f)", pose.position.x, pose.position.y);
+            ROS_INFO("[SemanticGoalsGenerator]: Pose (x: %f, y: %f, z: %f)", pose.position.x, pose.position.y, yaw);
 
             res.goals.poses.push_back(pose);
-            //createMarker(markerArray, res.goals.poses.size()-1, pose);
         }
     }
-
+    	
     navGoalsPub_.publish(res.goals);
-    markersLen_ = markerArray.markers.size();
+    publishPolygonRoi();
 
     return true;
 }
@@ -264,13 +248,16 @@ int SemanticGoalsGenerator::cell(int x, int y){
     // Return 'unknown' if out of bounds
     if(x < 0 || y < 0 || x >= width_  || y >= height_) return -1;
 
-    //return mapData_[x +  width_ * y];
+    return mapData_[x +  width_ * y];
 }
 
 /* Check if a point is inside the region of interest (ROI) */
-bool SemanticGoalsGenerator::inROI(int x, int y){
-    if(roi_.edges.size() == 0) return true;
+bool SemanticGoalsGenerator::inROI(float x, float y){
+    if(roi_.size() == 0) return true;
     Point p(x,y);
+   /* ROS_INFO("pose x %f", x);
+    ROS_INFO("pose y %f", y);
+    ROS_INFO("inside %i", roi_.contains(p));*/
     return roi_.contains(p);
 }
 
@@ -296,48 +283,19 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
     return false;
 }
 
-/* Create navigation goals visualization markers */
-void SemanticGoalsGenerator::createMarker(visualization_msgs::MarkerArray& markerArray, int markerId, geometry_msgs::Pose pose){
-    /* Create a marker triangle */
-	visualization_msgs::Marker vizMarker;
-	vizMarker.header.frame_id = mapFrame_;
-	vizMarker.header.stamp = ros::Time::now();
-	//vizMarker.lifetime = ros::Duration(0.1);
-	vizMarker.id = markerId;
-	vizMarker.type = visualization_msgs::Marker::TRIANGLE_LIST;
-	vizMarker.action = visualization_msgs::Marker::ADD;
-	vizMarker.scale.x = 1;
-    vizMarker.scale.y = 1;
-    vizMarker.scale.z = 1;
-    vizMarker.color.a = 0.1;
-    vizMarker.color.r = 1.0;
-    vizMarker.color.g = 0.0;
-    vizMarker.color.b = 0.0;
-    vizMarker.pose.orientation = pose.orientation;
-    vizMarker.pose.position = pose.position;
-    
-    geometry_msgs::Point p1; p1.x = 0.0; p1.y = 0.0; p1.z = 0.0;
-    geometry_msgs::Point p2; p2.x = 3.0; p2.y = -1.5; p2.z = 0.0;
-    geometry_msgs::Point p3; p3.x = 3.0; p3.y = 1.5; p3.z = 0.0;
-    
-    vizMarker.points = {p1, p2, p3};
-
-    markerArray.markers.push_back(vizMarker);
-}
-
-/* Delete navigation goals visualization markers */
-void SemanticGoalsGenerator::deleteMarkers(){
-    visualization_msgs::MarkerArray markerArray;
-
-    for(int i = 0; i < markersLen_; i++){
-        visualization_msgs::Marker vizMarker;
-
-        vizMarker.header.frame_id = mapFrame_;
-        vizMarker.id = i;
-        vizMarker.action = visualization_msgs::Marker::DELETE;
-        markerArray.markers.push_back(vizMarker);
+/* Publish the polygon roi */
+void SemanticGoalsGenerator::publishPolygonRoi(){
+	geometry_msgs::PolygonStamped polygonMk;
+	polygonMk.header.frame_id = mapFrame_;
+	polygonMk.header.stamp = ros::Time::now();
+	   
+    for(int e = 0; e < roi_.size(); e++){
+		Point p = roi_.edges[e].a;    
+		geometry_msgs::Point32 pg; pg.x = p.x; pg.y = p.y; pg.z = 0.0;
+		polygonMk.polygon.points.push_back(pg);
     }
-    visNavGoalsPub_.publish(markerArray);
+
+    roiPub_.publish(polygonMk);
 }
 
 int main(int argc, char** argv){

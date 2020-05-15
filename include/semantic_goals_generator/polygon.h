@@ -24,7 +24,7 @@ const double MAX = DOUBLE.max();
 struct Point{
 	double x, y;
 	Point(double x = 0.0, double y = 0.0) : x(x), y(y) {}
-	Point(const Point& p) : x(p.x), y(p.y) {}	
+	Point(const Point& p) : x(p.x), y(p.y) {}
 };
 
 struct Edge{
@@ -44,6 +44,14 @@ struct Edge{
 struct Polygon{
     std::string name;
     std::vector<Edge> edges;
+    
+    int size() 		{ return edges.size(); }
+    void clear()	{ edges.clear(); name.clear(); }
+    
+    bool empty(){
+		if( edges.size() == 0) return true;
+		else return false;
+	}
 
     bool contains(const Point& p) const{
         auto c = 0;
