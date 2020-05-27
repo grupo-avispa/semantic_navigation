@@ -57,10 +57,5 @@ Publications
 ----------
  * ```vis_semantic_goals```
   [geometry_msgs/PoseArray]
-  Random navigation goals generated.
- * ```vis_vis_semantic_goals```
-  [visualization_msgs/MarkerArray]
-  Markers for showing in RVIZ. 
-  
- 
+  Random navigation goals generated. 
 
