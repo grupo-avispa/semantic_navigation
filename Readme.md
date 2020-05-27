@@ -1,5 +1,5 @@
 semantic_goals_generator
-===================
+========================
 
 ROS Service to generate 2D navigation goals with orientation in a specifed
 region of interest (ROI). The service takes the number of navigation goals
