@@ -10,9 +10,6 @@
 #define POLYGON_H
 
 #include <algorithm>
-//#include <cstdlib>
-//#include <iomanip>
-//#include <iostream>
 #include <limits>
 #include <vector>
 
@@ -28,40 +25,40 @@ struct Point{
 };
 
 struct Edge{
-    Point a, b;
+	Point a, b;
 
-    bool operator()(const Point& p) const{
-        if (a.y > b.y) return Edge{ b, a }(p);
-        if (p.y == a.y || p.y == b.y) return operator()({ p.x, p.y + epsilon });
-        if (p.y > b.y || p.y < a.y || p.x > std::max(a.x, b.x)) return false;
-        if (p.x < std::min(a.x, b.x)) return true;
-        auto blue = std::abs(a.x - p.x) > MIN ? (p.y - a.y) / (p.x - a.x) : MAX;
-        auto red = std::abs(a.x - b.x) > MIN ? (b.y - a.y) / (b.x - a.x) : MAX;
-        return blue >= red;
-    }
+	bool operator()(const Point& p) const{
+		if (a.y > b.y) return Edge{ b, a }(p);
+		if (p.y == a.y || p.y == b.y) return operator()({ p.x, p.y + epsilon });
+		if (p.y > b.y || p.y < a.y || p.x > std::max(a.x, b.x)) return false;
+		if (p.x < std::min(a.x, b.x)) return true;
+		auto blue = std::abs(a.x - p.x) > MIN ? (p.y - a.y) / (p.x - a.x) : MAX;
+		auto red = std::abs(a.x - b.x) > MIN ? (b.y - a.y) / (b.x - a.x) : MAX;
+		return blue >= red;
+	}
 };
 
 struct Polygon{
-    std::string name;
-    std::vector<Edge> edges;
-    
-    int size() 		{ return edges.size(); }
-    void clear()	{ edges.clear(); name.clear(); }
-    
-    bool empty(){
+	std::string name;
+	std::vector<Edge> edges;
+
+	int size() 		{ return edges.size(); }
+	void clear()	{ edges.clear(); name.clear(); }
+
+	bool empty(){
 		if( edges.size() == 0) return true;
 		else return false;
 	}
 
-    bool contains(const Point& p) const{
-        auto c = 0;
-        for (auto e : edges) if (e(p)) c++;
-        return c % 2 != 0;
-    }
+	bool contains(const Point& p) const{
+		auto c = 0;
+		for (auto e : edges) if (e(p)) c++;
+		return c % 2 != 0;
+	}
 
-    /*void check(const initializer_list<geometry_msgs::Point32>& points, initializer_list<bool>& isInside) const{
-        for (auto p : points)
-            isInside[p] = contains(p);
-    }*/
+	/*void check(const initializer_list<geometry_msgs::Point32>& points, initializer_list<bool>& isInside) const{
+		for (auto p : points)
+			isInside[p] = contains(p);
+	}*/
 };
 #endif
