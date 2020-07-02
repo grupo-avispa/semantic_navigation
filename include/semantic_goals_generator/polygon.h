@@ -1,4 +1,15 @@
 /*
+ * POLYGON
+ *
+ * Copyright (c) 2020 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * 
+ * This file is part of semantic_goals_generator.
+ * 
+ * All rights reserved.
+ *
+ */
+
+/*
 ################################################################
 # Ray-casting algorithm
 #
