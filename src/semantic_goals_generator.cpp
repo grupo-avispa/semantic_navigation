@@ -24,7 +24,7 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 	initialize();
 
 	navGoalsPub_ = node_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1);
-	roiPub_ = node_.advertise<geometry_msgs::PolygonStamped>("roi_visualization", 1);
+	roiPub_ = nodePrivate_.advertise<geometry_msgs::PolygonStamped>("roi_visualization", 1);
 
 	navsGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
 }
