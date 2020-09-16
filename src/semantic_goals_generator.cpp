@@ -280,7 +280,7 @@ int main(int argc, char** argv){
 		SemanticGoalsGenerator detector(node, node_private);
 		ros::spin();
 	}catch(const char* s){
-		ROS_FATAL_STREAM("[NavGoals Generatorr]: " << s);
+		ROS_FATAL_STREAM("[SemanticGoalsGenerator]: " << s);
 	}catch(...){
 		ROS_FATAL_STREAM("[SemanticGoalsGenerator]: Unexpected error");
 	}
