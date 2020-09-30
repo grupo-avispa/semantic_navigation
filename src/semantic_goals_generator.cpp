@@ -166,12 +166,12 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 			roi_.clear();
 		}
 	}
-
-	try{
-		nav_msgs::OccupancyGrid::ConstPtr msgMap;
-		msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapFrame_, ros::Duration(10));
+	
+	// Wait for map
+	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapFrame_, node_, ros::Duration(10));
+	if(msgMap){
 		mapCallback(msgMap);
-	}catch(...){
+	}else{
 		ROS_FATAL("[SemanticGoalsGenerator]: Failed to get %s", mapFrame_.c_str());
 		return false;
 	}

@@ -31,7 +31,6 @@ class SemanticGoalsGenerator{
 		~SemanticGoalsGenerator();
 	private:
 		ros::NodeHandle node_, nodePrivate_;
-		ros::Subscriber mapSub_;
 		ros::Publisher navGoalsPub_, roiPub_;
 		ros::ServiceServer paramsSrv_, navsGenSrv_;
 
