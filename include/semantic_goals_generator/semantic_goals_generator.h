@@ -52,6 +52,7 @@ class SemanticGoalsGenerator{
 		void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap);
 		std::vector<Polygon> getROIParams();
 		void publishPolygonRoi();
+		void showVisualization();
 		void processBoundingBox();
 		int cell(int x, int y);
 		bool inROI(float x, float y);

@@ -23,8 +23,8 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 
 	initialize();
 
-	navGoalsPub_ = node_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1);
-	roiPub_ = nodePrivate_.advertise<geometry_msgs::PolygonStamped>("roi_visualization", 1);
+	navGoalsPub_ = nodePrivate_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1);
+	roiPub_ = nodePrivate_.advertise<geometry_msgs::PolygonStamped>("roi_viz", 1);
 
 	navsGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
 }
@@ -65,38 +65,34 @@ void SemanticGoalsGenerator::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr
 std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 	XmlRpc::XmlRpcValue xmlRoiList;
 	std::vector<Polygon> rois;
-	std::vector<std::string> roomNames;
+	std::vector<std::string> roisNames;
+	
+	if(nodePrivate_.hasParam("rois")){
+		nodePrivate_.getParam("rois", xmlRoiList);
+		for(int32_t i = 0; i < xmlRoiList.size(); ++i){
+			// Create a polygon
+			Polygon poly;
+			poly.name = static_cast<std::string>(xmlRoiList[i]["name"]);
 
-	if(nodePrivate_.hasParam("rois/room_names")){
-		nodePrivate_.getParam("rois/room_names", roomNames);
-
-		for(int roi = 0; roi < roomNames.size(); roi++){
-			if(nodePrivate_.hasParam("rois/" + roomNames[roi])){
-				nodePrivate_.getParam("rois/" + roomNames[roi], xmlRoiList);
-
-				Polygon poly;
-				poly.name = roomNames[roi];
-
-				for(int p = 0; p < xmlRoiList.size()-1; p++){
-					Point a(static_cast<double>(xmlRoiList[p][0]), static_cast<double>(xmlRoiList[p][1]));
-					Point b(static_cast<double>(xmlRoiList[p+1][0]), static_cast<double>(xmlRoiList[p+1][1]));
-					Edge edge; edge.a = a; edge.b = b;
-					poly.edges.push_back(edge);
-				}
-				// Add the last edge
-				Point a(static_cast<double>(xmlRoiList[xmlRoiList.size()-1][0]), static_cast<double>(xmlRoiList[xmlRoiList.size()-1][1]));
-				Point b(static_cast<double>(xmlRoiList[0][0]), static_cast<double>(xmlRoiList[0][1]));
+			// Extract points
+			int listSize = xmlRoiList[i]["points"].size();
+			for(int p = 0; p < listSize-1; p++){
+				Point a(static_cast<double>(xmlRoiList[i]["points"][p][0]), static_cast<double>(xmlRoiList[i]["points"][p][1]));
+				Point b(static_cast<double>(xmlRoiList[i]["points"][p+1][0]), static_cast<double>(xmlRoiList[i]["points"][p+1][1]));
 				Edge edge; edge.a = a; edge.b = b;
 				poly.edges.push_back(edge);
-				rois.push_back(poly);
-			}else{
-				ROS_ERROR("Room 'rois/%s' not defined", roomNames[roi].c_str());
 			}
+			// Add the last edge
+			Point a(static_cast<double>(xmlRoiList[i]["points"][listSize-1][0]), static_cast<double>(xmlRoiList[i]["points"][listSize-1][1]));
+			Point b(static_cast<double>(xmlRoiList[i]["points"][0][0]), static_cast<double>(xmlRoiList[i]["points"][0][1]));
+			Edge edge; edge.a = a; edge.b = b;
+			poly.edges.push_back(edge);
+			rois.push_back(poly);
 		}
 	}else{
-		ROS_ERROR("Param 'rois/room_names' not exist");
+		ROS_ERROR("Param 'rois' not exist");
 	}
-	
+
 	ROS_INFO("[SemanticGoalsGenerator]: ROIs readed");
 	return rois;
 }
@@ -214,6 +210,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 	navGoalsPub_.publish(res.goals);
 	publishPolygonRoi();
+	showVisualization();
 
 	return true;
 }
@@ -257,6 +254,21 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
 
 /* Publish the polygon roi */
 void SemanticGoalsGenerator::publishPolygonRoi(){
+	geometry_msgs::PolygonStamped polygonMk;
+	polygonMk.header.frame_id = mapFrame_;
+	polygonMk.header.stamp = ros::Time::now();
+
+	for(int e = 0; e < roi_.size(); e++){
+		Point p = roi_.edges[e].a;    
+		geometry_msgs::Point32 pg; pg.x = p.x; pg.y = p.y; pg.z = 0.0;
+		polygonMk.polygon.points.push_back(pg);
+	}
+
+	roiPub_.publish(polygonMk);
+}
+
+/* Show the rois in rviz */
+void SemanticGoalsGenerator::showVisualization(){
 	geometry_msgs::PolygonStamped polygonMk;
 	polygonMk.header.frame_id = mapFrame_;
 	polygonMk.header.stamp = ros::Time::now();
