@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
    FILES
    SemanticGoals.srv
+   SemanticPosition.srv
 )
 
 generate_messages(

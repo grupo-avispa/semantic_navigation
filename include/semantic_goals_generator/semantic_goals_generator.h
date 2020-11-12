@@ -26,6 +26,7 @@
 
 #include <laser_utils/polygon.h>
 #include "semantic_goals_generator/SemanticGoals.h"
+#include "semantic_goals_generator/SemanticPosition.h"
 
 class SemanticGoalsGenerator{
 	public:
@@ -34,7 +35,7 @@ class SemanticGoalsGenerator{
 	private:
 		ros::NodeHandle node_, nodePrivate_;
 		ros::Publisher navGoalsPub_, roisVizPub_, roisNamesVizPub_;
-		ros::ServiceServer paramsSrv_, navsGenSrv_;
+		ros::ServiceServer paramsSrv_, navsGenSrv_, semanticPosSrv_;
 
 		geometry_msgs::Pose origin_;
 		bool isCostmap_;
@@ -51,6 +52,7 @@ class SemanticGoalsGenerator{
 		void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
 		bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 		bool SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res);
+		bool SemanticPositionService(semantic_goals_generator::SemanticPosition::Request& req, semantic_goals_generator::SemanticPosition::Response& res);
 		void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap);
 		std::vector<Polygon> getROIParams();
 		void publishPolygonRoi();

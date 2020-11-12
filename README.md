@@ -6,16 +6,17 @@ region of interest (ROI). The service takes the number of navigation goals
 (*n*), an *inflation radius* which ressembles the robot's footprint, and a ROI
 described by a polygon as arguments and returns a list of goal poses.
 
+Also has a service to request the ROI name of a position. 
 
 Usage
 =====
 
-Launch the service as follows:
+Launch the node as follows:
 ```
 roslaunch semantic_goals_generator semantic_goals_generator.launch
 ```
 
-You can send a service request as follows:
+You can send a service to request goals as follows:
 ```
 rosservice call /semantic_goals '{n: 1, roi_name: "livingroom"}'
 ```
@@ -34,6 +35,11 @@ rosservice call /semantic_goals '{n: 100, roi_name: {}}'
 
 If a specified ROI includes a point that is outside the map, its *conflicting*
 coordinates are automatically adjusted to the map's bounding box.
+
+To know the name of the ROI send the service request as follows:
+```
+rosservice call /semantic_position '{position.x: 0.0, position.y: 0.0, position.z: 0.0}'
+```
 
 Parameters
 ----------

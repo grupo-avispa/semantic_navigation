@@ -27,6 +27,7 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 	roisNamesVizPub_ = nodePrivate_.advertise<visualization_msgs::MarkerArray>("rois_names_viz", 1, true);
 
 	navsGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
+	semanticPosSrv_ = nodePrivate_.advertiseService("/semantic_position", &SemanticGoalsGenerator::SemanticPositionService, this);
 	showVisualization();
 }
 
@@ -92,7 +93,7 @@ std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 		ROS_ERROR("Param 'rois' not exist");
 	}
 
-	ROS_INFO("[SemanticGoalsGenerator]: ROIs readed");
+	ROS_INFO("[SemanticGoalsGenerator]: ROIs read");
 	return rois;
 }
 
@@ -206,9 +207,26 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	}
 
 	navGoalsPub_.publish(res.goals);
-	//publishPolygonRoi();
 
 	return true;
+}
+
+/* Service for request the semantic pose  */
+bool SemanticGoalsGenerator::SemanticPositionService(semantic_goals_generator::SemanticPosition::Request& req, semantic_goals_generator::SemanticPosition::Response& res){
+	ROS_INFO("[SemanticGoalsGenerator]: Incoming service request: %f, %f", req.position.x, req.position.y);
+
+	// Get arguments
+	for(int r = 0; r < roisList_.size(); r++){
+		roi_ = roisList_[r];
+		// If the point lies within ROI
+		if(inROI(req.position.x, req.position.y)){
+			res.roi_name = roi_.getName();
+			return true;
+		}
+	}
+	
+	ROS_FATAL("[SemanticGoalsGenerator]: Failed to get semantic position");
+	return false;
 }
 
 /* Return the cell of the costmap */

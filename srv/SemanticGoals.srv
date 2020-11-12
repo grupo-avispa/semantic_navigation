@@ -1,6 +1,6 @@
 # Request / response service to generate random goals in regions determined by names
 
 int32 n								# Number of goals
-string roi_name						# Name of the goals 
+string roi_name						# Name of the roi 
 ---
 geometry_msgs/PoseArray goals		# Goals
