@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   visualization_msgs
+  jsk_recognition_msgs
+  laser_utils
 )
 
 ################################################
@@ -36,7 +38,7 @@ generate_messages(
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES ${PROJECT_NAME}
- CATKIN_DEPENDS roscpp geometry_msgs message_generation nav_msgs tf std_msgs visualization_msgs 
+ CATKIN_DEPENDS roscpp geometry_msgs message_generation nav_msgs tf std_msgs visualization_msgs jsk_recognition_msgs laser_utils
 )
 
 ###########

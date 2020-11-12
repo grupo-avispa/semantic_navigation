@@ -13,7 +13,6 @@
 
 #include <geometry_msgs/Point.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <visualization_msgs/Marker.h>
 
 #include "semantic_goals_generator/semantic_goals_generator.h"
 
@@ -24,9 +23,11 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 	initialize();
 
 	navGoalsPub_ = nodePrivate_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1);
-	roiPub_ = nodePrivate_.advertise<geometry_msgs::PolygonStamped>("roi_viz", 1);
+	roisVizPub_ = nodePrivate_.advertise<jsk_recognition_msgs::PolygonArray>("rois_viz", 1, true);
+	roisNamesVizPub_ = nodePrivate_.advertise<visualization_msgs::MarkerArray>("rois_names_viz", 1, true);
 
 	navsGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
+	showVisualization();
 }
 
 /* Delete all parameteres */
@@ -42,8 +43,8 @@ bool SemanticGoalsGenerator::updateParams(std_srvs::Empty::Request &req, std_srv
 	nodePrivate_.param<bool>("is_costmap", isCostmap_, false);
 	nodePrivate_.param<float>("inflation_radius", inflationRadius_, 0.5);
 
-	roiVector_ = getROIParams();
-
+	roisList_ = getROIParams();
+	
 	return true;
 }
 
@@ -72,21 +73,19 @@ std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 		for(int32_t i = 0; i < xmlRoiList.size(); ++i){
 			// Create a polygon
 			Polygon poly;
-			poly.name = static_cast<std::string>(xmlRoiList[i]["name"]);
+			poly.setName(static_cast<std::string>(xmlRoiList[i]["name"]));
 
 			// Extract points
 			int listSize = xmlRoiList[i]["points"].size();
 			for(int p = 0; p < listSize-1; p++){
 				Point a(static_cast<double>(xmlRoiList[i]["points"][p][0]), static_cast<double>(xmlRoiList[i]["points"][p][1]));
 				Point b(static_cast<double>(xmlRoiList[i]["points"][p+1][0]), static_cast<double>(xmlRoiList[i]["points"][p+1][1]));
-				Edge edge; edge.a = a; edge.b = b;
-				poly.edges.push_back(edge);
+				poly.addEdge({a,b});
 			}
 			// Add the last edge
 			Point a(static_cast<double>(xmlRoiList[i]["points"][listSize-1][0]), static_cast<double>(xmlRoiList[i]["points"][listSize-1][1]));
 			Point b(static_cast<double>(xmlRoiList[i]["points"][0][0]), static_cast<double>(xmlRoiList[i]["points"][0][1]));
-			Edge edge; edge.a = a; edge.b = b;
-			poly.edges.push_back(edge);
+			poly.addEdge({a,b});
 			rois.push_back(poly);
 		}
 	}else{
@@ -115,14 +114,13 @@ void SemanticGoalsGenerator::processBoundingBox(){
 	}else{
 		// If the ROI is outside the map, adjust to map boundaries
 		// Determine bounding box of ROI
-		// We have to change point a on edge and b from the prior edge
 		bBoxMinX_ = std::numeric_limits<int>::infinity();
 		bBoxMaxX_ = -std::numeric_limits<int>::infinity();
 		bBoxMinY_ = std::numeric_limits<int>::infinity();
 		bBoxMaxY_ = -std::numeric_limits<int>::infinity();
 
 		for(int e = 0; e < roi_.size(); e++){
-			Point p = roi_.edges[e].a;
+			Point p = roi_.getEdge(e).a;
 
 			if(p.x < mapMinX_) p.x = mapMinX_;
 			if(p.x > mapMaxX_) p.x = mapMaxX_;
@@ -136,16 +134,16 @@ void SemanticGoalsGenerator::processBoundingBox(){
 			if(p.y < bBoxMinY_) bBoxMinY_ = p.y;
 			if(p.y > bBoxMaxY_) bBoxMaxY_ = p.y;
 		}
-
-		// Calculate bounding box for cell array
-		cellMinX_ = int((bBoxMinX_ - origin_.position.x) / resolution_);
-		cellMaxX_ = int((bBoxMaxX_ - origin_.position.x) / resolution_);
-		cellMinY_ = int((bBoxMinY_ - origin_.position.y) / resolution_);
-		cellMaxY_ = int((bBoxMaxY_ - origin_.position.y) / resolution_);
-
-		ROS_INFO("[SemanticGoalsGenerator]: ROI bounding box (meters): (%f,%f) (%f,%f)", bBoxMinX_, bBoxMinY_, bBoxMaxX_, bBoxMaxY_);
-		ROS_INFO("[SemanticGoalsGenerator]: ROI bounding box (cells): (%i,%i) (%i,%i)", cellMinX_, cellMinY_, cellMaxX_, cellMaxY_);
 	}
+
+	// Calculate bounding box for cell array
+	cellMinX_ = int((bBoxMinX_ - origin_.position.x) / resolution_);
+	cellMaxX_ = int((bBoxMaxX_ - origin_.position.x) / resolution_);
+	cellMinY_ = int((bBoxMinY_ - origin_.position.y) / resolution_);
+	cellMaxY_ = int((bBoxMaxY_ - origin_.position.y) / resolution_);
+
+	ROS_INFO("[SemanticGoalsGenerator]: ROI bounding box (meters): (%f,%f) (%f,%f)", bBoxMinX_, bBoxMinY_, bBoxMaxX_, bBoxMaxY_);
+	ROS_INFO("[SemanticGoalsGenerator]: ROI bounding box (cells): (%i,%i) (%i,%i)", cellMinX_, cellMinY_, cellMaxX_, cellMaxY_);
 }
 
 /* Service for sending random goals based on labeled rois */
@@ -154,9 +152,9 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 	// Get arguments
 	int n = req.n;
-	for(int r = 0; r < roiVector_.size(); r++){
-		if(roiVector_[r].name == req.roi_name){
-			roi_ = roiVector_[r];
+	for(int r = 0; r < roisList_.size(); r++){
+		if(roisList_[r].getName() == req.roi_name){
+			roi_ = roisList_[r];
 			break;
 		}else if (req.roi_name.empty()){
 			roi_.clear();
@@ -187,11 +185,10 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 	int upperBound = n  * ( 2 +  inflationRadius_ / 0.01);
 	int count = 0;
-	//while( (res.goals.poses.size() < n) && (count < upperBound) ){
-	while( res.goals.poses.size() < n){
+	while( (res.goals.poses.size() < n) && (count < upperBound) ){
 		count += 1;
 		int cellX = distX(eng);
-		int cellY = distY(eng);     
+		int cellY = distY(eng);
 
 		geometry_msgs::Pose pose;
 		pose.position.x = cellX * resolution_ + origin_.position.x;
@@ -199,7 +196,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 		// If the point lies within ROI and is not in collision
 		if(inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY)){
-			double yaw = distPI(eng);            
+			double yaw = distPI(eng);
 			tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.orientation);
 
 			ROS_INFO("[SemanticGoalsGenerator]: Pose (x: %f, y: %f, z: %f)", pose.position.x, pose.position.y, yaw);
@@ -209,8 +206,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	}
 
 	navGoalsPub_.publish(res.goals);
-	publishPolygonRoi();
-	showVisualization();
+	//publishPolygonRoi();
 
 	return true;
 }
@@ -252,34 +248,55 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
 	return false;
 }
 
-/* Publish the polygon roi */
-void SemanticGoalsGenerator::publishPolygonRoi(){
-	geometry_msgs::PolygonStamped polygonMk;
-	polygonMk.header.frame_id = mapFrame_;
-	polygonMk.header.stamp = ros::Time::now();
-
-	for(int e = 0; e < roi_.size(); e++){
-		Point p = roi_.edges[e].a;    
-		geometry_msgs::Point32 pg; pg.x = p.x; pg.y = p.y; pg.z = 0.0;
-		polygonMk.polygon.points.push_back(pg);
-	}
-
-	roiPub_.publish(polygonMk);
-}
-
 /* Show the rois in rviz */
 void SemanticGoalsGenerator::showVisualization(){
-	geometry_msgs::PolygonStamped polygonMk;
-	polygonMk.header.frame_id = mapFrame_;
-	polygonMk.header.stamp = ros::Time::now();
-
-	for(int e = 0; e < roi_.size(); e++){
-		Point p = roi_.edges[e].a;    
-		geometry_msgs::Point32 pg; pg.x = p.x; pg.y = p.y; pg.z = 0.0;
-		polygonMk.polygon.points.push_back(pg);
+	jsk_recognition_msgs::PolygonArray polygonArray;
+	polygonArray.header.frame_id = mapFrame_;
+	polygonArray.header.stamp = ros::Time::now();
+	
+	visualization_msgs::MarkerArray namesArray;
+	
+	for(int r = 0; r < roisList_.size(); r++){
+		// Create polygon marker
+		geometry_msgs::PolygonStamped polygonMk;
+		polygonMk.header.frame_id = mapFrame_;
+		polygonMk.header.stamp = ros::Time::now();
+		
+		for(int e = 0; e < roisList_[r].size(); e++){
+			Point p = roisList_[r].getEdge(e).a;
+			geometry_msgs::Point32 pg; 
+			pg.x = p.x; pg.y = p.y; pg.z = 0.0;
+			polygonMk.polygon.points.push_back(pg);
+		}
+		polygonArray.polygons.push_back(polygonMk);
+		polygonArray.labels.push_back(r);
+		
+		// Create label
+		visualization_msgs::Marker labelMk;
+		labelMk.header.frame_id = mapFrame_;
+		labelMk.header.stamp = ros::Time::now();
+		labelMk.ns = "labelroi";
+		labelMk.id = r;
+		labelMk.text = roisList_[r].getName();
+		labelMk.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+		labelMk.action = visualization_msgs::Marker::ADD;
+		labelMk.pose.position.x = roisList_[r].centroid().x;
+		labelMk.pose.position.y = roisList_[r].centroid().y;
+		labelMk.pose.position.z = 0.05;
+		labelMk.pose.orientation.x = 0.0;
+		labelMk.pose.orientation.y = 0.0;
+		labelMk.pose.orientation.z = 0.0;
+		labelMk.pose.orientation.w = 1.0;
+		labelMk.scale.z = 0.5;
+		labelMk.color.r = 1.0;
+		labelMk.color.g = 1.0;
+		labelMk.color.b = 1.0;
+		labelMk.color.a = 1.0f;
+		namesArray.markers.push_back(labelMk);
 	}
 
-	roiPub_.publish(polygonMk);
+	roisVizPub_.publish(polygonArray);
+	roisNamesVizPub_.publish(namesArray);
 }
 
 int main(int argc, char** argv){

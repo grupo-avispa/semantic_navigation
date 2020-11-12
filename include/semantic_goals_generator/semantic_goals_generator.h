@@ -21,8 +21,10 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <jsk_recognition_msgs/PolygonArray.h>
+#include <visualization_msgs/MarkerArray.h>
 
-#include "semantic_goals_generator/polygon.h"
+#include <laser_utils/polygon.h>
 #include "semantic_goals_generator/SemanticGoals.h"
 
 class SemanticGoalsGenerator{
@@ -31,7 +33,7 @@ class SemanticGoalsGenerator{
 		~SemanticGoalsGenerator();
 	private:
 		ros::NodeHandle node_, nodePrivate_;
-		ros::Publisher navGoalsPub_, roiPub_;
+		ros::Publisher navGoalsPub_, roisVizPub_, roisNamesVizPub_;
 		ros::ServiceServer paramsSrv_, navsGenSrv_;
 
 		geometry_msgs::Pose origin_;
@@ -44,7 +46,7 @@ class SemanticGoalsGenerator{
 		std::string mapFrame_;
 		std::vector<int8_t> mapData_;
 		Polygon roi_;
-		std::vector<Polygon> roiVector_;
+		std::vector<Polygon> roisList_;
 
 		void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
 		bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);

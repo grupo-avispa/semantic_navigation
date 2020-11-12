@@ -45,17 +45,22 @@ Parameters
   [float, default:0.5]
   The inflation radius of the robot's footprint.
  * ```rois.yaml```
-  A configuration file including the names of regions of interests (ROIs) and the point defining them.
+  A configuration file including the names of regions of interests (ROIs) and the points defining them.
 
 Subscriptions
 ----------
  * ```map_frame```
-  [nav_msgs/OccupancyGrid]
+  [nav_msgs/OccupancyGrid, default:map]
   The map frame where the robot moves.
  
 Publications
 ----------
- * ```vis_semantic_goals```
+ * ```semantic_goals```
   [geometry_msgs/PoseArray]
   Random navigation goals generated. 
-
+ * ```rois_viz```
+  [jsk_recognition_msgs/PolygonArray]
+  Filled polygons array of Regions of Interest.
+ * ```rois_names_viz```
+  [visualization_msgs/MarkerArrayy]
+  Names array of Regions of Interest.
