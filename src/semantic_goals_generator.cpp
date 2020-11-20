@@ -90,10 +90,10 @@ std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 			rois.push_back(poly);
 		}
 	}else{
-		ROS_ERROR("Param 'rois' not exist");
+		ROS_ERROR("[Semantic goals generator]: Param 'rois' not exist");
 	}
 
-	ROS_INFO("[SemanticGoalsGenerator]: ROIs read");
+	ROS_INFO("[Semantic goals generator]: ROIs read");
 	return rois;
 }
 
@@ -111,7 +111,7 @@ void SemanticGoalsGenerator::processBoundingBox(){
 		bBoxMaxX_ = mapMaxX_;
 		bBoxMinY_ = mapMinY_;
 		bBoxMaxY_ = mapMaxY_;
-		ROS_INFO("No ROI specified, full map is used.");
+		ROS_INFO("[Semantic goals generator]: No ROI specified, full map is used.");
 	}else{
 		// If the ROI is outside the map, adjust to map boundaries
 		// Determine bounding box of ROI
@@ -143,13 +143,13 @@ void SemanticGoalsGenerator::processBoundingBox(){
 	cellMinY_ = int((bBoxMinY_ - origin_.position.y) / resolution_);
 	cellMaxY_ = int((bBoxMaxY_ - origin_.position.y) / resolution_);
 
-	ROS_INFO("[SemanticGoalsGenerator]: ROI bounding box (meters): (%f,%f) (%f,%f)", bBoxMinX_, bBoxMinY_, bBoxMaxX_, bBoxMaxY_);
-	ROS_INFO("[SemanticGoalsGenerator]: ROI bounding box (cells): (%i,%i) (%i,%i)", cellMinX_, cellMinY_, cellMaxX_, cellMaxY_);
+	ROS_INFO("[Semantic goals generator]: ROI bounding box (meters): (%f,%f) (%f,%f)", bBoxMinX_, bBoxMinY_, bBoxMaxX_, bBoxMaxY_);
+	ROS_INFO("[Semantic goals generator]: ROI bounding box (cells): (%i,%i) (%i,%i)", cellMinX_, cellMinY_, cellMaxX_, cellMaxY_);
 }
 
 /* Service for sending random goals based on labeled rois */
 bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res){
-	ROS_INFO("[SemanticGoalsGenerator]: Incoming service request: %i, %s", req.n, req.roi_name.c_str());
+	ROS_INFO("[Semantic goals generator]: Incoming service request: %i, %s", req.n, req.roi_name.c_str());
 
 	// Get arguments
 	int n = req.n;
@@ -167,7 +167,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	if(msgMap){
 		mapCallback(msgMap);
 	}else{
-		ROS_FATAL("[SemanticGoalsGenerator]: Failed to get %s", mapFrame_.c_str());
+		ROS_FATAL("[Semantic goals generator]: Failed to get %s", mapFrame_.c_str());
 		return false;
 	}
 
@@ -200,7 +200,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 			double yaw = distPI(eng);
 			tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.orientation);
 
-			ROS_INFO("[SemanticGoalsGenerator]: Pose (x: %f, y: %f, z: %f)", pose.position.x, pose.position.y, yaw);
+			ROS_INFO("[Semantic goals generator]: Pose (x: %f, y: %f, z: %f)", pose.position.x, pose.position.y, yaw);
 
 			res.goals.poses.push_back(pose);
 		}
@@ -213,7 +213,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 /* Service for request the semantic pose  */
 bool SemanticGoalsGenerator::SemanticPositionService(semantic_goals_generator::SemanticPosition::Request& req, semantic_goals_generator::SemanticPosition::Response& res){
-	ROS_INFO("[SemanticGoalsGenerator]: Incoming service request: %f, %f", req.position.x, req.position.y);
+	ROS_INFO("[Semantic goals generator]: Incoming service request: %f, %f", req.position.x, req.position.y);
 
 	// Get arguments
 	for(int r = 0; r < roisList_.size(); r++){
@@ -225,7 +225,7 @@ bool SemanticGoalsGenerator::SemanticPositionService(semantic_goals_generator::S
 		}
 	}
 	
-	ROS_FATAL("[SemanticGoalsGenerator]: Failed to get semantic position");
+	ROS_FATAL("[Semantic goals generator]: Failed to get semantic position");
 	return false;
 }
 
@@ -318,18 +318,18 @@ void SemanticGoalsGenerator::showVisualization(){
 }
 
 int main(int argc, char** argv){
-	ros::init(argc, argv, "SemanticGoalsGenerator");
+	ros::init(argc, argv, "semantic_goals_generator");
 	ros::NodeHandle node("");
 	ros::NodeHandle node_private("~");
 
 	try{
-		ROS_INFO("[SemanticGoalsGenerator]: Initializing node");
+		ROS_INFO("[Semantic goals generator]: Initializing node");
 		SemanticGoalsGenerator detector(node, node_private);
 		ros::spin();
 	}catch(const char* s){
-		ROS_FATAL_STREAM("[SemanticGoalsGenerator]: " << s);
+		ROS_FATAL_STREAM("[Semantic goals generator]: " << s);
 	}catch(...){
-		ROS_FATAL_STREAM("[SemanticGoalsGenerator]: Unexpected error");
+		ROS_FATAL_STREAM("[Semantic goals generator]: Unexpected error");
 	}
 
 	return 0;
