@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2020 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
- * This file is part of semantic_goals_generator.
+ * This file is part of semantic_navigation.
  * 
  * All rights reserved.
  *

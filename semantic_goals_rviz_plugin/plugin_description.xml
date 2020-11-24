@@ -1,0 +1,5 @@
+<library path="lib/libsemantic_goals_rviz_plugin">
+	<class name="semantic_goals_rviz_plugin/SemanticNavigation" type="semantic_goals_rviz_plugin::semanticNavigationPanel" base_class_type="rviz::Panel">
+		<description>A panel widget allowing to send the robot to a room.</description>
+	</class>
+</library>

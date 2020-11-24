@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package>
+	<name>semantic_navigation</name>
+	<version>0.1.0</version>
+	<description>A ROS metapackage for semantic navigation. Includes goals generation and rviz plugin.</description>
+	<maintainer email="ajtudela@uma.es">Alberto Tudela</maintainer>
+	<license>GPL</license>
+	<author email="ajtudela@uma.es">Alberto Tudela</author>
+	<buildtool_depend>catkin</buildtool_depend>
+	<run_depend>semantic_goals_generator</run_depend>
+	<run_depend>semantic_goals_rviz_plugin</run_depend>
+	<export>
+		<metapackage/>
+	</export>
+</package>
