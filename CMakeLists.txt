@@ -38,7 +38,6 @@ generate_messages(
 ###################################
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES ${PROJECT_NAME}
  CATKIN_DEPENDS roscpp geometry_msgs message_generation nav_msgs tf std_msgs visualization_msgs jsk_recognition_msgs laser_utils
 )
 
@@ -56,8 +55,9 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(semantic_goals_generator src/semantic_goals_generator.cpp)
-add_dependencies(semantic_goals_generator ${PROJECT_NAME}_generate_messages_cpp)
+add_executable(${PROJECT_NAME} src/semantic_goals_generator.cpp)
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(semantic_goals_generator ${catkin_LIBRARIES} )

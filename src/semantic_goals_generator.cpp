@@ -40,7 +40,7 @@ SemanticGoalsGenerator::~SemanticGoalsGenerator() {
 
 /* Update parameters of the node */
 bool SemanticGoalsGenerator::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
-	nodePrivate_.param<std::string>("map_frame", mapFrame_, "/map");
+	nodePrivate_.param<std::string>("map_frame", mapFrame_, "map");
 	nodePrivate_.param<bool>("is_costmap", isCostmap_, false);
 	nodePrivate_.param<float>("inflation_radius", inflationRadius_, 0.5);
 
