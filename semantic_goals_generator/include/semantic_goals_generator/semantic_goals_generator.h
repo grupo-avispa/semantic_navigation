@@ -44,7 +44,7 @@ class SemanticGoalsGenerator{
 		float bBoxMinX_, bBoxMaxX_, bBoxMinY_, bBoxMaxY_;
 		float mapMinX_, mapMaxX_, mapMinY_, mapMaxY_;
 		float resolution_, inflationRadius_;
-		std::string mapFrame_;
+		std::string mapTopic_;
 		std::vector<int8_t> mapData_;
 		Polygon roi_;
 		std::vector<Polygon> roisList_;

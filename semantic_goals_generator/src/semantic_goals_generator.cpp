@@ -33,14 +33,14 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 
 /* Delete all parameteres */
 SemanticGoalsGenerator::~SemanticGoalsGenerator() {
-	nodePrivate_.deleteParam("map_frame");
+	nodePrivate_.deleteParam("map_topic");
 	nodePrivate_.deleteParam("is_costmap");
 	nodePrivate_.deleteParam("inflation_radius");
 }
 
 /* Update parameters of the node */
 bool SemanticGoalsGenerator::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
-	nodePrivate_.param<std::string>("map_frame", mapFrame_, "map");
+	nodePrivate_.param<std::string>("map_topic", mapTopic_, "map");
 	nodePrivate_.param<bool>("is_costmap", isCostmap_, false);
 	nodePrivate_.param<float>("inflation_radius", inflationRadius_, 0.5);
 
@@ -163,11 +163,11 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	}
 	
 	// Wait for map
-	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapFrame_, node_, ros::Duration(10));
+	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapTopic_, node_, ros::Duration(10));
 	if(msgMap){
 		mapCallback(msgMap);
 	}else{
-		ROS_FATAL("[Semantic goals generator]: Failed to get %s", mapFrame_.c_str());
+		ROS_FATAL("[Semantic goals generator]: Failed to get %s", mapTopic_.c_str());
 		return false;
 	}
 
@@ -175,7 +175,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	processBoundingBox();
 
 	// Generate response
-	res.goals.header.frame_id = mapFrame_;
+	res.goals.header.frame_id = "map";
 
 	// Generate random goal pose
 	std::random_device rd; // obtain a random number from hardware
@@ -269,7 +269,7 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
 /* Show the rois in rviz */
 void SemanticGoalsGenerator::showVisualization(){
 	jsk_recognition_msgs::PolygonArray polygonArray;
-	polygonArray.header.frame_id = mapFrame_;
+	polygonArray.header.frame_id = "map";
 	polygonArray.header.stamp = ros::Time::now();
 	
 	visualization_msgs::MarkerArray namesArray;
@@ -277,7 +277,7 @@ void SemanticGoalsGenerator::showVisualization(){
 	for(int r = 0; r < roisList_.size(); r++){
 		// Create polygon marker
 		geometry_msgs::PolygonStamped polygonMk;
-		polygonMk.header.frame_id = mapFrame_;
+		polygonMk.header.frame_id = "map";
 		polygonMk.header.stamp = ros::Time::now();
 		
 		for(int e = 0; e < roisList_[r].size(); e++){
@@ -291,7 +291,7 @@ void SemanticGoalsGenerator::showVisualization(){
 		
 		// Create label
 		visualization_msgs::Marker labelMk;
-		labelMk.header.frame_id = mapFrame_;
+		labelMk.header.frame_id = "map";
 		labelMk.header.stamp = ros::Time::now();
 		labelMk.ns = "labelroi";
 		labelMk.id = r;

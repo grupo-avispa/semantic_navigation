@@ -1,15 +1,19 @@
 <?xml version="1.0" ?>
 <launch>
-	<arg name="map" default="map"/>
-	<arg name="is_costmap" default="false"/>
 	<arg name="machine" default="localhost" />
 	<arg name="user" default="" />
+	<arg name="is_costmap" default="false"/>
+	<arg name="with_nogo_map" default="true"/>
+	<arg name="map" default="$(find clara_gazebo)/map/pasillo.yaml"/>
+	<arg name="nogo_map" default="$(find clara_gazebo)/map/pasillo-nogo.yaml"/>
+	<arg name="rois" default="$(find clara_gazebo)/map/pasillo_rois.yaml"/>
 
 	<machine name="$(arg machine)" address="$(arg machine)" env-loader="(optenv ROS_ENV_LOADER)" user="$(arg user)" default="true"/>
 
 	<node pkg="semantic_goals_generator" type="semantic_goals_generator" name="semantic_goals_generator" output="screen">
-		<param name="map_frame" value="$(arg map)"/>
 		<param name="is_costmap" value="$(arg is_costmap)"/>
-		<rosparam file="$(find clara_gazebo)/map/pasillo.yaml" command="load"/>
+		<param name="map_topic" value="nogo_map" if="$(arg with_nogo_map)"/>
+		<param name="map_topic" value="map"  unless="$(arg with_nogo_map)"/>
+		<rosparam file="$(arg rois)" command="load"/>
 	</node>
 </launch>
