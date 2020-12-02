@@ -179,17 +179,18 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 	// Generate random goal pose
 	std::random_device rd; // obtain a random number from hardware
-	std::mt19937 eng(rd()); // seed the generator
-	std::uniform_int_distribution<> distX(cellMinX_, cellMaxX_); // define the range
-	std::uniform_int_distribution<> distY(cellMinY_, cellMaxY_); // define the range
+	std::mt19937 gen(rd()); // seed the generator
+	std::uniform_int_distribution<int> distX(cellMinX_, cellMaxX_); // define the range
+	std::uniform_int_distribution<int> distY(cellMinY_, cellMaxY_); // define the range
 	std::uniform_real_distribution<double> distPI(0.0, 2 * M_PI);
 
-	int upperBound = n  * ( 2 +  inflationRadius_ / 0.01);
 	int count = 0;
-	while( (res.goals.poses.size() < n) && (count < upperBound) ){
+	//int upperBound = n  * ( 2 +  inflationRadius_ / 0.01);
+	//while( (res.goals.poses.size() < n) && (count < upperBound) ){
+	while( (res.goals.poses.size() < n)){
 		count += 1;
-		int cellX = distX(eng);
-		int cellY = distY(eng);
+		int cellX = distX(gen);
+		int cellY = distY(gen);
 
 		geometry_msgs::Pose pose;
 		pose.position.x = cellX * resolution_ + origin_.position.x;
@@ -197,7 +198,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 		// If the point lies within ROI and is not in collision
 		if(inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY)){
-			double yaw = distPI(eng);
+			double yaw = distPI(gen);
 			tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.orientation);
 
 			ROS_INFO("[Semantic goals generator]: Pose (x: %f, y: %f, z: %f)", pose.position.x, pose.position.y, yaw);

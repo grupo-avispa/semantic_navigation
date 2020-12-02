@@ -5,7 +5,7 @@
 	<arg name="is_costmap" default="false"/>
 	<arg name="with_nogo_map" default="false"/>
 	<arg name="map" default="$(find clara_2d_navigation)/map/UMA-pasillo-lab.yaml"/>
-	<arg name="nogo_map" default="$(find clara_gazebo)/map/pasillo-nogo.yaml"/>
+	<arg name="nogo_map" default="$(find clara_2d_navigation)/map/UMA-pasillo-lab-nogo.yaml"/>
 	<arg name="rois" default="$(find clara_2d_navigation)/map/UMA-pasillo-lab_rois.yaml"/>
 
 	<machine name="$(arg machine)" address="$(arg machine)" env-loader="(optenv ROS_ENV_LOADER)" user="$(arg user)" default="true"/>
