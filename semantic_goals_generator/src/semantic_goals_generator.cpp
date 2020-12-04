@@ -77,16 +77,25 @@ std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 			poly.setName(static_cast<std::string>(xmlRoiList[i]["name"]));
 
 			// Extract points
-			int listSize = xmlRoiList[i]["points"].size();
-			for(int p = 0; p < listSize-1; p++){
+			/*int pointsSize = xmlRoiList[i]["points"].size();
+			for(int p = 0; p < pointsSize-1; p++){
 				Point a(static_cast<double>(xmlRoiList[i]["points"][p][0]), static_cast<double>(xmlRoiList[i]["points"][p][1]));
 				Point b(static_cast<double>(xmlRoiList[i]["points"][p+1][0]), static_cast<double>(xmlRoiList[i]["points"][p+1][1]));
 				poly.addEdge({a,b});
 			}
 			// Add the last edge
-			Point a(static_cast<double>(xmlRoiList[i]["points"][listSize-1][0]), static_cast<double>(xmlRoiList[i]["points"][listSize-1][1]));
+			Point a(static_cast<double>(xmlRoiList[i]["points"][pointsSize-1][0]), static_cast<double>(xmlRoiList[i]["points"][pointsSize-1][1]));
 			Point b(static_cast<double>(xmlRoiList[i]["points"][0][0]), static_cast<double>(xmlRoiList[i]["points"][0][1]));
 			poly.addEdge({a,b});
+			rois.push_back(poly);*/
+			
+			// Extract edges
+			int edgesSize = xmlRoiList[i]["edges"].size();
+			for(int e = 0; e < edgesSize; e++){
+				Point a(static_cast<double>(xmlRoiList[i]["edges"][e][0][0]), static_cast<double>(xmlRoiList[i]["edges"][e][0][1]));
+				Point b(static_cast<double>(xmlRoiList[i]["edges"][e][1][0]), static_cast<double>(xmlRoiList[i]["edges"][e][1][1]));
+				poly.addEdge({a,b});
+			}
 			rois.push_back(poly);
 		}
 	}else{

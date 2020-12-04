@@ -3,8 +3,7 @@ semantic_goals_generator
 
 ROS Service to generate 2D navigation goals with orientation in a specifed
 region of interest (ROI). The service takes the number of navigation goals
-(*n*), an *inflation radius* which ressembles the robot's footprint, and a ROI
-described by a polygon as arguments and returns a list of goal poses.
+(*n*) and a ROI described by a polygon as arguments and returns a list of goal poses.
 
 Also has a service to request the ROI name of a position. 
 
@@ -21,9 +20,9 @@ You can send a service to request goals as follows:
 rosservice call /semantic_goals '{n: 1, roi_name: "livingroom"}'
 ```
 
-whereby the first argument is the number of goal loactions to be generated
+whereby the first argument is the number of goal locations to be generated
 (here 1) and the second argument is the name of a ROI specified as a list of
-points (at least three) in the configuration file.  The result of the pose generation is additionally
+edges (at least three) in the configuration file.  The result of the pose generation is additionally
 published on the topic `/semantic_goals` in order to visualize the result in RVIZ.
 
 If the service is called with an empty ROI, the full map is considered as ROI
@@ -36,7 +35,7 @@ rosservice call /semantic_goals '{n: 100, roi_name: {}}'
 If a specified ROI includes a point that is outside the map, its *conflicting*
 coordinates are automatically adjusted to the map's bounding box.
 
-To know the name of the ROI send the service request as follows:
+To know the name of the ROI where the robot is, send the service request as follows:
 ```
 rosservice call /semantic_position '{position.x: 0.0, position.y: 0.0, position.z: 0.0}'
 ```
