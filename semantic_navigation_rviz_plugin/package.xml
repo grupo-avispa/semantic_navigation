@@ -1,17 +1,21 @@
 <?xml version="1.0"?>
 <package format="2">
-	<name>semantic_goals_rviz_plugin</name>
+	<name>semantic_navigation_rviz_plugin</name>
 	<version>0.1.0</version>
-	<description>Panel for Rviz to send the robot to a room.</description>
+	<description>Panel for Rviz to send the robot to a ROI and tool to save ROIs in a YAML file.</description>
 	<maintainer email="ajtudela@gmail.com">Alberto J. Tudela Roldán</maintainer>
 	<license>BSD</license>
 	<buildtool_depend>catkin</buildtool_depend>
 	<build_depend>rviz</build_depend>
 	<build_depend>roslib</build_depend>
 	<build_depend>semantic_goals_generator</build_depend>
+	<build_depend>jsk_recognition_msgs</build_depend>
+	<build_depend>laser_utils</build_depend>
 	<exec_depend>rviz</exec_depend>
 	<exec_depend>roslib</exec_depend>
 	<exec_depend>semantic_goals_generator</exec_depend>
+	<exec_depend>jsk_recognition_msgs</exec_depend>
+	<exec_depend>laser_utils</exec_depend>
 	<export>
 		<rviz plugin="${prefix}/plugin_description.xml"/>
 	</export>

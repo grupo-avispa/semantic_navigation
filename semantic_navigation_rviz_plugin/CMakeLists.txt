@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(semantic_goals_rviz_plugin)
+project(semantic_navigation_rviz_plugin)
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -fpermissive ${CMAKE_CXX_FLAGS} -Wfatal-errors\ ")
 
@@ -9,6 +9,8 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -fpermissive ${CMAKE_CXX_FLAGS} -Wfatal-errors\ 
 find_package(catkin REQUIRED COMPONENTS
   rviz
   semantic_goals_generator
+  jsk_recognition_msgs
+  laser_utils
 )
 
 ###################################
@@ -16,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 ###################################
 
 catkin_package(
-  CATKIN_DEPENDS semantic_goals_generator
+  CATKIN_DEPENDS semantic_goals_generator jsk_recognition_msgs laser_utils
 )
 
 ###########
@@ -39,6 +41,7 @@ if(rviz_QT_VERSION VERSION_LESS "5")
   include(${QT_USE_FILE})
   qt4_wrap_cpp(MOC_FILES
   src/semanticNavigationPanel.h
+  src/semanticAnnotationTool.h
 )
 else()
   message(STATUS "Using Qt5 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
@@ -47,6 +50,7 @@ else()
   set(QT_LIBRARIES Qt5::Widgets)
   qt5_wrap_cpp(MOC_FILES
   src/semanticNavigationPanel.h
+  src/semanticAnnotationTool.h
 )
 endif()
 
@@ -54,6 +58,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 
 set(SOURCE_FILES
    src/semanticNavigationPanel.cpp
+   src/semanticAnnotationTool.cpp
    ${MOC_FILES}
 )
 

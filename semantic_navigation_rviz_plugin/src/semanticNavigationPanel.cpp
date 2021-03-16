@@ -1,7 +1,7 @@
 /*
- * SEMANTIC GOALS RVIZ PLUGIN
+ * SEMANTIC NAVIGATION RVIZ PLUGIN
  *
- * Copyright (c) 2020 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * Copyright (c) 2020-2021 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
@@ -18,7 +18,7 @@
 
 #include "semanticNavigationPanel.h"
 
-namespace semantic_goals_rviz_plugin{
+namespace semantic_navigation_rviz_plugin{
 
 semanticNavigationPanel::semanticNavigationPanel(QWidget* parent){
 	// We lay out the "room name" text entry field using a QLabel and a QLineEdit in a QHBoxLayout.
@@ -170,5 +170,5 @@ void semanticNavigationPanel::requestRoom(){
 // Tell pluginlib about this class.  It is important to do this in
 // global scope, outside our package's namespace.
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(semantic_goals_rviz_plugin::semanticNavigationPanel, rviz::Panel)
+PLUGINLIB_EXPORT_CLASS(semantic_navigation_rviz_plugin::semanticNavigationPanel, rviz::Panel)
 

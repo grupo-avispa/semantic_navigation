@@ -1,7 +1,7 @@
 /*
- * SEMANTIC GOALS RVIZ PLUGIN
+ * SEMANTIC NAVIGATION RVIZ PLUGIN
  *
- * Copyright (c) 2020 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * Copyright (c) 2020-2021 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
@@ -24,7 +24,7 @@
 
 class QLineEdit;
 
-namespace semantic_goals_rviz_plugin{
+namespace semantic_navigation_rviz_plugin{
 
 class semanticNavigationPanel: public rviz::Panel{
 Q_OBJECT
