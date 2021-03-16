@@ -21,6 +21,8 @@
 #include <rviz/mesh_loader.h>
 #include <rviz/geometry.h>
 #include <rviz/properties/vector_property.h>
+#include "rviz/properties/float_property.h"
+#include "rviz/properties/string_property.h"
 
 #include "semanticAnnotationTool.h"
 
@@ -28,16 +30,29 @@ namespace semantic_navigation_rviz_plugin{
 
 /* Constructor */
 semanticAnnotationTool::semanticAnnotationTool(){
+	std::string path = ros::package::getPath("semantic_goals_generator") + "/params/roi_" + std::to_string(ros::Time::now().toSec()) + ".yaml";
+
 	shortcut_key_ = 's';
+	inflationProperty_ = new rviz::FloatProperty("Inflation radius", 0.5,"Inflation radius", getPropertyContainer(), SLOT(updateProperty()), this);
+	pathProperty_ = new rviz::StringProperty("Path", QString::fromStdString(path) , "Path to save the rois", getPropertyContainer(), SLOT(updateProperty()), this);
 }
 
 /* Destructor */
 semanticAnnotationTool::~semanticAnnotationTool(){
 }
 
+/* Update properties */
+void semanticAnnotationTool::updateProperty(){
+	inflationRadius_ = inflationProperty_->getFloat();
+	pathFile_ = pathProperty_->getStdString();
+}
+
+/* Initiate */
 void semanticAnnotationTool::initialize(){
-	polygonPub_ = node_.advertise<jsk_recognition_msgs::PolygonArray>("/rois_viz", 1, true);
+	roisVizPub_ = node_.advertise<jsk_recognition_msgs::PolygonArray>("/rois_viz", 1, true);
+	roisNamesVizPub_ = node_.advertise<visualization_msgs::MarkerArray>("rois_names_viz", 1, true);
 	newPolygon_ = true;
+	updateProperty();
 }
 
 /* Activation  */
@@ -61,9 +76,8 @@ int semanticAnnotationTool::processMouseEvent(rviz::ViewportMouseEvent& event){
 	try{
 		if( rviz::getPointOnPlaneFromWindowXY( event.viewport, ground_plane, event.x, event.y, intersection )){
 			if(event.leftDown()){
-				// Extract the last polygon
 				polyStamp.header = polygonArray_.header;
-				//if( (!newPolygon) && (!polygonArray_.polygons.empty()) ){
+				// Extract the last polygon
 				if(!newPolygon_){
 					polyStamp.polygon = polygonArray_.polygons.back().polygon;
 					polygonArray_.polygons.pop_back();
@@ -73,19 +87,28 @@ int semanticAnnotationTool::processMouseEvent(rviz::ViewportMouseEvent& event){
 				point.x = intersection.x;
 				point.y = intersection.y;
 				point.z = 0.0;
-				// Create the new polygon and publish it
+				// Create the new polygon 
 				polyStamp.polygon.points.push_back(point);
 				polygonArray_.polygons.push_back(polyStamp);
-				polygonPub_.publish(polygonArray_);
+				// Publish it
+				roisVizPub_.publish(polygonArray_);
+				// Convert to vector of polygons
+				polygons_ = polygonArrayToVector(polygonArray_);
+				// Show names
+				showPolygonNames();
 				newPolygon_ = false;
 			}
 
 			if(event.rightUp()) newPolygon_ = true;
 
 			if(event.middleUp()){
-				// Clear the polygons
+				newPolygon_ = true;
+				// Save and clear the polygons
+				savePolygon(pathFile_);
 				polygonArray_.polygons.clear();
-				polygonPub_.publish(polygonArray_);
+				polygons_.clear();
+				roisVizPub_.publish(polygonArray_);
+				showPolygonNames();
 			}
 		}
 	}catch(int a){
@@ -97,7 +120,8 @@ int semanticAnnotationTool::processMouseEvent(rviz::ViewportMouseEvent& event){
 }
 
 /* Convert a jsk_recognition_msgs::PolygonArray to a vector of Polygon with edges */
-void semanticAnnotationTool::polygonArrayToEdges(jsk_recognition_msgs::PolygonArray polygonArray){
+std::vector<Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recognition_msgs::PolygonArray polygonArray){
+	std::vector<Polygon> polyVector;
 	for(int i = 0; i < polygonArray.polygons.size(); i++){
 		geometry_msgs::Polygon poly = polygonArray.polygons[i].polygon;
 		Polygon area;
@@ -117,18 +141,72 @@ void semanticAnnotationTool::polygonArrayToEdges(jsk_recognition_msgs::PolygonAr
 		Point a(lastPoint.x, lastPoint.y);
 		Point b(firstPoint.x, firstPoint.y);
 		area.addEdge({a,b});
-		polygons_.push_back(area);
+
+		// Add name
+		area.setName("roi_" + std::to_string(i));
+
+		polyVector.push_back(area);
 	}
+	return polyVector;
 }
 
 /* Save polygon into a file */
 void semanticAnnotationTool::savePolygon(const std::string modelFilepath){
 	std::ofstream polygonFile(modelFilepath, std::ofstream::app);
-
-	polygonFile << "Features: " << std::endl;
+	std::cout<<modelFilepath<< std::endl;
+	polygonFile << "inflation_radius: " << inflationRadius_ << std::endl;
+	polygonFile << "rois:" << std::endl;
+	for(Polygon poly: polygons_){
+		polygonFile << "  - {name: '" << poly.getName() <<"', edges: [";
+		std::vector<Edge> edges = poly.getEdges();
+		for(int e = 0; e < edges.size() - 1; e++){
+			Edge edge = edges[e];
+			polygonFile << "[["<< edge.a.x << ", " << edge.a.y << "], [" << edge.b.x << ", " << edge.b.y << "]], " << std::endl;
+			polygonFile << "                              ";
+		}
+		int edgesSize = edges.size();
+		polygonFile << "[["<< edges[edgesSize-1].a.x << ", " << edges[edgesSize-1].a.y << "], [" << edges[edgesSize-1].b.x << ", " << edges[edgesSize-1].b.y << "]]]}" << std::endl;
+	}
 
 	polygonFile<<"\n";
 	polygonFile.close();
+}
+
+/* Show polygon names */
+void semanticAnnotationTool::showPolygonNames(){
+	visualization_msgs::MarkerArray namesArray;
+	for(int p = 0; p < polygons_.size(); p++){
+		// Create label
+		visualization_msgs::Marker labelMk;
+		labelMk.header.frame_id = "map";
+		labelMk.header.stamp = ros::Time::now();
+		labelMk.ns = "labelroi";
+		labelMk.id = p;
+		labelMk.text = polygons_[p].getName();
+		labelMk.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+		labelMk.action = visualization_msgs::Marker::ADD;
+		labelMk.pose.position.x = polygons_[p].centroid().x;
+		labelMk.pose.position.y = polygons_[p].centroid().y;
+		labelMk.pose.position.z = 0.05;
+		labelMk.pose.orientation.x = 0.0;
+		labelMk.pose.orientation.y = 0.0;
+		labelMk.pose.orientation.z = 0.0;
+		labelMk.pose.orientation.w = 1.0;
+		labelMk.scale.z = 0.5;
+		labelMk.color.r = 1.0;
+		labelMk.color.g = 1.0;
+		labelMk.color.b = 1.0;
+		labelMk.color.a = 1.0f;
+		namesArray.markers.push_back(labelMk);
+	}
+
+	if(polygons_.empty()){
+		visualization_msgs::Marker labelMk;
+		labelMk.header.frame_id = "map";
+		labelMk.action = visualization_msgs::Marker::DELETEALL;
+		namesArray.markers.push_back(labelMk);
+	}
+	roisNamesVizPub_.publish(namesArray);
 }
 
 } // end namespace 

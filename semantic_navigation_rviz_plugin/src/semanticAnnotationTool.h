@@ -12,10 +12,15 @@
 #ifndef SEMANTIC_ANNOTATION_TOOL_H
 #define SEMANTIC_ANNOTATION_TOOL_H
 
-#include "ros/ros.h"
+#include <iostream>
+#include <fstream>
+
+#include <ros/ros.h>
 #include <rviz/tool.h>
+#include <ros/package.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <jsk_recognition_msgs/PolygonArray.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <laser_utils/polygon.h>
 
@@ -28,6 +33,8 @@ namespace rviz{
 	class VectorProperty;
 	class VisualizationManager;
 	class ViewportMouseEvent;
+	class FloatProperty;
+	class StringProperty;
 }
 
 namespace semantic_navigation_rviz_plugin{
@@ -45,18 +52,24 @@ Q_OBJECT
 
 		virtual int processMouseEvent( rviz::ViewportMouseEvent& event );
 
+	public Q_SLOTS:
+		virtual void updateProperty();
+
 	protected Q_SLOTS:
-		void polygonArrayToEdges(jsk_recognition_msgs::PolygonArray polygonArray);
+		std::vector<Polygon> polygonArrayToVector(jsk_recognition_msgs::PolygonArray polygonArray);
 		void savePolygon(const std::string modelFilepath);
+		void showPolygonNames();
 
 	private:
 		ros::NodeHandle node_;
-		ros::Publisher polygonPub_;
-		geometry_msgs::PolygonStamped polygonMk_;
+		ros::Publisher roisVizPub_, roisNamesVizPub_;
 		jsk_recognition_msgs::PolygonArray polygonArray_;
 		std::vector<Polygon> polygons_;
-
-		bool newPolygon_; 
+		bool newPolygon_;
+		rviz::FloatProperty* inflationProperty_;
+		rviz::StringProperty* pathProperty_;
+		float inflationRadius_;
+		std::string pathFile_;
 };
 
 
