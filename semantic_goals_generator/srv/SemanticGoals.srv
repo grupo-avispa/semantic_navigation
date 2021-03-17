@@ -1,6 +1,8 @@
 # Request / response service to generate random goals in regions determined by names
 
 int32 n								# Number of goals
-string roi_name						# Name of the roi 
+string roi_name						# Name of the roi
+string orientation					# Orientation of the goals. Can be: outside, inside, any (default)
+float32 border						# Distance from the edge of the roi. Default: 0.0
 ---
 geometry_msgs/PoseArray goals		# Goals

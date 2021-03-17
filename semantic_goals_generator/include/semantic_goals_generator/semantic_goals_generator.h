@@ -43,8 +43,8 @@ class SemanticGoalsGenerator{
 		int cellMinX_, cellMaxX_, cellMinY_, cellMaxY_;
 		float bBoxMinX_, bBoxMaxX_, bBoxMinY_, bBoxMaxY_;
 		float mapMinX_, mapMaxX_, mapMinY_, mapMaxY_;
-		float resolution_, inflationRadius_;
-		std::string mapTopic_;
+		float resolution_, inflationRadius_, border_;
+		std::string mapTopic_, orientation_;
 		std::vector<int8_t> mapData_;
 		Polygon roi_;
 		std::vector<Polygon> roisList_;
@@ -55,11 +55,11 @@ class SemanticGoalsGenerator{
 		bool SemanticPositionService(semantic_goals_generator::SemanticPosition::Request& req, semantic_goals_generator::SemanticPosition::Response& res);
 		void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap);
 		std::vector<Polygon> getROIParams();
-		void publishPolygonRoi();
 		void showVisualization();
 		void processBoundingBox();
 		int cell(int x, int y);
 		bool inROI(float x, float y);
 		bool inCollision(int x, int y);
+		void decreaseROI();
 };
 #endif

@@ -1,4 +1,10 @@
+# - The regions of interest (rois) are defined by a name ans its edges written in consecutive order.
+# - The rois can have an inner contour. The "useful" ROI remains as the area between the outer and inner contour.
+# - Each edge is defined by its two points. Those points are set in "map" frame. The point units are meters (m).
+# - The inflation radius of the robot's footprint are defined as in navigation stack.
 inflation_radius: 0.5
 rois:
-  - {name: 'lab', points: [[-7.371, 1.8144], [-7.445, -6.497], [0.695, -6.567], [0.5383, 1.799]]}
-  - {name: 'pasillo', points: [[1.864, 22.044], [3.837, -19.182], [7.463, -19.422], [5.448, 22.066]]}
+  - {name: 'roi_0', edges: [[[0.0912409, 1.43037], [-1.53088, 1.29854]], 
+                            [[-1.53088, 1.29854], [-1.70598, -0.862793]]]}
+  - {name: 'roi_1', edges: [[[0.0912409, 1.43037], [-1.53088, 1.29854]], 
+                            [[-1.53088, 1.29854], [-1.70598, -0.862793]]]}

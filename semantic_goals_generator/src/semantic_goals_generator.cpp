@@ -29,23 +29,22 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 	navsGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
 	semanticPosSrv_ = nodePrivate_.advertiseService("/semantic_position", &SemanticGoalsGenerator::SemanticPositionService, this);
 	showVisualization();
+
+	border_ = 0.0;
+	orientation_ = "any";
 }
 
 /* Delete all parameteres */
 SemanticGoalsGenerator::~SemanticGoalsGenerator() {
 	nodePrivate_.deleteParam("map_topic");
 	nodePrivate_.deleteParam("is_costmap");
-	nodePrivate_.deleteParam("inflation_radius");
 }
 
 /* Update parameters of the node */
 bool SemanticGoalsGenerator::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
 	nodePrivate_.param<std::string>("map_topic", mapTopic_, "map");
 	nodePrivate_.param<bool>("is_costmap", isCostmap_, false);
-	nodePrivate_.param<float>("inflation_radius", inflationRadius_, 0.5);
-
 	roisList_ = getROIParams();
-	
 	return true;
 }
 
@@ -68,7 +67,13 @@ std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 	XmlRpc::XmlRpcValue xmlRoiList;
 	std::vector<Polygon> rois;
 	std::vector<std::string> roisNames;
-	
+
+	if(nodePrivate_.hasParam("inflation_radius")){
+		nodePrivate_.getParam("inflation_radius", inflationRadius_);
+	}else{
+		inflationRadius_ = 0.5;
+	}
+
 	if(nodePrivate_.hasParam("rois")){
 		nodePrivate_.getParam("rois", xmlRoiList);
 		for(int32_t i = 0; i < xmlRoiList.size(); ++i){
@@ -88,7 +93,7 @@ std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 			Point b(static_cast<double>(xmlRoiList[i]["points"][0][0]), static_cast<double>(xmlRoiList[i]["points"][0][1]));
 			poly.addEdge({a,b});
 			rois.push_back(poly);*/
-			
+
 			// Extract edges
 			int edgesSize = xmlRoiList[i]["edges"].size();
 			for(int e = 0; e < edgesSize; e++){
@@ -160,17 +165,23 @@ void SemanticGoalsGenerator::processBoundingBox(){
 bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res){
 	ROS_INFO("[Semantic goals generator]: Incoming service request: %i, %s", req.n, req.roi_name.c_str());
 
+	// Clear previous ROI
+	roi_.clear();
+
 	// Get arguments
 	int n = req.n;
-	for(int r = 0; r < roisList_.size(); r++){
-		if(roisList_[r].getName() == req.roi_name){
-			roi_ = roisList_[r];
+	for(Polygon roi: roisList_){
+		if(roi.getName() == req.roi_name){
+			roi_ = roi;
 			break;
-		}else if (req.roi_name.empty()){
-			roi_.clear();
 		}
 	}
-	
+	orientation_ = req.orientation;
+	border_ = req.border;
+
+	// Decrease the ROI
+	decreaseROI();
+
 	// Wait for map
 	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapTopic_, node_, ros::Duration(10));
 	if(msgMap){
@@ -207,9 +218,16 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 		// If the point lies within ROI and is not in collision
 		if(inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY)){
-			double yaw = distPI(gen);
+			// Generate orientation
+			double yaw;
+			if(orientation_ == "outside"){
+				yaw = atan2((pose.position.y - roi_.centroid().y), (pose.position.x - roi_.centroid().x));
+			}else if(orientation_ == "inside"){
+				yaw = atan2((pose.position.y - roi_.centroid().y), (pose.position.x - roi_.centroid().x)) + M_PI;
+			}else{
+				yaw = distPI(gen);
+			}
 			tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.orientation);
-
 			ROS_INFO("[Semantic goals generator]: Pose (x: %f, y: %f, z: %f)", pose.position.x, pose.position.y, yaw);
 
 			res.goals.poses.push_back(pose);
@@ -234,7 +252,8 @@ bool SemanticGoalsGenerator::SemanticPositionService(semantic_goals_generator::S
 			return true;
 		}
 	}
-	
+
+	res.roi_name = "Region unknown";
 	ROS_FATAL("[Semantic goals generator]: Failed to get semantic position");
 	return false;
 }
@@ -250,8 +269,7 @@ int SemanticGoalsGenerator::cell(int x, int y){
 /* Check if a point is inside the region of interest (ROI) */
 bool SemanticGoalsGenerator::inROI(float x, float y){
 	if(roi_.size() == 0) return true;
-	Point p(x,y);
-	return roi_.contains(p);
+	return roi_.contains(Point(x,y));
 }
 
 /* Check if a point is in collision */
@@ -259,7 +277,7 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
 	int xMin, xMax, yMin, yMax;
 
 	if(isCostmap_){
-		if(cell(x, y) !=0 ) return true;
+		if(cell(x, y) != 0) return true;
 		return false;
 	}
 
@@ -276,20 +294,40 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
 	return false;
 }
 
+/* Decrease the size of the ROI by border distance */
+void SemanticGoalsGenerator::decreaseROI(){
+	Polygon newRoi;
+	std::vector<Edge> edges = roi_.getEdges();
+
+	for(Edge edge: edges){
+		if(edge.a.x < roi_.centroid().x) edge.a.x += border_;
+		if(edge.a.x > roi_.centroid().x) edge.a.x -= border_;
+		if(edge.a.y < roi_.centroid().y) edge.a.y += border_;
+		if(edge.a.y > roi_.centroid().y) edge.a.y -= border_;
+
+		if(edge.b.x < roi_.centroid().x) edge.b.x += border_;
+		if(edge.b.x > roi_.centroid().x) edge.b.x -= border_;
+		if(edge.b.y < roi_.centroid().y) edge.b.y += border_;
+		if(edge.b.y > roi_.centroid().y) edge.b.y -= border_;
+		newRoi.addEdge(edge);
+	}
+	roi_ = newRoi;
+}
+
 /* Show the rois in rviz */
 void SemanticGoalsGenerator::showVisualization(){
 	jsk_recognition_msgs::PolygonArray polygonArray;
 	polygonArray.header.frame_id = "map";
 	polygonArray.header.stamp = ros::Time::now();
-	
+
 	visualization_msgs::MarkerArray namesArray;
-	
+
 	for(int r = 0; r < roisList_.size(); r++){
 		// Create polygon marker
 		geometry_msgs::PolygonStamped polygonMk;
 		polygonMk.header.frame_id = "map";
 		polygonMk.header.stamp = ros::Time::now();
-		
+
 		for(int e = 0; e < roisList_[r].size(); e++){
 			Point p = roisList_[r].getEdge(e).a;
 			geometry_msgs::Point32 pg; 
@@ -298,7 +336,7 @@ void SemanticGoalsGenerator::showVisualization(){
 		}
 		polygonArray.polygons.push_back(polygonMk);
 		polygonArray.labels.push_back(r);
-		
+
 		// Create label
 		visualization_msgs::Marker labelMk;
 		labelMk.header.frame_id = "map";
