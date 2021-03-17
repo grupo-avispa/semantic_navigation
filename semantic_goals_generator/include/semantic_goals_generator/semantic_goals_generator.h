@@ -60,6 +60,5 @@ class SemanticGoalsGenerator{
 		int cell(int x, int y);
 		bool inROI(float x, float y);
 		bool inCollision(int x, int y);
-		void decreaseROI();
 };
 #endif

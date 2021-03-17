@@ -179,8 +179,8 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	orientation_ = req.orientation;
 	border_ = req.border;
 
-	// Decrease the ROI
-	decreaseROI();
+	// Offset the ROI
+	roi_.offset(border_);
 
 	// Wait for map
 	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapTopic_, node_, ros::Duration(10));
@@ -292,26 +292,6 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
 		}
 	}
 	return false;
-}
-
-/* Decrease the size of the ROI by border distance */
-void SemanticGoalsGenerator::decreaseROI(){
-	Polygon newRoi;
-	std::vector<Edge> edges = roi_.getEdges();
-
-	for(Edge edge: edges){
-		if(edge.a.x < roi_.centroid().x) edge.a.x += border_;
-		if(edge.a.x > roi_.centroid().x) edge.a.x -= border_;
-		if(edge.a.y < roi_.centroid().y) edge.a.y += border_;
-		if(edge.a.y > roi_.centroid().y) edge.a.y -= border_;
-
-		if(edge.b.x < roi_.centroid().x) edge.b.x += border_;
-		if(edge.b.x > roi_.centroid().x) edge.b.x -= border_;
-		if(edge.b.y < roi_.centroid().y) edge.b.y += border_;
-		if(edge.b.y > roi_.centroid().y) edge.b.y -= border_;
-		newRoi.addEdge(edge);
-	}
-	roi_ = newRoi;
 }
 
 /* Show the rois in rviz */
