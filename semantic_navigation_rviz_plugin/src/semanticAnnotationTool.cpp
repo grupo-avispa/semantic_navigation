@@ -34,6 +34,7 @@ semanticAnnotationTool::semanticAnnotationTool(){
 
 	shortcut_key_ = 's';
 	inflationProperty_ = new rviz::FloatProperty("Inflation radius", 0.5,"Inflation radius", getPropertyContainer(), SLOT(updateProperty()), this);
+	roiNamesListProperty_ = new rviz::StringProperty("ROIs names", "", "List of ROIs names", getPropertyContainer(), SLOT(updateProperty()), this);
 	pathProperty_ = new rviz::StringProperty("Path", QString::fromStdString(path) , "Path to save the rois", getPropertyContainer(), SLOT(updateProperty()), this);
 }
 
@@ -45,6 +46,10 @@ semanticAnnotationTool::~semanticAnnotationTool(){
 void semanticAnnotationTool::updateProperty(){
 	inflationRadius_ = inflationProperty_->getFloat();
 	pathFile_ = pathProperty_->getStdString();
+
+	std::string roiList = roiNamesListProperty_->getStdString();
+	if(roiList == "") roiNamesList_.clear();
+	else boost::split(roiNamesList_, roiList, boost::is_any_of(","));
 }
 
 /* Initiate */
@@ -142,8 +147,12 @@ std::vector<Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recognitio
 		Point b(firstPoint.x, firstPoint.y);
 		area.addEdge({a,b});
 
-		// Add name
-		area.setName("roi_" + std::to_string(i));
+		// Add name to the rois
+		if(i < roiNamesList_.size()){
+			area.setName(roiNamesList_[i]);
+		}else{
+			area.setName("roi_" + std::to_string(i));
+		}
 
 		polyVector.push_back(area);
 	}

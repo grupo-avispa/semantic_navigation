@@ -15,6 +15,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <boost/algorithm/string.hpp> 
+
 #include <ros/ros.h>
 #include <rviz/tool.h>
 #include <ros/package.h>
@@ -67,9 +69,11 @@ Q_OBJECT
 		std::vector<Polygon> polygons_;
 		bool newPolygon_;
 		rviz::FloatProperty* inflationProperty_;
+		rviz::StringProperty* roiNamesListProperty_;
 		rviz::StringProperty* pathProperty_;
 		float inflationRadius_;
 		std::string pathFile_;
+		std::vector<std::string> roiNamesList_;
 };
 
 
