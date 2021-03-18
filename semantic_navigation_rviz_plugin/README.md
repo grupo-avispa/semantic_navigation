@@ -16,7 +16,7 @@ Usage of Semantic Annotation Tool
 
 * Open the plugin in Rviz by clicking "+" in the tool panel and select "Semantic Annotation".
 * In the Displays panel, make sure you have the topic "/rois_viz" of type PolygonArray and "/rois_names_viz" of type MarkerArray.
-* In the Tool properties panel, change the inflation radius and write the ROIs names splitted by a comma (,).
+* In the Tool properties panel, change the inflation radius, write the ROIs names splitted by a comma (,) and the YAML configuration filename. It will store in semantic_goals_generator package.
 * Clic with the left button on the map to add new points to a polygon.
 * Clic with the right button to start a new polygon.
 * Clic with the middle button to erase all polygons, save them and start over.

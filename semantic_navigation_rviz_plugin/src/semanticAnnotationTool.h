@@ -59,7 +59,7 @@ Q_OBJECT
 
 	protected Q_SLOTS:
 		std::vector<Polygon> polygonArrayToVector(jsk_recognition_msgs::PolygonArray polygonArray);
-		void savePolygon(const std::string modelFilepath);
+		void savePolygon(const std::string pathFilename);
 		void showPolygonNames();
 
 	private:
@@ -72,7 +72,7 @@ Q_OBJECT
 		rviz::StringProperty* roiNamesListProperty_;
 		rviz::StringProperty* pathProperty_;
 		float inflationRadius_;
-		std::string pathFile_;
+		std::string pathFilename_;
 		std::vector<std::string> roiNamesList_;
 };
 

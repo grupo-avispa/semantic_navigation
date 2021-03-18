@@ -30,12 +30,12 @@ namespace semantic_navigation_rviz_plugin{
 
 /* Constructor */
 semanticAnnotationTool::semanticAnnotationTool(){
-	std::string path = ros::package::getPath("semantic_goals_generator") + "/params/roi_" + std::to_string(ros::Time::now().toSec()) + ".yaml";
+	std::string filename = "roi_" + std::to_string(ros::Time::now().toSec()) + ".yaml";
 
 	shortcut_key_ = 's';
 	inflationProperty_ = new rviz::FloatProperty("Inflation radius", 0.5,"Inflation radius", getPropertyContainer(), SLOT(updateProperty()), this);
 	roiNamesListProperty_ = new rviz::StringProperty("ROIs names", "", "List of ROIs names", getPropertyContainer(), SLOT(updateProperty()), this);
-	pathProperty_ = new rviz::StringProperty("Path", QString::fromStdString(path) , "Path to save the rois", getPropertyContainer(), SLOT(updateProperty()), this);
+	pathProperty_ = new rviz::StringProperty("YAML config filename", QString::fromStdString(filename) , "Filename to save the ROIs.", getPropertyContainer(), SLOT(updateProperty()), this);
 }
 
 /* Destructor */
@@ -45,7 +45,7 @@ semanticAnnotationTool::~semanticAnnotationTool(){
 /* Update properties */
 void semanticAnnotationTool::updateProperty(){
 	inflationRadius_ = inflationProperty_->getFloat();
-	pathFile_ = pathProperty_->getStdString();
+	pathFilename_ = pathProperty_->getStdString();
 
 	std::string roiList = roiNamesListProperty_->getStdString();
 	if(roiList == "") roiNamesList_.clear();
@@ -109,7 +109,7 @@ int semanticAnnotationTool::processMouseEvent(rviz::ViewportMouseEvent& event){
 			if(event.middleUp()){
 				newPolygon_ = true;
 				// Save and clear the polygons
-				savePolygon(pathFile_);
+				savePolygon(pathFilename_);
 				polygonArray_.polygons.clear();
 				polygons_.clear();
 				roisVizPub_.publish(polygonArray_);
@@ -160,9 +160,10 @@ std::vector<Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recognitio
 }
 
 /* Save polygon into a file */
-void semanticAnnotationTool::savePolygon(const std::string modelFilepath){
-	std::ofstream polygonFile(modelFilepath, std::ofstream::app);
-	std::cout<<modelFilepath<< std::endl;
+void semanticAnnotationTool::savePolygon(const std::string pathFilename){
+	std::string filePath = ros::package::getPath("semantic_goals_generator") + "/params/" + pathFilename;
+	std::ofstream polygonFile(filePath, std::ofstream::app);
+
 	polygonFile << "inflation_radius: " << inflationRadius_ << std::endl;
 	polygonFile << "rois:" << std::endl;
 	for(Polygon poly: polygons_){

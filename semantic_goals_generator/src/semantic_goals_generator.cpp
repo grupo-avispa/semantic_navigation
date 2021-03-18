@@ -179,9 +179,6 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	orientation_ = req.orientation;
 	border_ = req.border;
 
-	// Offset the ROI
-	roi_.offset(border_);
-
 	// Wait for map
 	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapTopic_, node_, ros::Duration(10));
 	if(msgMap){
@@ -217,7 +214,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 		pose.position.y = cellY * resolution_ + origin_.position.y;
 
 		// If the point lies within ROI and is not in collision
-		if(inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY)){
+		if(inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY) && disFromBorders(pose.position.x, pose.position.y)){
 			// Generate orientation
 			double yaw;
 			if(orientation_ == "outside"){
@@ -292,6 +289,14 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
 		}
 	}
 	return false;
+}
+
+/* Check if the point is at distance from all borders */
+bool SemanticGoalsGenerator::disFromBorders(float x, float y){
+	for(Edge edge: roi_.getEdges()){
+		if(edge.distance(Point(x,y)) < border_) return false;
+	}
+	return true;
 }
 
 /* Show the rois in rviz */
