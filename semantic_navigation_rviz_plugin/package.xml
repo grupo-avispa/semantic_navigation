@@ -15,6 +15,7 @@
 	<exec_depend>roslib</exec_depend>
 	<exec_depend>semantic_goals_generator</exec_depend>
 	<exec_depend>jsk_recognition_msgs</exec_depend>
+	<exec_depend>jsk_rviz_plugins</exec_depend>
 	<exec_depend>laser_utils</exec_depend>
 	<export>
 		<rviz plugin="${prefix}/plugin_description.xml"/>
