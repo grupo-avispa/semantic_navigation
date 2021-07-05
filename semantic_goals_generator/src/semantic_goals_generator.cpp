@@ -1,7 +1,7 @@
 /*
  * SEMANTIC GOALS GENERATOR ROS NODE
  *
- * Copyright (c) 2020 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * Copyright (c) 2020-2021 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
@@ -10,23 +10,25 @@
  */
 
 #include <map>
-
+#include <tf/tf.h>
 #include <geometry_msgs/Point.h>
-#include <nav_msgs/OccupancyGrid.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <jsk_recognition_msgs/PolygonArray.h>
 
 #include "semantic_goals_generator/semantic_goals_generator.h"
 
 /* Initialize the subscribers and publishers */
 SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeHandle& node_private) : node_(node), nodePrivate_(node_private){
-	paramsSrv_ = nodePrivate_.advertiseService("params", &SemanticGoalsGenerator::updateParams, this);
-
-	initialize();
+	// Initialize ROS parameters
+	getParams();
 
 	navGoalsPub_ = nodePrivate_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1);
 	roisVizPub_ = nodePrivate_.advertise<jsk_recognition_msgs::PolygonArray>("rois_viz", 1, true);
 	roisNamesVizPub_ = nodePrivate_.advertise<visualization_msgs::MarkerArray>("rois_names_viz", 1, true);
 
-	navsGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
+	navGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
 	semanticPosSrv_ = nodePrivate_.advertiseService("/semantic_position", &SemanticGoalsGenerator::SemanticPositionService, this);
 	showVisualization();
 
@@ -35,17 +37,18 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 }
 
 /* Delete all parameteres */
-SemanticGoalsGenerator::~SemanticGoalsGenerator() {
+SemanticGoalsGenerator::~SemanticGoalsGenerator(){
 	nodePrivate_.deleteParam("map_topic");
 	nodePrivate_.deleteParam("is_costmap");
 }
 
 /* Update parameters of the node */
-bool SemanticGoalsGenerator::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
+void SemanticGoalsGenerator::getParams(){
+	ROS_INFO("[Semantic goals generator]: Reading ROS parameters");
+
 	nodePrivate_.param<std::string>("map_topic", mapTopic_, "map");
 	nodePrivate_.param<bool>("is_costmap", isCostmap_, false);
 	roisList_ = getROIParams();
-	return true;
 }
 
 /* Map callback */

@@ -6,11 +6,11 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -fpermissive ${CMAKE_CXX_FLAGS} -Wfatal-errors\ 
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
-  nav_msgs
   roscpp
   std_msgs
   tf
+  geometry_msgs
+  nav_msgs
   visualization_msgs
   jsk_recognition_msgs
   laser_utils
