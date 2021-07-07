@@ -161,7 +161,7 @@ std::vector<Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recognitio
 
 /* Save polygon into a file */
 void semanticAnnotationTool::savePolygon(const std::string pathFilename){
-	std::string filePath = ros::package::getPath("semantic_goals_generator") + "/params/" + pathFilename;
+	std::string filePath = ros::package::getPath("semantic_goals_generator") + "/config/" + pathFilename;
 	std::ofstream polygonFile(filePath, std::ofstream::app);
 
 	polygonFile << "inflation_radius: " << inflationRadius_ << std::endl;
