@@ -16,8 +16,9 @@ If you want to know where the robot is, clic on "Where is the robot?".
 For the Semantic Annotation Tool:
 
 * Open the plugin in Rviz by clicking "+" in the tool panel and select "Semantic Annotation".
-* In the Displays panel, make sure you have the topic "/rois_viz" of type PolygonArray and "/rois_names_viz" of type MarkerArray.
-* In the Tool properties panel, change the inflation radius, write the ROIs names splitted by a comma (,) and the YAML configuration filename. It will store in semantic_goals_generator package.
+* In the Displays panel, add a display of jsk_rviz_plugins/PolygonArray type and make sure the name of the topic is "/rois_viz".
+* In the Displays panel, add a display of rviz/MarkerArray type and make sure the name of the topic is "/rois_names_viz".
+* In the Tool properties panel, you can change the inflation radius, write the ROIs names splitted by a comma (,) and the YAML configuration filename. It will store in the config folder of semantic_goals_generator package.
 * Clic with the left button on the map to add new points to a polygon.
 * Clic with the right button to start a new polygon.
 * Clic with the middle button to erase all polygons, save them and start over.
