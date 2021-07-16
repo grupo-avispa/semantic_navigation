@@ -15,7 +15,7 @@
 	<build_depend>visualization_msgs</build_depend>
 	<build_depend>message_generation</build_depend>
 	<build_depend>jsk_recognition_msgs</build_depend>
-	<build_depend>laser_utils</build_depend>
+	<build_depend>simple_laser_geometry</build_depend>
 	<exec_depend>roscpp</exec_depend>
 	<exec_depend>std_msgs</exec_depend>
 	<exec_depend>tf</exec_depend>
@@ -24,5 +24,5 @@
 	<exec_depend>visualization_msgs</exec_depend>
 	<exec_depend>message_runtime</exec_depend>
 	<exec_depend>jsk_recognition_msgs</exec_depend>
-	<exec_depend>laser_utils</exec_depend>
+	<exec_depend>simple_laser_geometry</exec_depend>
 </package>

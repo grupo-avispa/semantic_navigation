@@ -24,7 +24,7 @@
 #include <jsk_recognition_msgs/PolygonArray.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <laser_utils/polygon.h>
+#include <simple_laser_geometry/polygon.h>
 
 namespace Ogre{
 	class SceneNode;

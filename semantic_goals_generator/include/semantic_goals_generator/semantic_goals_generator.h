@@ -22,7 +22,7 @@
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/OccupancyGrid.h>
 
-#include <laser_utils/polygon.h>
+#include <simple_laser_geometry/polygon.h>
 #include "semantic_goals_generator/SemanticGoals.h"
 #include "semantic_goals_generator/SemanticPosition.h"
 

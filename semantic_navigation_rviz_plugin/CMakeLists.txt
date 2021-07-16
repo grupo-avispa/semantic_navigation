@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   rviz
   semantic_goals_generator
   jsk_recognition_msgs
-  laser_utils
+  simple_laser_geometry
 )
 
 ###################################
@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 ###################################
 
 catkin_package(
-  CATKIN_DEPENDS semantic_goals_generator jsk_recognition_msgs laser_utils
+  CATKIN_DEPENDS semantic_goals_generator jsk_recognition_msgs simple_laser_geometry
 )
 
 ###########

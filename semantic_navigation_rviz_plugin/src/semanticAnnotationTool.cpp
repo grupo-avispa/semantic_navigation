@@ -135,16 +135,16 @@ std::vector<Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recognitio
 			geometry_msgs::Point32 currPoint = poly.points[p];
 			geometry_msgs::Point32 nextPoint = poly.points[p+1];
 
-			Point a(currPoint.x, currPoint.y);
-			Point b(nextPoint.x, nextPoint.y);
+			Point2D a(currPoint.x, currPoint.y);
+			Point2D b(nextPoint.x, nextPoint.y);
 			area.addEdge({a,b});
 		}
 		// Add the last edge
 		geometry_msgs::Point32 lastPoint = poly.points[poly.points.size()-1];
 		geometry_msgs::Point32 firstPoint = poly.points[0];
 
-		Point a(lastPoint.x, lastPoint.y);
-		Point b(firstPoint.x, firstPoint.y);
+		Point2D a(lastPoint.x, lastPoint.y);
+		Point2D b(firstPoint.x, firstPoint.y);
 		area.addEdge({a,b});
 
 		// Add name to the rois

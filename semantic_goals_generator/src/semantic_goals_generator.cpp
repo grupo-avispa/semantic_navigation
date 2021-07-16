@@ -17,6 +17,8 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <jsk_recognition_msgs/PolygonArray.h>
 
+#include <simple_laser_geometry/point2D.h>
+
 #include "semantic_goals_generator/semantic_goals_generator.h"
 
 /* Initialize the subscribers and publishers */
@@ -87,21 +89,21 @@ std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 			// Extract points
 			/*int pointsSize = xmlRoiList[i]["points"].size();
 			for(int p = 0; p < pointsSize-1; p++){
-				Point a(static_cast<double>(xmlRoiList[i]["points"][p][0]), static_cast<double>(xmlRoiList[i]["points"][p][1]));
-				Point b(static_cast<double>(xmlRoiList[i]["points"][p+1][0]), static_cast<double>(xmlRoiList[i]["points"][p+1][1]));
+				Point2D a(static_cast<double>(xmlRoiList[i]["points"][p][0]), static_cast<double>(xmlRoiList[i]["points"][p][1]));
+				Point2D b(static_cast<double>(xmlRoiList[i]["points"][p+1][0]), static_cast<double>(xmlRoiList[i]["points"][p+1][1]));
 				poly.addEdge({a,b});
 			}
 			// Add the last edge
-			Point a(static_cast<double>(xmlRoiList[i]["points"][pointsSize-1][0]), static_cast<double>(xmlRoiList[i]["points"][pointsSize-1][1]));
-			Point b(static_cast<double>(xmlRoiList[i]["points"][0][0]), static_cast<double>(xmlRoiList[i]["points"][0][1]));
+			Point2D a(static_cast<double>(xmlRoiList[i]["points"][pointsSize-1][0]), static_cast<double>(xmlRoiList[i]["points"][pointsSize-1][1]));
+			Point2D b(static_cast<double>(xmlRoiList[i]["points"][0][0]), static_cast<double>(xmlRoiList[i]["points"][0][1]));
 			poly.addEdge({a,b});
 			rois.push_back(poly);*/
 
 			// Extract edges
 			int edgesSize = xmlRoiList[i]["edges"].size();
 			for(int e = 0; e < edgesSize; e++){
-				Point a(static_cast<double>(xmlRoiList[i]["edges"][e][0][0]), static_cast<double>(xmlRoiList[i]["edges"][e][0][1]));
-				Point b(static_cast<double>(xmlRoiList[i]["edges"][e][1][0]), static_cast<double>(xmlRoiList[i]["edges"][e][1][1]));
+				Point2D a(static_cast<double>(xmlRoiList[i]["edges"][e][0][0]), static_cast<double>(xmlRoiList[i]["edges"][e][0][1]));
+				Point2D b(static_cast<double>(xmlRoiList[i]["edges"][e][1][0]), static_cast<double>(xmlRoiList[i]["edges"][e][1][1]));
 				poly.addEdge({a,b});
 			}
 			rois.push_back(poly);
@@ -138,7 +140,7 @@ void SemanticGoalsGenerator::processBoundingBox(){
 		bBoxMaxY_ = -std::numeric_limits<int>::infinity();
 
 		for(int e = 0; e < roi_.size(); e++){
-			Point p = roi_.getEdge(e).a;
+			Point2D p = roi_.getEdge(e).a;
 
 			if(p.x < mapMinX_) p.x = mapMinX_;
 			if(p.x > mapMaxX_) p.x = mapMaxX_;
@@ -269,7 +271,7 @@ int SemanticGoalsGenerator::cell(int x, int y){
 /* Check if a point is inside the region of interest (ROI) */
 bool SemanticGoalsGenerator::inROI(float x, float y){
 	if(roi_.size() == 0) return true;
-	return roi_.contains(Point(x,y));
+	return roi_.contains(Point2D(x,y));
 }
 
 /* Check if a point is in collision */
@@ -297,7 +299,7 @@ bool SemanticGoalsGenerator::inCollision(int x, int y){
 /* Check if the point is at distance from all borders */
 bool SemanticGoalsGenerator::disFromBorders(float x, float y){
 	for(Edge edge: roi_.getEdges()){
-		if(edge.distance(Point(x,y)) < border_) return false;
+		if(edge.distance(Point2D(x,y)) < border_) return false;
 	}
 	return true;
 }
@@ -317,7 +319,7 @@ void SemanticGoalsGenerator::showVisualization(){
 		polygonMk.header.stamp = ros::Time::now();
 
 		for(int e = 0; e < roisList_[r].size(); e++){
-			Point p = roisList_[r].getEdge(e).a;
+			Point2D p = roisList_[r].getEdge(e).a;
 			geometry_msgs::Point32 pg; 
 			pg.x = p.x; pg.y = p.y; pg.z = 0.0;
 			polygonMk.polygon.points.push_back(pg);
