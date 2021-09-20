@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
 	<name>semantic_navigation_rviz_plugin</name>
-	<version>0.1.5</version>
+	<version>1.0.0</version>
 	<description>Panel for Rviz to send the robot to a ROI and tool to save ROIs in a YAML file.</description>
 	<maintainer email="ajtudela@gmail.com">Alberto Tudela</maintainer>
 	<author email="ajtudela@gmail.com">Alberto Tudela</author>
