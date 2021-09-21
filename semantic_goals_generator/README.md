@@ -1,8 +1,6 @@
 # semantic_goals_generator
 
-![ROS](https://img.shields.io/badge/ros-%230A0FF9.svg?style=for-the-badge&logo=ros&logoColor=white)
-![Melodic](https://img.shields.io/badge/release-melodic-blue?style=for-the-badge)
-
+![ROS](https://img.shields.io/badge/ros-melodic-blue?style=for-the-badge&logo=ros&logoColor=white)
 
 ## Overview
 
