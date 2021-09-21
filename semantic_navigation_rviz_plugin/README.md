@@ -1,5 +1,7 @@
 # semantic_navigation_rviz_plugin
 
+![ROS](https://img.shields.io/badge/ros-melodic-blue?style=for-the-badge&logo=ros&logoColor=white)
+
 ## Overview
 
 Panel for [RViz] to send the robot to a region of interest (ROI) and tool to save ROIs in a YAML file.

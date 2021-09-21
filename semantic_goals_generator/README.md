@@ -1,5 +1,7 @@
 # semantic_goals_generator
 
+![ROS](https://img.shields.io/badge/ros-melodic-blue?style=for-the-badge&logo=ros&logoColor=white)
+
 ## Overview
 
 ROS Service to generate 2D navigation goals with orientation in a specifed region of interest (ROI). The service takes the number of navigation goals (*n*) 
