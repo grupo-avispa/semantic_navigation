@@ -9,7 +9,6 @@
  *
  */
 
-#include <map>
 #include <tf/tf.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseArray.h>
@@ -71,7 +70,6 @@ void SemanticGoalsGenerator::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr
 std::vector<Polygon> SemanticGoalsGenerator::getROIParams(){
 	XmlRpc::XmlRpcValue xmlRoiList;
 	std::vector<Polygon> rois;
-	std::vector<std::string> roisNames;
 
 	if(nodePrivate_.hasParam("inflation_radius")){
 		nodePrivate_.getParam("inflation_radius", inflationRadius_);
