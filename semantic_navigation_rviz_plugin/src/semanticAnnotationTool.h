@@ -58,7 +58,7 @@ Q_OBJECT
 		virtual void updateProperty();
 
 	protected Q_SLOTS:
-		std::vector<Polygon> polygonArrayToVector(jsk_recognition_msgs::PolygonArray polygonArray);
+		std::vector<slg::Polygon> polygonArrayToVector(jsk_recognition_msgs::PolygonArray polygonArray);
 		void savePolygon(const std::string pathFilename);
 		void showPolygonNames();
 
@@ -66,7 +66,7 @@ Q_OBJECT
 		ros::NodeHandle node_;
 		ros::Publisher roisVizPub_, roisNamesVizPub_;
 		jsk_recognition_msgs::PolygonArray polygonArray_;
-		std::vector<Polygon> polygons_;
+		std::vector<slg::Polygon> polygons_;
 		bool newPolygon_;
 		rviz::FloatProperty* inflationProperty_;
 		rviz::StringProperty* roiNamesListProperty_;

@@ -125,26 +125,26 @@ int semanticAnnotationTool::processMouseEvent(rviz::ViewportMouseEvent& event){
 }
 
 /* Convert a jsk_recognition_msgs::PolygonArray to a vector of Polygon with edges */
-std::vector<Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recognition_msgs::PolygonArray polygonArray){
-	std::vector<Polygon> polyVector;
+std::vector<slg::Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recognition_msgs::PolygonArray polygonArray){
+	std::vector<slg::Polygon> polyVector;
 	for(int i = 0; i < polygonArray.polygons.size(); i++){
 		geometry_msgs::Polygon poly = polygonArray.polygons[i].polygon;
-		Polygon area;
+		slg::Polygon area;
 		// Read n-1 points
 		for(int p = 0; p < poly.points.size() - 1; p++){
 			geometry_msgs::Point32 currPoint = poly.points[p];
 			geometry_msgs::Point32 nextPoint = poly.points[p+1];
 
-			Point2D a(currPoint.x, currPoint.y);
-			Point2D b(nextPoint.x, nextPoint.y);
+			slg::Point2D a(currPoint.x, currPoint.y);
+			slg::Point2D b(nextPoint.x, nextPoint.y);
 			area.addEdge({a,b});
 		}
 		// Add the last edge
 		geometry_msgs::Point32 lastPoint = poly.points[poly.points.size()-1];
 		geometry_msgs::Point32 firstPoint = poly.points[0];
 
-		Point2D a(lastPoint.x, lastPoint.y);
-		Point2D b(firstPoint.x, firstPoint.y);
+		slg::Point2D a(lastPoint.x, lastPoint.y);
+		slg::Point2D b(firstPoint.x, firstPoint.y);
 		area.addEdge({a,b});
 
 		// Add name to the rois
@@ -166,11 +166,11 @@ void semanticAnnotationTool::savePolygon(const std::string pathFilename){
 
 	polygonFile << "inflation_radius: " << inflationRadius_ << std::endl;
 	polygonFile << "rois:" << std::endl;
-	for(Polygon poly: polygons_){
+	for(slg::Polygon poly: polygons_){
 		polygonFile << "  - {name: '" << poly.getName() <<"', edges: [";
-		std::vector<Edge> edges = poly.getEdges();
+		std::vector<slg::Edge> edges = poly.getEdges();
 		for(int e = 0; e < edges.size() - 1; e++){
-			Edge edge = edges[e];
+			slg::Edge edge = edges[e];
 			polygonFile << "[["<< edge.a.x << ", " << edge.a.y << "], [" << edge.b.x << ", " << edge.b.y << "]], " << std::endl;
 			polygonFile << "                              ";
 		}

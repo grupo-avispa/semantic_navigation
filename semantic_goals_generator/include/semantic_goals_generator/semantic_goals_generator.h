@@ -44,14 +44,14 @@ class SemanticGoalsGenerator{
 		float resolution_, inflationRadius_, border_;
 		std::string mapTopic_, orientation_;
 		std::vector<int8_t> mapData_;
-		Polygon roi_;
-		std::vector<Polygon> roisList_;
+		slg::Polygon roi_;
+		std::vector<slg::Polygon> roisList_;
 
 		void getParams();
 		bool SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res);
 		bool SemanticPositionService(semantic_goals_generator::SemanticPosition::Request& req, semantic_goals_generator::SemanticPosition::Response& res);
 		void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap);
-		std::vector<Polygon> getROIParams();
+		std::vector<slg::Polygon> getROIParams();
 		void showVisualization();
 		void processBoundingBox();
 		int cell(int x, int y);
