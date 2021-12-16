@@ -28,6 +28,7 @@ The semantic_goals_generator package has been tested under [ROS] Melodic on [Ubu
 #### Dependencies
 
 - [Robot Operating System (ROS)](http://wiki.ros.org) (middleware for robotics),
+- [simple_laser_geometry](https://github.com/ajtudela/simple_laser_geometry) (Library and messages to interact with laser related geometry),
 - [jsk_recognition_msgs](https://jsk-visualization.readthedocs.io/en/latest/index.html) (jsk_visualization)
 
 	sudo rosdep install --from-paths src
