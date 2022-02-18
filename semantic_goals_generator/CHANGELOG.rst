@@ -5,7 +5,7 @@ Changelog for package semantic_goals_generator
 2.0.0 (18-02-2022)
 ------------------
 * Change orientation subtopic to direction.
-* Added yaw in srv message and in configuration file. 
+* Added yaw in srv message and in configuration file.
 
 1.0.1 (15-12-2021)
 ------------------

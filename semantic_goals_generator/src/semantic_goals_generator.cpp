@@ -213,11 +213,14 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 				yaw = atan2((pose.position.y - roi_.polygon.centroid().y), (pose.position.x - roi_.polygon.centroid().x));
 			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::INSIDE){
 				yaw = atan2((pose.position.y - roi_.polygon.centroid().y), (pose.position.x - roi_.polygon.centroid().x)) + M_PI;
-			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::FORCED){
-				// The yaw from the request has priority over the config roi.
+			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::STORED){
 				if (roi_.yaw > -M_PI || roi_.yaw < M_PI){
 					yaw = roi_.yaw;
-				}else if (req.yaw > -M_PI || req.yaw < M_PI){
+				}else{
+					yaw = distPI(gen);
+				}
+			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::REQUESTED){
+				if (req.yaw > -M_PI || req.yaw < M_PI){
 					yaw = req.yaw;
 				}else{
 					yaw = distPI(gen);

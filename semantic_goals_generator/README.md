@@ -11,9 +11,8 @@ returns a list of goal poses.
 The ROIs are stored in a YAML configuration file. Look for the examples to get more information about it.
 
 There are optional parameters like:
-- Direction of the goal. The goal can be orientated "outside" the ROI, "inside" the ROI, "forced" to a value (see below) or "random" by default.
-- Yaw. Alternatively to the direction of the goal, the yaw of the goals can be forced to a value between -PI and PI. The yaw value from the request
- has priority over the yaw in the configuration file.
+- Direction of the goal. The goal can be orientated "outside" the ROI, "inside" the ROI, the value "stored" in the configuration file, "requested" (see below) or "random" by default.
+- Yaw. Alternatively to the direction of the goal, the yaw of the goals can be set to a value between -PI and PI. This value can be set into the configuration file or sent using the service.
 - Distance from the border of the ROI. The goal can be at a distance (in meters) from the border of the ROI. Default is 0.0.
 
 Also it's included a service to request the ROI name of a known position. 

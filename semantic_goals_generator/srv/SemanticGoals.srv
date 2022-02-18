@@ -10,6 +10,7 @@ float32 						border				# Distance from the edge of the roi. Default: 0.0
 string 							OUTSIDE = outside
 string 							INSIDE = inside
 string 							RANDOM = random
-string 							FORCED = forced
+string 							STORED = stored
+string 							REQUESTED = requested
 ---
 geometry_msgs/PoseArray 		goals				# Goals
