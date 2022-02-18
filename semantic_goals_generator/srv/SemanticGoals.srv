@@ -2,7 +2,14 @@
 
 int32 							n					# Number of goals
 string 							roi_name			# Name of the roi
-string 							orientation			# Orientation of the goals. Can be: outside, inside, any (default)
+float32 						yaw					# Yaw of the goals. Value are valid between -PI and PI radians.
+string 							direction			# Random direction of the goals. Can be towards 'outside' the area, 'inside' the area or 'random' (default)
 float32 						border				# Distance from the edge of the roi. Default: 0.0
+
+# Type of the direction
+string 							OUTSIDE = outside
+string 							INSIDE = inside
+string 							RANDOM = random
+string 							FORCED = forced
 ---
 geometry_msgs/PoseArray 		goals				# Goals

@@ -3,3 +3,6 @@
 geometry_msgs/Point 		position			# Position
 ---
 string 						roi_name			# Name of the roi 
+
+# Constans
+string 						UNKNOWN = unknown

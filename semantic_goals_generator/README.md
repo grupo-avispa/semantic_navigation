@@ -4,11 +4,16 @@
 
 ## Overview
 
-ROS Service to generate 2D navigation goals with orientation in a specifed region of interest (ROI). The service takes the number of navigation goals (*n*) 
-and a ROI name (*roi_name*) and returns a list of goal poses. The ROIs are described by a polygon defined by its edges in the map frame.
+ROS Service to generate 2D navigation goals with orientation in a specifed region of interest (ROI). These ROIs are described by a polygon 
+defined by its edges in the map frame and a name. The service takes the number of navigation goals (*n*) and a ROI name (*roi_name*) and 
+returns a list of goal poses. 
+
+The ROIs are stored in a YAML configuration file. Look for the examples to get more information about it.
 
 There are optional parameters like:
-- Orientation of the goal. The goal can be orientated "outside" the ROI, "inside" the ROI or random by default.
+- Direction of the goal. The goal can be orientated "outside" the ROI, "inside" the ROI, "forced" to a value (see below) or "random" by default.
+- Yaw. Alternatively to the direction of the goal, the yaw of the goals can be forced to a value between -PI and PI. The yaw value from the request
+ has priority over the yaw in the configuration file.
 - Distance from the border of the ROI. The goal can be at a distance (in meters) from the border of the ROI. Default is 0.0.
 
 Also it's included a service to request the ROI name of a known position. 
@@ -51,14 +56,14 @@ For the goals generator service, launch the node as follows:
 
 You can send a service to request goals as follows:
 
-	rosservice call /semantic_goals '{n: 1, roi_name: "roi_0", orientation: "inside", border: 0.1}'
+	rosservice call /semantic_goals '{n: 1, roi_name: "roi_0", direction: "inside", border: 0.1}'
 
 whereby the first argument is the number of goal locations to be generated (here 1), the second argument is the name of a ROI specified that match the list in the configuration file (here roi_0), the orientation of the goals (here inside) and the distance from the border of the ROI (here 0.1). 
 The result of the pose generation is additionally published on the topic `/semantic_goals` in order to visualize the result in [RViz].
 
 If the service is called with an empty ROI or the ROI is not in the configuration file, the full map is considered as ROI by default. 
 
-	rosservice call /semantic_goals '{n: 100, roi_name: {}, orientation: "", border: 0.0}'
+	rosservice call /semantic_goals '{n: 100, roi_name: {}, direction: "random", border: 0.0}'
 
 
 If a specified ROI includes a point that is outside the map, its *conflicting* coordinates are automatically adjusted to the map's bounding box.
