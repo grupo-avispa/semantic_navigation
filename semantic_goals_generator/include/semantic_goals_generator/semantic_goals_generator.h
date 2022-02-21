@@ -26,6 +26,29 @@
 #include "semantic_goals_generator/SemanticGoals.h"
 #include "semantic_goals_generator/SemanticPosition.h"
 
+struct ROI{
+	slg::Polygon polygon;
+	float yaw;
+
+	bool empty(){return polygon.empty();};
+	void clear(){return polygon.clear();};
+	std::string getName(){return polygon.getName();};
+
+	/* Check if a point is inside the region of interest (ROI) */
+	bool inROI(float x, float y){
+		if(polygon.size() == 0) return true;
+		return polygon.contains(slg::Point2D(x,y));
+	}
+
+	/* Check if the point is at distance from all borders */
+	bool disFromBorders(float x, float y, float border){
+		for(slg::Edge edge: polygon.getEdges()){
+			if(edge.distance(slg::Point2D(x,y)) < border) return false;
+		}
+		return true;
+	}
+};
+
 class SemanticGoalsGenerator{
 	public:
 		SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeHandle& node_private);
@@ -42,16 +65,16 @@ class SemanticGoalsGenerator{
 		float bBoxMinX_, bBoxMaxX_, bBoxMinY_, bBoxMaxY_;
 		float mapMinX_, mapMaxX_, mapMinY_, mapMaxY_;
 		float resolution_, inflationRadius_, border_;
-		std::string mapTopic_, orientation_;
+		std::string mapTopic_, direction_;
 		std::vector<int8_t> mapData_;
-		slg::Polygon roi_;
-		std::vector<slg::Polygon> roisList_;
+		ROI roi_;
+		std::vector<ROI> roiList_;
 
 		void getParams();
 		bool SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res);
 		bool SemanticPositionService(semantic_goals_generator::SemanticPosition::Request& req, semantic_goals_generator::SemanticPosition::Response& res);
 		void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap);
-		std::vector<slg::Polygon> getROIParams();
+		std::vector<ROI> getROIParams();
 		void showVisualization();
 		void processBoundingBox();
 		int cell(int x, int y);
