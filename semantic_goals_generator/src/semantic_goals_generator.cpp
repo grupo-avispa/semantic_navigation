@@ -214,13 +214,13 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::INSIDE){
 				yaw = atan2((pose.position.y - roi_.polygon.centroid().y), (pose.position.x - roi_.polygon.centroid().x)) + M_PI;
 			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::STORED){
-				if (roi_.yaw > -M_PI || roi_.yaw < M_PI){
+				if (roi_.yaw > -M_PI && roi_.yaw < M_PI){
 					yaw = roi_.yaw;
 				}else{
 					yaw = distPI(gen);
 				}
 			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::REQUESTED){
-				if (req.yaw > -M_PI || req.yaw < M_PI){
+				if (req.yaw > -M_PI && req.yaw < M_PI){
 					yaw = req.yaw;
 				}else{
 					yaw = distPI(gen);
@@ -229,7 +229,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 				yaw = distPI(gen);
 			}
 			tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.orientation);
-			ROS_INFO("[Semantic goals generator]: Pose (x: %f, y: %f, z: %f)", pose.position.x, pose.position.y, yaw);
+			ROS_INFO("[Semantic goals generator]: Pose (x: %f, y: %f, yaw: %f)", pose.position.x, pose.position.y, yaw);
 
 			res.goals.poses.push_back(pose);
 		}
