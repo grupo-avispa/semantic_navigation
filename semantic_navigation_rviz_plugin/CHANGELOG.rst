@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_rviz_plugin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.2 (18-02-2022)
+------------------
+* Change direction for constant message.
+
 1.0.1 (15-12-2021)
 ------------------
 * Update simple_laser_geometry to 3.0.0.

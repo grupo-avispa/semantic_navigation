@@ -109,12 +109,11 @@ void semanticNavigationPanel::sendGoal(){
 	semantic_goals_generator::SemanticGoals srvSemanticGoals;
 	geometry_msgs::PoseArray goals;
 	int nGoals = 1;
-	std::string orientation = "inside";
 	float border = 0.1;
 
 	srvSemanticGoals.request.n = nGoals;
 	srvSemanticGoals.request.roi_name = roomName_.toStdString();
-	srvSemanticGoals.request.orientation = orientation;
+	srvSemanticGoals.request.direction = semantic_goals_generator::SemanticGoalsRequest::INSIDE;
 	srvSemanticGoals.request.border = border;
 
 	if(clientSemanticGoals_.call(srvSemanticGoals)){
