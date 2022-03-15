@@ -49,7 +49,9 @@ void SemanticGoalsGenerator::getParams(){
 
 	nodePrivate_.param<std::string>("map_topic", mapTopic_, "map");
 	nodePrivate_.param<bool>("is_costmap", isCostmap_, false);
+	nodePrivate_.param<bool>("full_map", fullMap_, false);
 	roiList_ = getROIParams();
+	if (roiList_.empty()) exit(1);
 }
 
 /* Map callback */
@@ -95,7 +97,8 @@ std::vector<ROI> SemanticGoalsGenerator::getROIParams(){
 			rois.push_back(roi);
 		}
 	}else{
-		ROS_ERROR("[Semantic goals generator]: Param 'rois' not exist");
+		ROS_ERROR("[Semantic goals generator]: Param 'rois' not exists");
+		return std::vector<ROI>();
 	}
 
 	ROS_INFO("[Semantic goals generator]: ROIs read");
@@ -103,7 +106,7 @@ std::vector<ROI> SemanticGoalsGenerator::getROIParams(){
 }
 
 /* Calculate bounding box for ROI */
-void SemanticGoalsGenerator::processBoundingBox(){
+void SemanticGoalsGenerator::processBoundingBox(ROI roi){
 	// Inflation radius must be positive
 	if(inflationRadius_ < 0) inflationRadius_ = 0.5;
 
@@ -111,7 +114,7 @@ void SemanticGoalsGenerator::processBoundingBox(){
 
 	// Region of interest (ROI) must lie inside the map boundaries
 	// If ROI is empty, the whole map is treated as ROI by default
-	if(roi_.empty()){
+	if(roi.empty()){
 		bBoxMinX_ = mapMinX_;
 		bBoxMaxX_ = mapMaxX_;
 		bBoxMinY_ = mapMinY_;
@@ -125,7 +128,7 @@ void SemanticGoalsGenerator::processBoundingBox(){
 		bBoxMinY_ = std::numeric_limits<int>::infinity();
 		bBoxMaxY_ = -std::numeric_limits<int>::infinity();
 
-		slg::Polygon polygonRoi = roi_.polygon;
+		slg::Polygon polygonRoi = roi.polygon;
 		for(int e = 0; e < polygonRoi.size(); e++){
 			slg::Point2D p = polygonRoi.getEdge(e).a;
 
@@ -157,19 +160,24 @@ void SemanticGoalsGenerator::processBoundingBox(){
 bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res){
 	ROS_INFO("[Semantic goals generator]: Incoming service request: %i, %s", req.n, req.roi_name.c_str());
 
-	// Clear previous ROI
-	roi_.clear();
+	ROI currentRoi;
 
 	// Get arguments
 	int n = req.n;
 	for(ROI roi: roiList_){
 		if(roi.polygon.getName() == req.roi_name){
-			roi_ = roi;
+			currentRoi = roi;
 			break;
 		}
 	}
 	direction_ = req.direction;
 	border_ = req.border;
+
+	// If the requested ROI is empty and we don't want to use the full map
+	if (currentRoi.empty() && !fullMap_){
+		ROS_FATAL("[Semantic goals generator]: The requested ROI: %s, could not be found in the list.", currentRoi.getName());
+		return false;
+	}
 
 	// Wait for map
 	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapTopic_, node_, ros::Duration(10));
@@ -181,7 +189,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	}
 
 	// Process bounding box
-	processBoundingBox();
+	processBoundingBox(currentRoi);
 
 	// Generate response
 	res.goals.header.frame_id = mapTopic_;
@@ -206,16 +214,16 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 		pose.position.y = cellY * resolution_ + origin_.position.y;
 
 		// If the point lies within ROI and is not in collision
-		if(roi_.inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY) && roi_.disFromBorders(pose.position.x, pose.position.y, border_)){
+		if(currentRoi.inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY) && currentRoi.disFromBorders(pose.position.x, pose.position.y, border_)){
 			// Generate orientation
 			double yaw;
 			if (direction_ == semantic_goals_generator::SemanticGoalsRequest::OUTSIDE){
-				yaw = atan2((pose.position.y - roi_.polygon.centroid().y), (pose.position.x - roi_.polygon.centroid().x));
+				yaw = atan2((pose.position.y - currentRoi.polygon.centroid().y), (pose.position.x - currentRoi.polygon.centroid().x));
 			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::INSIDE){
-				yaw = atan2((pose.position.y - roi_.polygon.centroid().y), (pose.position.x - roi_.polygon.centroid().x)) + M_PI;
+				yaw = atan2((pose.position.y - currentRoi.polygon.centroid().y), (pose.position.x - currentRoi.polygon.centroid().x)) + M_PI;
 			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::STORED){
-				if (roi_.yaw > -M_PI && roi_.yaw < M_PI){
-					yaw = roi_.yaw;
+				if (currentRoi.yaw > -M_PI && currentRoi.yaw < M_PI){
+					yaw = currentRoi.yaw;
 				}else{
 					yaw = distPI(gen);
 				}

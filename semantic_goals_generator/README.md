@@ -104,6 +104,10 @@ ROS Service to generate 2D navigation goals as described above.
 
 	If the map argument is a costmap, you should also set the flag `is_costmap` to `true`. Then the inflation radius in the service call is ignored (a costmap is already inflated)
 
+* **`full_map`** (bool, default: false)
+
+	Option to choose the full map if a requested ROI is not found in the configuration file or reject the goal request.
+
 * **`inflation_radius`** (float, default: 0.5)
 
 	The inflation radius of the robot's footprint.
