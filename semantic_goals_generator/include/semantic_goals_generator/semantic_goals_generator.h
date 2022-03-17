@@ -67,7 +67,6 @@ class SemanticGoalsGenerator{
 		float resolution_, inflationRadius_, border_;
 		std::string mapTopic_, direction_;
 		std::vector<int8_t> mapData_;
-		ROI roi_;
 		std::vector<ROI> roiList_;
 
 		void getParams();
@@ -78,8 +77,6 @@ class SemanticGoalsGenerator{
 		void showVisualization();
 		void processBoundingBox(ROI roi);
 		int cell(int x, int y);
-		bool inROI(float x, float y);
 		bool inCollision(int x, int y);
-		bool disFromBorders(float x, float y);
 };
 #endif

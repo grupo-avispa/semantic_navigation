@@ -1,7 +1,7 @@
 /*
  * SEMANTIC GOALS GENERATOR ROS NODE
  *
- * Copyright (c) 2020-2021 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * Copyright (c) 2020-2022 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
@@ -9,15 +9,19 @@
  *
  */
 
+// C++
+#include <limits>
+
+// ROS
 #include <tf/tf.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <jsk_recognition_msgs/PolygonArray.h>
-
 #include <simple_laser_geometry/point2D.h>
 
+// Semantic Goals
 #include "semantic_goals_generator/semantic_goals_generator.h"
 
 /* Initialize the subscribers and publishers */
@@ -41,6 +45,7 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 SemanticGoalsGenerator::~SemanticGoalsGenerator(){
 	nodePrivate_.deleteParam("map_topic");
 	nodePrivate_.deleteParam("is_costmap");
+	nodePrivate_.deleteParam("full_map");
 }
 
 /* Update parameters of the node */
@@ -51,7 +56,10 @@ void SemanticGoalsGenerator::getParams(){
 	nodePrivate_.param<bool>("is_costmap", isCostmap_, false);
 	nodePrivate_.param<bool>("full_map", fullMap_, false);
 	roiList_ = getROIParams();
-	if (roiList_.empty()) exit(1);
+	if (roiList_.empty()){
+		ROS_ERROR("[Semantic goals generator]: The list of ROIs could not be found");
+		exit(1);
+	}
 }
 
 /* Map callback */
@@ -107,11 +115,6 @@ std::vector<ROI> SemanticGoalsGenerator::getROIParams(){
 
 /* Calculate bounding box for ROI */
 void SemanticGoalsGenerator::processBoundingBox(ROI roi){
-	// Inflation radius must be positive
-	if(inflationRadius_ < 0) inflationRadius_ = 0.5;
-
-	inflatedFootprintSize_ = int(inflationRadius_ / resolution_) + 1;
-
 	// Region of interest (ROI) must lie inside the map boundaries
 	// If ROI is empty, the whole map is treated as ROI by default
 	if(roi.empty()){
@@ -119,14 +122,14 @@ void SemanticGoalsGenerator::processBoundingBox(ROI roi){
 		bBoxMaxX_ = mapMaxX_;
 		bBoxMinY_ = mapMinY_;
 		bBoxMaxY_ = mapMaxY_;
-		ROS_INFO("[Semantic goals generator]: No ROI specified, full map is used.");
+		ROS_INFO("[Semantic goals generator]: No ROI specified, full map is used");
 	}else{
 		// If the ROI is outside the map, adjust to map boundaries
 		// Determine bounding box of ROI
-		bBoxMinX_ = std::numeric_limits<int>::infinity();
-		bBoxMaxX_ = -std::numeric_limits<int>::infinity();
-		bBoxMinY_ = std::numeric_limits<int>::infinity();
-		bBoxMaxY_ = -std::numeric_limits<int>::infinity();
+		bBoxMinX_ = std::numeric_limits<double>::infinity();
+		bBoxMaxX_ = -std::numeric_limits<double>::infinity();
+		bBoxMinY_ = std::numeric_limits<double>::infinity();
+		bBoxMaxY_ = -std::numeric_limits<double>::infinity();
 
 		slg::Polygon polygonRoi = roi.polygon;
 		for(int e = 0; e < polygonRoi.size(); e++){
@@ -175,7 +178,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 	// If the requested ROI is empty and we don't want to use the full map
 	if (currentRoi.empty() && !fullMap_){
-		ROS_FATAL("[Semantic goals generator]: The requested ROI: %s, could not be found in the list.", currentRoi.getName());
+		ROS_FATAL("[Semantic goals generator]: The requested ROI: %s, could not be found in the list", req.roi_name.c_str());
 		return false;
 	}
 
@@ -187,6 +190,10 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 		ROS_FATAL("[Semantic goals generator]: Failed to get %s", mapTopic_.c_str());
 		return false;
 	}
+
+	// Inflation radius must be positive
+	if(inflationRadius_ < 0) inflationRadius_ = 0.5;
+	inflatedFootprintSize_ = int(inflationRadius_ / resolution_) + 1;
 
 	// Process bounding box
 	processBoundingBox(currentRoi);
@@ -202,8 +209,6 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	std::uniform_real_distribution<double> distPI(0.0, 2 * M_PI);
 
 	int count = 0;
-	//int upperBound = n  * ( 2 +  inflationRadius_ / 0.01);
-	//while( (res.goals.poses.size() < n) && (count < upperBound) ){
 	while( (res.goals.poses.size() < n)){
 		count += 1;
 		int cellX = distX(gen);
@@ -237,7 +242,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 				yaw = distPI(gen);
 			}
 			tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.orientation);
-			ROS_INFO("[Semantic goals generator]: Pose (x: %f, y: %f, yaw: %f)", pose.position.x, pose.position.y, yaw);
+			ROS_INFO("[Semantic goals generator]: Pose %i (x: %f, y: %f, yaw: %f)", res.goals.poses.size()+1, pose.position.x, pose.position.y, yaw);
 
 			res.goals.poses.push_back(pose);
 		}
