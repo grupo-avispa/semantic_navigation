@@ -3,7 +3,7 @@
 	<arg name="machine" 			default="localhost"/>
 	<arg name="user" 				default=""/>
 	<arg name="is_costmap" 			default="false"/>
-	<arg name="map" 				default="$(find semantic_goals_generator)/map/map.yaml"/>
+	<arg name="map_topic" 			default="map"/>
 	<arg name="rois" 				default="$(find semantic_goals_generator)/config/rois.yaml"/>
 
 	<!-- Environment -->
@@ -11,7 +11,8 @@
 
 	<node pkg="semantic_goals_generator" type="semantic_goals_generator" name="semantic_goals_generator" output="screen">
 		<param name="is_costmap" 	value="$(arg is_costmap)"/>
-		<param name="map_topic" 	value="map" />
+		<param name="map_topic" 	value="$(arg map_topic)" />
+		<param name="full_map" 		value="false" />
 		<rosparam file="$(arg rois)" command="load"/>
 	</node>
 </launch>

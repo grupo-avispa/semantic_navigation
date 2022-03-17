@@ -1,7 +1,7 @@
 /*
  * SEMANTIC GOALS GENERATOR ROS NODE
  *
- * Copyright (c) 2020-2021 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * Copyright (c) 2020-2021 Alberto Josï¿½ Tudela Roldï¿½n <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
@@ -59,7 +59,7 @@ class SemanticGoalsGenerator{
 		ros::ServiceServer navGenSrv_, semanticPosSrv_;
 
 		geometry_msgs::Pose origin_;
-		bool isCostmap_;
+		bool isCostmap_, fullMap_;
 		int width_, height_, inflatedFootprintSize_;
 		int cellMinX_, cellMaxX_, cellMinY_, cellMaxY_;
 		float bBoxMinX_, bBoxMaxX_, bBoxMinY_, bBoxMaxY_;
@@ -67,7 +67,6 @@ class SemanticGoalsGenerator{
 		float resolution_, inflationRadius_, border_;
 		std::string mapTopic_, direction_;
 		std::vector<int8_t> mapData_;
-		ROI roi_;
 		std::vector<ROI> roiList_;
 
 		void getParams();
@@ -76,10 +75,8 @@ class SemanticGoalsGenerator{
 		void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap);
 		std::vector<ROI> getROIParams();
 		void showVisualization();
-		void processBoundingBox();
+		void processBoundingBox(ROI roi);
 		int cell(int x, int y);
-		bool inROI(float x, float y);
 		bool inCollision(int x, int y);
-		bool disFromBorders(float x, float y);
 };
 #endif

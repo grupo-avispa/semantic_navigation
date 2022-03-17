@@ -2,6 +2,11 @@
 Changelog for package semantic_goals_generator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.1.0 (17-03-2022)
+------------------
+* Added option to choose between fullmap or reject.
+* Fixed bounding box limits.
+
 2.0.0 (18-02-2022)
 ------------------
 * Change orientation subtopic to direction.
