@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_rviz_plugin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.3 (18-05-2022)
+------------------
+* Clean list of ROIs names for spaces.
+
 1.0.2 (18-02-2022)
 ------------------
 * Change direction for constant message.

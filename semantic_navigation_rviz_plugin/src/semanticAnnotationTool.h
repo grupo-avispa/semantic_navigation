@@ -1,7 +1,7 @@
 /*
  * SEMANTIC ANNOTATION RVIZ TOOL
  *
- * Copyright (c) 2021 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * Copyright (c) 2021-2022 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
@@ -52,7 +52,7 @@ Q_OBJECT
 		virtual void activate();
 		virtual void deactivate();
 
-		virtual int processMouseEvent( rviz::ViewportMouseEvent& event );
+		virtual int processMouseEvent(rviz::ViewportMouseEvent& event);
 
 	public Q_SLOTS:
 		virtual void updateProperty();

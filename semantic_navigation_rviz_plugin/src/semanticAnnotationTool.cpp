@@ -1,7 +1,7 @@
 /*
  * SEMANTIC ANNOTATION RVIZ TOOL
  *
- * Copyright (c) 2021 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * Copyright (c) 2021-2022 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
@@ -47,9 +47,14 @@ void semanticAnnotationTool::updateProperty(){
 	inflationRadius_ = inflationProperty_->getFloat();
 	pathFilename_ = pathProperty_->getStdString();
 
+	// Convert string "list" to vector of strings
 	std::string roiList = roiNamesListProperty_->getStdString();
-	if(roiList == "") roiNamesList_.clear();
-	else boost::split(roiNamesList_, roiList, boost::is_any_of(","));
+	if (roiList == ""){
+		roiNamesList_.clear();
+	}else{
+		if (roiList.back() == ' ' || roiList.back() == ',') roiList.pop_back();
+		boost::split(roiNamesList_, roiList, boost::is_any_of(" ,"), boost::token_compress_on);
+	}
 }
 
 /* Initiate */
@@ -79,11 +84,12 @@ int semanticAnnotationTool::processMouseEvent(rviz::ViewportMouseEvent& event){
 	polygonArray_.header.stamp = ros::Time::now();
 
 	try{
-		if( rviz::getPointOnPlaneFromWindowXY( event.viewport, ground_plane, event.x, event.y, intersection )){
-			if(event.leftDown()){
+		if (rviz::getPointOnPlaneFromWindowXY( event.viewport, ground_plane, event.x, event.y, intersection)){
+			// Add points to polygon with left button in Rviz
+			if (event.leftDown()){
 				polyStamp.header = polygonArray_.header;
 				// Extract the last polygon
-				if(!newPolygon_){
+				if (!newPolygon_){
 					polyStamp.polygon = polygonArray_.polygons.back().polygon;
 					polygonArray_.polygons.pop_back();
 				}
@@ -104,19 +110,20 @@ int semanticAnnotationTool::processMouseEvent(rviz::ViewportMouseEvent& event){
 				newPolygon_ = false;
 			}
 
-			if(event.rightUp()) newPolygon_ = true;
+			// Add new polygon with right button in Rviz
+			if (event.rightUp()) newPolygon_ = true;
 
-			if(event.middleUp()){
-				newPolygon_ = true;
-				// Save and clear the polygons
+			// Save and clear the polygons with central button in Rviz
+			if (event.middleUp()){
 				savePolygon(pathFilename_);
 				polygonArray_.polygons.clear();
 				polygons_.clear();
 				roisVizPub_.publish(polygonArray_);
 				showPolygonNames();
+				newPolygon_ = true;
 			}
 		}
-	}catch(int a){
+	}catch (int a){
 		ROS_ERROR("Error Occured!!");
 		return 0;
 	}
@@ -127,11 +134,11 @@ int semanticAnnotationTool::processMouseEvent(rviz::ViewportMouseEvent& event){
 /* Convert a jsk_recognition_msgs::PolygonArray to a vector of Polygon with edges */
 std::vector<slg::Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recognition_msgs::PolygonArray polygonArray){
 	std::vector<slg::Polygon> polyVector;
-	for(int i = 0; i < polygonArray.polygons.size(); i++){
+	for (int i = 0; i < polygonArray.polygons.size(); i++){
 		geometry_msgs::Polygon poly = polygonArray.polygons[i].polygon;
 		slg::Polygon area;
 		// Read n-1 points
-		for(int p = 0; p < poly.points.size() - 1; p++){
+		for (int p = 0; p < poly.points.size() - 1; p++){
 			geometry_msgs::Point32 currPoint = poly.points[p];
 			geometry_msgs::Point32 nextPoint = poly.points[p+1];
 
@@ -148,7 +155,7 @@ std::vector<slg::Polygon> semanticAnnotationTool::polygonArrayToVector(jsk_recog
 		area.addEdge({a,b});
 
 		// Add name to the rois
-		if(i < roiNamesList_.size()){
+		if (i < roiNamesList_.size()){
 			area.setName(roiNamesList_[i]);
 		}else{
 			area.setName("roi_" + std::to_string(i));
@@ -166,10 +173,10 @@ void semanticAnnotationTool::savePolygon(const std::string pathFilename){
 
 	polygonFile << "inflation_radius: " << inflationRadius_ << std::endl;
 	polygonFile << "rois:" << std::endl;
-	for(slg::Polygon poly: polygons_){
+	for (const auto& poly: polygons_){
 		polygonFile << "  - {name: '" << poly.getName() <<"', edges: [";
 		std::vector<slg::Edge> edges = poly.getEdges();
-		for(int e = 0; e < edges.size() - 1; e++){
+		for (int e = 0; e < edges.size() - 1; e++){
 			slg::Edge edge = edges[e];
 			polygonFile << "[["<< edge.a.x << ", " << edge.a.y << "], [" << edge.b.x << ", " << edge.b.y << "]], " << std::endl;
 			polygonFile << "                              ";
@@ -185,7 +192,7 @@ void semanticAnnotationTool::savePolygon(const std::string pathFilename){
 /* Show polygon names */
 void semanticAnnotationTool::showPolygonNames(){
 	visualization_msgs::MarkerArray namesArray;
-	for(int p = 0; p < polygons_.size(); p++){
+	for (int p = 0; p < polygons_.size(); p++){
 		// Create label
 		visualization_msgs::Marker labelMk;
 		labelMk.header.frame_id = "map";
@@ -210,7 +217,7 @@ void semanticAnnotationTool::showPolygonNames(){
 		namesArray.markers.push_back(labelMk);
 	}
 
-	if(polygons_.empty()){
+	if (polygons_.empty()){
 		visualization_msgs::Marker labelMk;
 		labelMk.header.frame_id = "map";
 		labelMk.action = visualization_msgs::Marker::DELETEALL;
