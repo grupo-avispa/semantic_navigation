@@ -2,6 +2,11 @@
 Changelog for package semantic_goals_generator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.2.0 (18-0072022)
+------------------
+* Create subscriber to "robot_pose".
+* Create publisher of "semantic_position".
+
 2.1.0 (17-03-2022)
 ------------------
 * Added option to choose between fullmap or reject.

@@ -15,7 +15,9 @@ There are optional parameters like:
 - Yaw. Alternatively to the direction of the goal, the yaw of the goals can be set to a value between -PI and PI. This value can be set into the configuration file or sent using the service.
 - Distance from the border of the ROI. The goal can be at a distance (in meters) from the border of the ROI. Default is 0.0.
 
-Also it's included a service to request the ROI name of a known position. 
+In addition to the random navigation goals service, it's also included:
+- A service to request the ROI name of a known position.
+- A latched publisher of the ROI name where the robot is.
 
 **Keywords:** ROS, navigation, semantic, social
 
@@ -84,11 +86,19 @@ ROS Service to generate 2D navigation goals as described above.
 
 	The map where the robot moves.
 
+* **`robot_pose`** ([geometry_msgs/PoseStamped])
+
+	The pose of the robot.
+
 #### Published Topics
 
 * **`semantic_goals`** ([geometry_msgs/PoseArray])
 
 	Topic where the random navigation goals are published.
+
+* **`semantic_position`** ([std_msgs/String])
+
+	Topic where the semantic location of the robot is published.
 
 * **`rois_viz`** ([jsk_recognition_msgs/PolygonArray])
 
@@ -121,7 +131,9 @@ ROS Service to generate 2D navigation goals as described above.
 [Ubuntu]: https://ubuntu.com/
 [ROS]: http://www.ros.org
 [Rviz]: http://wiki.ros.org/rviz
+[std_msgs/String]: http://docs.ros.org/api/std_msgs/html/msg/String.html
 [nav_msgs/OccupancyGrid]: http://docs.ros.org/api/nav_msgs/html/msg/OccupancyGrid.html
 [geometry_msgs/PoseArray]: http://docs.ros.org/api/geometry_msgs/html/msg/PoseArray.html
+[geometry_msgs/PoseStamped]: http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html
 [visualization_msgs/MarkerArray]: http://docs.ros.org/api/visualization_msgs/html/msg/MarkerArray.html
 [jsk_recognition_msgs/PolygonArray]: http://docs.ros.org/api/jsk_recognition_msgs/html/msg/PolygonArray.html

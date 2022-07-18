@@ -1,14 +1,14 @@
 /*
  * SEMANTIC GOALS GENERATOR ROS NODE
  *
- * Copyright (c) 2020-2021 Alberto Jos� Tudela Rold�n <ajtudela@gmail.com>
+ * Copyright (c) 2020-2022 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
  * All rights reserved.
  *
  */
- 
+
 #ifndef SEMANTICGOALSGENERATOR_H
 #define SEMANTICGOALSGENERATOR_H
 
@@ -30,20 +30,20 @@ struct ROI{
 	slg::Polygon polygon;
 	float yaw;
 
-	bool empty(){return polygon.empty();};
-	void clear(){return polygon.clear();};
-	std::string getName(){return polygon.getName();};
+	inline bool empty(){ return polygon.empty(); };
+	inline void clear(){ return polygon.clear(); };
+	inline std::string getName(){ return polygon.getName(); };
 
 	/* Check if a point is inside the region of interest (ROI) */
 	bool inROI(float x, float y){
-		if(polygon.size() == 0) return true;
-		return polygon.contains(slg::Point2D(x,y));
+		if (polygon.size() == 0) return true;
+		return polygon.contains(slg::Point2D(x, y));
 	}
 
 	/* Check if the point is at distance from all borders */
 	bool disFromBorders(float x, float y, float border){
-		for(slg::Edge edge: polygon.getEdges()){
-			if(edge.distance(slg::Point2D(x,y)) < border) return false;
+		for (auto& edge: polygon.getEdges()){
+			if (edge.distance(slg::Point2D(x,y)) < border) return false;
 		}
 		return true;
 	}
@@ -55,7 +55,8 @@ class SemanticGoalsGenerator{
 		~SemanticGoalsGenerator();
 	private:
 		ros::NodeHandle node_, nodePrivate_;
-		ros::Publisher navGoalsPub_, roisVizPub_, roisNamesVizPub_;
+		ros::Subscriber poseSub_;
+		ros::Publisher navGoalsPub_, semanticPosPub_, roisVizPub_, roisNamesVizPub_;
 		ros::ServiceServer navGenSrv_, semanticPosSrv_;
 
 		geometry_msgs::Pose origin_;
@@ -73,6 +74,7 @@ class SemanticGoalsGenerator{
 		bool SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res);
 		bool SemanticPositionService(semantic_goals_generator::SemanticPosition::Request& req, semantic_goals_generator::SemanticPosition::Response& res);
 		void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap);
+		void poseCallback(const geometry_msgs::PoseStamped::ConstPtr& msgPose);
 		std::vector<ROI> getROIParams();
 		void showVisualization();
 		void processBoundingBox(ROI roi);

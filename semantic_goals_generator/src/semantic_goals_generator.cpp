@@ -14,6 +14,7 @@
 
 // ROS
 #include <tf/tf.h>
+#include <std_msgs/String.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PolygonStamped.h>
@@ -29,10 +30,16 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeH
 	// Initialize ROS parameters
 	getParams();
 
-	navGoalsPub_ = nodePrivate_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1);
+	// Subscribers
+	poseSub_ = node_.subscribe<geometry_msgs::PoseStamped>("robot_pose", 1, &SemanticGoalsGenerator::poseCallback, this);
+
+	// Publishers
+	navGoalsPub_ = nodePrivate_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1, true);
+	semanticPosPub_ = nodePrivate_.advertise<std_msgs::String>("semantic_position", 1, true);
 	roisVizPub_ = nodePrivate_.advertise<jsk_recognition_msgs::PolygonArray>("rois_viz", 1, true);
 	roisNamesVizPub_ = nodePrivate_.advertise<visualization_msgs::MarkerArray>("rois_names_viz", 1, true);
 
+	// Services
 	navGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
 	semanticPosSrv_ = nodePrivate_.advertiseService("/semantic_position", &SemanticGoalsGenerator::SemanticPositionService, this);
 	showVisualization();
@@ -75,6 +82,27 @@ void SemanticGoalsGenerator::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr
 	mapMinY_ = origin_.position.y;
 	mapMaxY_ = origin_.position.y + height_ * resolution_;
 }
+
+/* Pose callback */
+void SemanticGoalsGenerator::poseCallback(const geometry_msgs::PoseStamped::ConstPtr& msgPose){	
+	static std_msgs::String oldLocationMsg;
+	std_msgs::String locationMsg;
+	locationMsg.data  = semantic_goals_generator::SemanticPosition::Response::UNKNOWN;
+
+	// Check if the point lies within ROI
+	for (auto& roi: roiList_){
+		if (roi.inROI(msgPose->pose.position.x, msgPose->pose.position.y)){
+			locationMsg.data = roi.getName();
+			break;
+		}
+	}
+
+	if (oldLocationMsg != locationMsg){
+		oldLocationMsg = locationMsg;
+		semanticPosPub_.publish(locationMsg);
+	}
+}
+
 
 /* Get rois from YAML file */
 std::vector<ROI> SemanticGoalsGenerator::getROIParams(){
@@ -167,8 +195,8 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 	// Get arguments
 	int n = req.n;
-	for(ROI roi: roiList_){
-		if(roi.polygon.getName() == req.roi_name){
+	for (const auto& roi: roiList_){
+		if (roi.polygon.getName() == req.roi_name){
 			currentRoi = roi;
 			break;
 		}
@@ -184,7 +212,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 
 	// Wait for map
 	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapTopic_, node_, ros::Duration(10));
-	if(msgMap){
+	if (msgMap) {
 		mapCallback(msgMap);
 	}else{
 		ROS_FATAL("[Semantic goals generator]: Failed to get %s", mapTopic_.c_str());
@@ -192,7 +220,7 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 	}
 
 	// Inflation radius must be positive
-	if(inflationRadius_ < 0) inflationRadius_ = 0.5;
+	if (inflationRadius_ < 0) inflationRadius_ = 0.5;
 	inflatedFootprintSize_ = int(inflationRadius_ / resolution_) + 1;
 
 	// Process bounding box
@@ -219,7 +247,9 @@ bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::Sema
 		pose.position.y = cellY * resolution_ + origin_.position.y;
 
 		// If the point lies within ROI and is not in collision
-		if(currentRoi.inROI(pose.position.x, pose.position.y) && !inCollision(cellX, cellY) && currentRoi.disFromBorders(pose.position.x, pose.position.y, border_)){
+		if (currentRoi.inROI(pose.position.x, pose.position.y) && 
+			!inCollision(cellX, cellY) && 
+			currentRoi.disFromBorders(pose.position.x, pose.position.y, border_)){
 			// Generate orientation
 			double yaw;
 			if (direction_ == semantic_goals_generator::SemanticGoalsRequest::OUTSIDE){
@@ -258,8 +288,8 @@ bool SemanticGoalsGenerator::SemanticPositionService(semantic_goals_generator::S
 	ROS_INFO("[Semantic goals generator]: Incoming service request: %f, %f", req.position.x, req.position.y);
 
 	// Get arguments and check if the point lies within ROI
-	for(ROI roi: roiList_){
-		if(roi.inROI(req.position.x, req.position.y)){
+	for (auto& roi: roiList_){
+		if (roi.inROI(req.position.x, req.position.y)){
 			res.roi_name = roi.getName();
 			return true;
 		}
@@ -273,7 +303,7 @@ bool SemanticGoalsGenerator::SemanticPositionService(semantic_goals_generator::S
 /* Return the cell of the costmap */
 int SemanticGoalsGenerator::cell(int x, int y){
 	// Return 'unknown' if out of bounds
-	if(x < 0 || y < 0 || x >= width_  || y >= height_) return -1;
+	if (x < 0 || y < 0 || x >= width_  || y >= height_) return -1;
 
 	return mapData_[x +  width_ * y];
 }
@@ -282,8 +312,8 @@ int SemanticGoalsGenerator::cell(int x, int y){
 bool SemanticGoalsGenerator::inCollision(int x, int y){
 	int xMin, xMax, yMin, yMax;
 
-	if(isCostmap_){
-		if(cell(x, y) != 0) return true;
+	if (isCostmap_){
+		if (cell(x, y) != 0) return true;
 		return false;
 	}
 
