@@ -1,0 +1,16 @@
+# Request / response service to generate random goals in regions determined by names
+
+int32 							n					# Number of goals
+string 							roi_name			# Name of the roi
+float32 						yaw					# Yaw of the goals. Value are valid between -PI and PI radians.
+string 							direction			# Random direction of the goals. Can be towards 'outside' the area, 'inside' the area or 'random' (default)
+float32 						border				# Distance from the edge of the roi. Default: 0.0
+
+# Type of the direction
+string 							OUTSIDE = outside
+string 							INSIDE = inside
+string 							RANDOM = random
+string 							STORED = stored
+string 							REQUESTED = requested
+---
+geometry_msgs/PoseArray 		goals				# Goals
