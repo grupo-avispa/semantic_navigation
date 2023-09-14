@@ -2,7 +2,11 @@
 Changelog for package semantic_goals_generator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2.2.0 (18-0072022)
+2.3.0 (14-09-2023)
+------------------
+* First ROS2 (Humble) version.
+
+2.2.0 (18-07-2022)
 ------------------
 * Create subscriber to "robot_pose".
 * Create publisher of "semantic_position".

@@ -1,11 +1,9 @@
 # - The regions of interest (rois) are defined by a name, and optional yaw and its edges written in consecutive order.
 # - The rois can have an inner contour. The "useful" ROI remains as the area between the outer and inner contour.
 # - Each edge is defined by its two points. Those points are set in "map" frame. The point units are meters (m).
-# - The inflation radius of the robot's footprint are defined as in navigation stack.
 # - The yaw can be optional and it's defined in a range from -PI to PI radians [rad]. Every value outside this range will be discarded.
-inflation_radius: 0.5
 rois:
-  - {name: 'roi_0', yaw: '0.0', edges: [[[0.0912409, 1.43037], [-1.53088, 1.29854]], 
-                                        [[-1.53088, 1.29854], [-1.70598, -0.862793]]]}
-  - {name: 'roi_1', yaw: '0.0', 'edges: [[[0.0912409, 1.43037], [-1.53088, 1.29854]], 
-                                         [[-1.53088, 1.29854], [-1.70598, -0.862793]]]}
+  - {name: 'roi_0', yaw: '0.0', edges: [[[0.0, 0.0], [0.0, 1.0]], [[0.0, 1.0], [1.0, 1.0]], 
+                                        [[1.0, 1.0], [1.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]]}
+  - {name: 'roi_1', yaw: '0.0', edges: [[[1.0, 1.0], [1.0, 2.0]], [[1.0, 2.0], [2.0, 2.0]], 
+                                        [[2.0, 2.0], [2.0, 1.0]], [[2.0, 1.0], [1.0, 1.0]]]}

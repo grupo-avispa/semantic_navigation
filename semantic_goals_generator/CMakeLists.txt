@@ -1,86 +1,91 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(semantic_goals_generator)
 
-## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  tf
-  geometry_msgs
-  message_generation
-  nav_msgs
-  visualization_msgs
-  jsk_recognition_msgs
-  simple_laser_geometry
-)
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 ################################################
-## Declare ROS messages, services and actions ##
+## Find  dependencies                         ##
 ################################################
-
-## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   SemanticGoals.srv
-   SemanticPosition.srv
-)
-
-generate_messages(
-  DEPENDENCIES
-    std_msgs
-    geometry_msgs
-)
-
-###################################
-## catkin specific configuration ##
-###################################
-catkin_package(
- INCLUDE_DIRS include
- CATKIN_DEPENDS roscpp geometry_msgs message_runtime nav_msgs tf std_msgs visualization_msgs jsk_recognition_msgs simple_laser_geometry
-)
+## Find ament macros and libraries
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(polygon_msgs REQUIRED)
+find_package(polygon_utils REQUIRED)
+find_package(semantic_navigation_msgs REQUIRED)
+find_package(slg_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 
 ###########
 ## Build ##
 ###########
-
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
   include
-  ${catkin_INCLUDE_DIRS}
+  ${slg_msgs_INCLUDE_DIRS}
 )
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME} src/semantic_goals_generator.cpp)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} )
+add_executable(${PROJECT_NAME}
+  src/semantic_goals_generator.cpp
+)
+
+ament_target_dependencies(${PROJECT_NAME}
+  rclcpp
+  geometry_msgs
+  nav2_msgs
+  polygon_msgs
+  polygon_utils
+  semantic_navigation_msgs
+  slg_msgs
+  visualization_msgs
+  nav2_util
+  tf2
+  tf2_geometry_msgs
+  yaml_cpp_vendor
+)
 
 #############
 ## Install ##
 #############
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-## Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE
+  DESTINATION include/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.hpp"
+#   PATTERN ".svn" EXCLUDE
 )
 
-## Mark launch files for installation
-install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  FILES_MATCHING PATTERN "*.launch"
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}/
+)
+
+install(DIRECTORY params
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #############
 ## Testing ##
 #############
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_package()

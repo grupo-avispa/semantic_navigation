@@ -1,7 +1,7 @@
 /*
  * SEMANTIC GOALS GENERATOR ROS NODE
  *
- * Copyright (c) 2020-2022 Alberto José Tudela Roldán <ajtudela@gmail.com>
+ * Copyright (c) 2020-2023 Alberto José Tudela Roldán <ajtudela@gmail.com>
  * 
  * This file is part of semantic_navigation.
  * 
@@ -13,389 +13,388 @@
 #include <limits>
 
 // ROS
-#include <tf/tf.h>
-#include <std_msgs/String.h>
-#include <geometry_msgs/Point.h>
-#include <geometry_msgs/PoseArray.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <jsk_recognition_msgs/PolygonArray.h>
-#include <simple_laser_geometry/point2D.h>
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "nav2_util/occ_grid_values.hpp"
+#include "nav2_util/node_utils.hpp"
+#include "geometry_msgs/msg/pose.hpp"
+#include "geometry_msgs/msg/point32.hpp"
+#include "geometry_msgs/msg/polygon_stamped.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
+#include "slg_msgs/point2D.hpp"
+#include "polygon_utils/polygon_utils.hpp"
+#include <yaml-cpp/yaml.h>
 
 // Semantic Goals
-#include "semantic_goals_generator/semantic_goals_generator.h"
+#include "semantic_goals_generator/semantic_goals_generator.hpp"
 
 /* Initialize the subscribers and publishers */
-SemanticGoalsGenerator::SemanticGoalsGenerator(ros::NodeHandle& node, ros::NodeHandle& node_private) : node_(node), nodePrivate_(node_private){
+SemanticGoalsGenerator::SemanticGoalsGenerator(): Node("semantic_goals_generator"), border_(0.0), 
+	direction_(SemanticGoals::Request::RANDOM){
 	// Initialize ROS parameters
-	getParams();
-
-	// Subscribers
-	poseSub_ = node_.subscribe<geometry_msgs::PoseStamped>("robot_pose", 1, &SemanticGoalsGenerator::poseCallback, this);
+	get_params();
 
 	// Publishers
-	navGoalsPub_ = nodePrivate_.advertise<geometry_msgs::PoseArray>("semantic_goals", 1, true);
-	semanticPosPub_ = nodePrivate_.advertise<std_msgs::String>("semantic_position", 1, true);
-	roisVizPub_ = nodePrivate_.advertise<jsk_recognition_msgs::PolygonArray>("rois_viz", 1, true);
-	roisNamesVizPub_ = nodePrivate_.advertise<visualization_msgs::MarkerArray>("rois_names_viz", 1, true);
+	goals_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>(
+		"semantic_goals", rclcpp::QoS(1).transient_local());
+	polygon_viz_pub_ = this->create_publisher<polygon_msgs::msg::Polygon2DCollection>(
+		"polygons", rclcpp::QoS(1).transient_local());
+	names_viz_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+		"names", rclcpp::QoS(1).transient_local());
+
+	// Subscribers
+	map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
+		map_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable(),
+		std::bind(&SemanticGoalsGenerator::map_callback, this, std::placeholders::_1));
 
 	// Services
-	navGenSrv_ = nodePrivate_.advertiseService("/semantic_goals", &SemanticGoalsGenerator::SemanticGoalsService, this);
-	semanticPosSrv_ = nodePrivate_.advertiseService("/semantic_position", &SemanticGoalsGenerator::SemanticPositionService, this);
-	showVisualization();
+	using std::placeholders::_1, std::placeholders::_2;
+	goals_generator_service_ = this->create_service<SemanticGoals>(
+		"semantic_goals", 
+		std::bind(&SemanticGoalsGenerator::goals_generator_service, this, _1, _2));
+	semantic_position_service_ = this->create_service<SemanticPosition>(
+		"semantic_position", 
+		std::bind(&SemanticGoalsGenerator::semantic_position_service, this, _1, _2));
 
-	border_ = 0.0;
-	direction_ = semantic_goals_generator::SemanticGoalsRequest::RANDOM;
-}
-
-/* Delete all parameteres */
-SemanticGoalsGenerator::~SemanticGoalsGenerator(){
-	nodePrivate_.deleteParam("map_topic");
-	nodePrivate_.deleteParam("is_costmap");
-	nodePrivate_.deleteParam("full_map");
+	show_visualization();
 }
 
 /* Update parameters of the node */
-void SemanticGoalsGenerator::getParams(){
-	ROS_INFO("[Semantic goals generator]: Reading ROS parameters");
+void SemanticGoalsGenerator::get_params(){
+	// BOOLEAN PARAMS ..........................................................................
+	nav2_util::declare_parameter_if_not_declared(this, "is_costmap", 
+		rclcpp::ParameterValue(false), rcl_interfaces::msg::ParameterDescriptor()
+			.set__description("Is the map a costmap?"));
+	this->get_parameter("is_costmap", is_costmap_);
+	RCLCPP_INFO(this->get_logger(), "The parameter is_costmap is set to: [%s]", 
+		is_costmap_ ? "true" : "false");
 
-	nodePrivate_.param<std::string>("map_topic", mapTopic_, "map");
-	nodePrivate_.param<bool>("is_costmap", isCostmap_, false);
-	nodePrivate_.param<bool>("full_map", fullMap_, false);
-	roiList_ = getROIParams();
-	if (roiList_.empty()){
-		ROS_ERROR("[Semantic goals generator]: The list of ROIs could not be found");
+	nav2_util::declare_parameter_if_not_declared(this, "full_map", 
+		rclcpp::ParameterValue(false), rcl_interfaces::msg::ParameterDescriptor()
+			.set__description("Use the full map as ROI?"));
+	this->get_parameter("full_map", full_map_);
+	RCLCPP_INFO(this->get_logger(), "The parameter full_map is set to: [%s]", 
+		full_map_ ? "true" : "false");
+	
+	// FLOAT PARAMS ..........................................................................
+	nav2_util::declare_parameter_if_not_declared(this, "inflation_radius", 
+		rclcpp::ParameterValue(0.5), rcl_interfaces::msg::ParameterDescriptor()
+			.set__description("Inflation radius for the robot footprint")
+			.set__floating_point_range({rcl_interfaces::msg::FloatingPointRange()
+			.set__from_value(0.0).set__to_value(10.0).set__step(0.01)}));
+	this->get_parameter("inflation_radius", inflation_radius_);
+	RCLCPP_INFO(this->get_logger(), "The parameter inflation_radius is set to: [%f]", 
+		inflation_radius_);
+
+	// STRING PARAMS ..........................................................................
+	nav2_util::declare_parameter_if_not_declared(this, "map_topic", 
+		rclcpp::ParameterValue("map"), rcl_interfaces::msg::ParameterDescriptor()
+			.set__description("Name of the map topic"));
+	this->get_parameter("map_topic", map_topic_);
+	RCLCPP_INFO(this->get_logger(), "The parameter map_topic is set to: [%s]", 
+		map_topic_.c_str());
+
+	std::string rois_filename;
+	nav2_util::declare_parameter_if_not_declared(this, "rois_filename", 
+		rclcpp::ParameterValue("rois.yaml"), rcl_interfaces::msg::ParameterDescriptor()
+			.set__description("File where the ROIs are stored"));
+	this->get_parameter("rois_filename", rois_filename);
+	RCLCPP_INFO(this->get_logger(), "The parameter rois_filename is set to: [%s]", 
+		rois_filename.c_str());
+
+	get_roi_params(rois_filename);
+	if (roi_list_.empty()){
+		RCLCPP_ERROR(this->get_logger(), "The list of ROIs could not be found");
 		exit(1);
 	}
 }
 
-/* Map callback */
-void SemanticGoalsGenerator::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgMap){
-	resolution_ = msgMap->info.resolution;
-	width_ = msgMap->info.width;
-	height_ = msgMap->info.height;
-	origin_ = msgMap->info.origin;
-	mapData_ = msgMap->data;
-
-	mapMinX_ = origin_.position.x;
-	mapMaxX_ = origin_.position.x + width_ * resolution_;
-	mapMinY_ = origin_.position.y;
-	mapMaxY_ = origin_.position.y + height_ * resolution_;
-}
-
-/* Pose callback */
-void SemanticGoalsGenerator::poseCallback(const geometry_msgs::PoseStamped::ConstPtr& msgPose){	
-	static std_msgs::String oldLocationMsg;
-	std_msgs::String locationMsg;
-	locationMsg.data  = semantic_goals_generator::SemanticPosition::Response::UNKNOWN;
-
-	// Check if the point lies within ROI
-	for (auto& roi: roiList_){
-		if (roi.inROI(msgPose->pose.position.x, msgPose->pose.position.y)){
-			locationMsg.data = roi.getName();
-			break;
-		}
-	}
-
-	if (oldLocationMsg != locationMsg){
-		oldLocationMsg = locationMsg;
-		semanticPosPub_.publish(locationMsg);
-	}
-}
-
-
 /* Get rois from YAML file */
-std::vector<ROI> SemanticGoalsGenerator::getROIParams(){
-	XmlRpc::XmlRpcValue xmlRoiList;
-	std::vector<ROI> rois;
+void SemanticGoalsGenerator::get_roi_params(const std::string &filename){
+	RCLCPP_INFO(this->get_logger(), "Reading ROIs from file: %s", filename.c_str());
+	YAML::Node config = YAML::LoadFile(filename);
 
-	if(nodePrivate_.hasParam("inflation_radius")){
-		nodePrivate_.getParam("inflation_radius", inflationRadius_);
-	}else{
-		inflationRadius_ = 0.5;
-	}
-
-	if(nodePrivate_.hasParam("rois")){
-		nodePrivate_.getParam("rois", xmlRoiList);
-		for(int32_t i = 0; i < xmlRoiList.size(); ++i){
-			// Get yaw and name
-			ROI roi;
-			roi.yaw = static_cast<double>(xmlRoiList[i]["yaw"]);
-			roi.polygon.setName(static_cast<std::string>(xmlRoiList[i]["name"]));
-
+	// Get the list of ROIs
+	if (config["rois"]){
+		for (const auto& roi : config["rois"]) {
+			ROI new_roi;
+			// Extract name and yaw
+			new_roi.yaw = roi["yaw"].as<float>();
+			new_roi.set_name(roi["name"].as<std::string>());
 			// Extract edges
-			int edgesSize = xmlRoiList[i]["edges"].size();
-			for(int e = 0; e < edgesSize; e++){
-				slg::Point2D a(static_cast<double>(xmlRoiList[i]["edges"][e][0][0]), static_cast<double>(xmlRoiList[i]["edges"][e][0][1]));
-				slg::Point2D b(static_cast<double>(xmlRoiList[i]["edges"][e][1][0]), static_cast<double>(xmlRoiList[i]["edges"][e][1][1]));
-				roi.polygon.addEdge({a,b});
+			for (const auto& edge : roi["edges"]) {
+				slg::Point2D a(edge[0][0].as<float>(), edge[0][1].as<float>());
+				slg::Point2D b(edge[1][0].as<float>(), edge[1][1].as<float>());
+				new_roi.polygon.add_edge({a,b});
 			}
-			rois.push_back(roi);
+			roi_list_.push_back(new_roi);
 		}
 	}else{
-		ROS_ERROR("[Semantic goals generator]: Param 'rois' not exists");
-		return std::vector<ROI>();
+		RCLCPP_ERROR(this->get_logger(), "No ROIs found in file [%s]", filename.c_str());
 	}
+}
 
-	ROS_INFO("[Semantic goals generator]: ROIs read");
-	return rois;
+/* Map callback */
+void SemanticGoalsGenerator::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg){
+	std::lock_guard<std::recursive_mutex> cfl(mutex_);
+	RCLCPP_INFO(this->get_logger(), "Received a %d X %d map @ %.3f m/pix", 
+		msg->info.width, msg->info.height, msg->info.resolution);
+
+	map_ = *msg;
+
+	map_min_x_ = map_.info.origin.position.x;
+	map_max_x_ = map_.info.origin.position.x + map_.info.width * map_.info.resolution;
+	map_min_y_ = map_.info.origin.position.y;
+	map_max_y_ = map_.info.origin.position.y + map_.info.height * map_.info.resolution;
 }
 
 /* Calculate bounding box for ROI */
-void SemanticGoalsGenerator::processBoundingBox(ROI roi){
+void SemanticGoalsGenerator::process_boundingbox(ROI roi){
 	// Region of interest (ROI) must lie inside the map boundaries
 	// If ROI is empty, the whole map is treated as ROI by default
-	if(roi.empty()){
-		bBoxMinX_ = mapMinX_;
-		bBoxMaxX_ = mapMaxX_;
-		bBoxMinY_ = mapMinY_;
-		bBoxMaxY_ = mapMaxY_;
-		ROS_INFO("[Semantic goals generator]: No ROI specified, full map is used");
+	if (roi.empty()){
+		bbox_min_x_ = map_min_x_;
+		bbox_max_x_ = map_max_x_;
+		bbox_min_y_ = map_min_y_;
+		bbox_max_y_ = map_max_y_;
+		RCLCPP_INFO(this->get_logger(), "No ROI specified, full map is used");
 	}else{
 		// If the ROI is outside the map, adjust to map boundaries
 		// Determine bounding box of ROI
-		bBoxMinX_ = std::numeric_limits<double>::infinity();
-		bBoxMaxX_ = -std::numeric_limits<double>::infinity();
-		bBoxMinY_ = std::numeric_limits<double>::infinity();
-		bBoxMaxY_ = -std::numeric_limits<double>::infinity();
+		bbox_min_x_ = std::numeric_limits<double>::infinity();
+		bbox_max_x_ = -std::numeric_limits<double>::infinity();
+		bbox_min_y_ = std::numeric_limits<double>::infinity();
+		bbox_max_y_ = -std::numeric_limits<double>::infinity();
 
-		slg::Polygon polygonRoi = roi.polygon;
-		for(int e = 0; e < polygonRoi.size(); e++){
-			slg::Point2D p = polygonRoi.getEdge(e).a;
+		slg::Polygon polygon_roi = roi.polygon;
+		for (int e = 0; e < polygon_roi.size(); e++){
+			slg::Point2D p = polygon_roi.get_edge(e).a;
 
-			if(p.x < mapMinX_) p.x = mapMinX_;
-			if(p.x > mapMaxX_) p.x = mapMaxX_;
+			if (p.x < map_min_x_) p.x = map_min_x_;
+			if (p.x > map_max_x_) p.x = map_max_x_;
 
-			if(p.x < bBoxMinX_) bBoxMinX_ = p.x;
-			if(p.x > bBoxMaxX_) bBoxMaxX_ = p.x;
+			if (p.x < bbox_min_x_) bbox_min_x_ = p.x;
+			if (p.x > bbox_max_x_) bbox_max_x_ = p.x;
 
-			if(p.y < mapMinY_) p.y = mapMinY_;
-			if(p.y > mapMaxY_) p.y = mapMaxY_;
+			if (p.y < map_min_y_) p.y = map_min_y_;
+			if (p.y > map_max_y_) p.y = map_max_y_;
 
-			if(p.y < bBoxMinY_) bBoxMinY_ = p.y;
-			if(p.y > bBoxMaxY_) bBoxMaxY_ = p.y;
+			if (p.y < bbox_min_y_) bbox_min_y_ = p.y;
+			if (p.y > bbox_max_y_) bbox_max_y_ = p.y;
 		}
 	}
 
 	// Calculate bounding box for cell array
-	cellMinX_ = int((bBoxMinX_ - origin_.position.x) / resolution_);
-	cellMaxX_ = int((bBoxMaxX_ - origin_.position.x) / resolution_);
-	cellMinY_ = int((bBoxMinY_ - origin_.position.y) / resolution_);
-	cellMaxY_ = int((bBoxMaxY_ - origin_.position.y) / resolution_);
+	cell_min_x_ = static_cast<int>((bbox_min_x_ - map_.info.origin.position.x) / 
+		map_.info.resolution);
+	cell_max_x_ = static_cast<int>((bbox_max_x_ - map_.info.origin.position.x) / 
+		map_.info.resolution);
+	cell_min_y_ = static_cast<int>((bbox_min_y_ - map_.info.origin.position.y) / 
+		map_.info.resolution);
+	cell_max_y_ = static_cast<int>((bbox_max_y_ - map_.info.origin.position.y) / 
+		map_.info.resolution);
 
-	ROS_INFO("[Semantic goals generator]: ROI bounding box (meters): (%f,%f) (%f,%f)", bBoxMinX_, bBoxMinY_, bBoxMaxX_, bBoxMaxY_);
-	ROS_INFO("[Semantic goals generator]: ROI bounding box (cells): (%i,%i) (%i,%i)", cellMinX_, cellMinY_, cellMaxX_, cellMaxY_);
+	RCLCPP_INFO(this->get_logger(), "ROI bounding box (meters): (%f,%f) (%f,%f)", 
+		bbox_min_x_, bbox_min_y_, bbox_max_x_, bbox_max_y_);
+	RCLCPP_INFO(this->get_logger(), "ROI bounding box (cells): (%i,%i) (%i,%i)", 
+		cell_min_x_, cell_min_y_, cell_max_x_, cell_max_y_);
 }
 
 /* Service for sending random goals based on labeled rois */
-bool SemanticGoalsGenerator::SemanticGoalsService(semantic_goals_generator::SemanticGoals::Request& req, semantic_goals_generator::SemanticGoals::Response& res){
-	ROS_INFO("[Semantic goals generator]: Incoming service request: %i, %s", req.n, req.roi_name.c_str());
-
-	ROI currentRoi;
+bool SemanticGoalsGenerator::goals_generator_service(
+	const std::shared_ptr<SemanticGoals::Request> request, 
+	std::shared_ptr<SemanticGoals::Response> response){
+	
+	std::lock_guard<std::recursive_mutex> cfl(mutex_);
+	ROI current_roi;
+	RCLCPP_INFO(this->get_logger(), "Incoming service request: %i, %s", 
+		request->n, request->roi_name.c_str());
 
 	// Get arguments
-	int n = req.n;
-	for (const auto& roi: roiList_){
-		if (roi.polygon.getName() == req.roi_name){
-			currentRoi = roi;
+	int n = request->n;
+	for (const auto& roi: roi_list_){
+		if (roi.polygon.get_name() == request->roi_name){
+			current_roi = roi;
 			break;
 		}
 	}
-	direction_ = req.direction;
-	border_ = req.border;
+	direction_ = request->direction;
+	border_ = request->border;
 
 	// If the requested ROI is empty and we don't want to use the full map
-	if (currentRoi.empty() && !fullMap_){
-		ROS_FATAL("[Semantic goals generator]: The requested ROI: %s, could not be found in the list", req.roi_name.c_str());
+	if (current_roi.empty() && !full_map_){
+		RCLCPP_FATAL(this->get_logger(), "The requested ROI [%s], could not be found in the list", 
+			request->roi_name.c_str());
 		return false;
 	}
 
-	// Wait for map
-	nav_msgs::OccupancyGrid::ConstPtr msgMap = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>(mapTopic_, node_, ros::Duration(10));
-	if (msgMap) {
-		mapCallback(msgMap);
-	}else{
-		ROS_FATAL("[Semantic goals generator]: Failed to get %s", mapTopic_.c_str());
+	// Check if we have a map
+	if (map_.data.empty()) {
+		RCLCPP_FATAL(this->get_logger(), "Failed to get map at [%s]", map_topic_.c_str());
 		return false;
 	}
 
-	// Inflation radius must be positive
-	if (inflationRadius_ < 0) inflationRadius_ = 0.5;
-	inflatedFootprintSize_ = int(inflationRadius_ / resolution_) + 1;
+	inflated_footprint_size_ = static_cast<int>(inflation_radius_ / map_.info.resolution) + 1;
 
 	// Process bounding box
-	processBoundingBox(currentRoi);
+	process_boundingbox(current_roi);
 
 	// Generate response
-	res.goals.header.frame_id = mapTopic_;
+	response->goals.header.frame_id = map_topic_;
 
 	// Generate random goal pose
 	std::random_device rd; // obtain a random number from hardware
 	std::mt19937 gen(rd()); // seed the generator
-	std::uniform_int_distribution<int> distX(cellMinX_, cellMaxX_); // define the range
-	std::uniform_int_distribution<int> distY(cellMinY_, cellMaxY_); // define the range
-	std::uniform_real_distribution<double> distPI(0.0, 2 * M_PI);
+	std::uniform_int_distribution<int> dist_x(cell_min_x_, cell_max_x_); // define the range
+	std::uniform_int_distribution<int> dist_y(cell_min_y_, cell_max_y_); // define the range
+	std::uniform_real_distribution<double> dist_pi(0.0, 2 * M_PI);
 
 	int count = 0;
-	while( (res.goals.poses.size() < n)){
+	while( (response->goals.poses.size() < n)){
 		count += 1;
-		int cellX = distX(gen);
-		int cellY = distY(gen);
+		int cell_x = dist_x(gen);
+		int cell_y = dist_y(gen);
 
-		geometry_msgs::Pose pose;
-		pose.position.x = cellX * resolution_ + origin_.position.x;
-		pose.position.y = cellY * resolution_ + origin_.position.y;
+		geometry_msgs::msg::Pose pose;
+		pose.position.x = cell_x * map_.info.resolution + map_.info.origin.position.x;
+		pose.position.y = cell_y * map_.info.resolution + map_.info.origin.position.y;
 
 		// If the point lies within ROI and is not in collision
-		if (currentRoi.inROI(pose.position.x, pose.position.y) && 
-			!inCollision(cellX, cellY) && 
-			currentRoi.disFromBorders(pose.position.x, pose.position.y, border_)){
+		if (current_roi.in_roi(pose.position.x, pose.position.y) && 
+			!in_collision(cell_x, cell_y) && 
+			current_roi.distance_from_borders(pose.position.x, pose.position.y, border_)){
 			// Generate orientation
 			double yaw;
-			if (direction_ == semantic_goals_generator::SemanticGoalsRequest::OUTSIDE){
-				yaw = atan2((pose.position.y - currentRoi.polygon.centroid().y), (pose.position.x - currentRoi.polygon.centroid().x));
-			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::INSIDE){
-				yaw = atan2((pose.position.y - currentRoi.polygon.centroid().y), (pose.position.x - currentRoi.polygon.centroid().x)) + M_PI;
-			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::STORED){
-				if (currentRoi.yaw > -M_PI && currentRoi.yaw < M_PI){
-					yaw = currentRoi.yaw;
+			if (direction_ == SemanticGoals::Request::OUTSIDE){
+				yaw = atan2((pose.position.y - current_roi.polygon.centroid().y), 
+					(pose.position.x - current_roi.polygon.centroid().x));
+			}else if (direction_ == SemanticGoals::Request::INSIDE){
+				yaw = atan2((pose.position.y - current_roi.polygon.centroid().y), 
+					(pose.position.x - current_roi.polygon.centroid().x)) + M_PI;
+			}else if (direction_ == SemanticGoals::Request::STORED){
+				if (current_roi.yaw > -M_PI && current_roi.yaw < M_PI){
+					yaw = current_roi.yaw;
 				}else{
-					yaw = distPI(gen);
+					yaw = dist_pi(gen);
 				}
-			}else if (direction_ == semantic_goals_generator::SemanticGoalsRequest::REQUESTED){
-				if (req.yaw > -M_PI && req.yaw < M_PI){
-					yaw = req.yaw;
+			}else if (direction_ == SemanticGoals::Request::REQUESTED){
+				if (request->yaw > -M_PI && request->yaw < M_PI){
+					yaw = request->yaw;
 				}else{
-					yaw = distPI(gen);
+					yaw = dist_pi(gen);
 				}
 			}else{
-				yaw = distPI(gen);
+				yaw = dist_pi(gen);
 			}
-			tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.orientation);
-			ROS_INFO("[Semantic goals generator]: Pose %i (x: %f, y: %f, yaw: %f)", res.goals.poses.size()+1, pose.position.x, pose.position.y, yaw);
+			pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
+			RCLCPP_INFO(this->get_logger(), "Pose %i (x: %f, y: %f, yaw: %f)", 
+				response->goals.poses.size()+1, pose.position.x, pose.position.y, yaw);
 
-			res.goals.poses.push_back(pose);
+			response->goals.poses.push_back(pose);
 		}
 	}
 
-	navGoalsPub_.publish(res.goals);
-
+	goals_pub_->publish(response->goals);
 	return true;
 }
 
 /* Service for request the semantic pose  */
-bool SemanticGoalsGenerator::SemanticPositionService(semantic_goals_generator::SemanticPosition::Request& req, semantic_goals_generator::SemanticPosition::Response& res){
-	ROS_INFO("[Semantic goals generator]: Incoming service request: %f, %f", req.position.x, req.position.y);
+bool SemanticGoalsGenerator::semantic_position_service(
+	const std::shared_ptr<SemanticPosition::Request> request, 
+	std::shared_ptr<SemanticPosition::Response> response){
+
+	RCLCPP_INFO(this->get_logger(), "Incoming service request: [%f, %f]", 
+		request->position.x, request->position.y);
 
 	// Get arguments and check if the point lies within ROI
-	for (auto& roi: roiList_){
-		if (roi.inROI(req.position.x, req.position.y)){
-			res.roi_name = roi.getName();
+	for (auto& roi: roi_list_){
+		if (roi.in_roi(request->position.x, request->position.y)){
+			response->roi_name = roi.get_name();
 			return true;
 		}
 	}
 
-	res.roi_name = semantic_goals_generator::SemanticPosition::Response::UNKNOWN;
-	ROS_FATAL("[Semantic goals generator]: Failed to get semantic position");
+	response->roi_name = SemanticPosition::Response::UNKNOWN;
+	RCLCPP_FATAL(this->get_logger(), "Failed to get semantic position");
 	return false;
 }
 
 /* Return the cell of the costmap */
-int SemanticGoalsGenerator::cell(int x, int y){
+int8_t SemanticGoalsGenerator::cell(int x, int y){
 	// Return 'unknown' if out of bounds
-	if (x < 0 || y < 0 || x >= width_  || y >= height_) return -1;
+	if (x < 0 || y < 0 || x >= map_.info.width  || y >= map_.info.height){
+		return nav2_util::OCC_GRID_UNKNOWN;
+	}
 
-	return mapData_[x +  width_ * y];
+	return map_.data[x +  map_.info.width * y];
 }
 
 /* Check if a point is in collision */
-bool SemanticGoalsGenerator::inCollision(int x, int y){
-	int xMin, xMax, yMin, yMax;
+bool SemanticGoalsGenerator::in_collision(int x, int y){
+	int x_min, x_max, y_min, y_max;
 
-	if (isCostmap_){
-		if (cell(x, y) != 0) return true;
+	if (is_costmap_){
+		if (cell(x, y) != nav2_util::OCC_GRID_FREE) return true;
 		return false;
 	}
 
-	xMin = x - inflatedFootprintSize_;
-	xMax = x + inflatedFootprintSize_;
-	yMin = y - inflatedFootprintSize_;
-	yMax = y + inflatedFootprintSize_;
+	x_min = x - inflated_footprint_size_;
+	x_max = x + inflated_footprint_size_;
+	y_min = y - inflated_footprint_size_;
+	y_max = y + inflated_footprint_size_;
 
-	for(int i = xMin; i < xMax; i++){
-		for(int j = yMin; j < yMax; j++){
-			if(cell(i, j) != 0) return true;
+	for (int i = x_min; i < x_max; i++){
+		for (int j = y_min; j < y_max; j++){
+			if (cell(i, j) != nav2_util::OCC_GRID_FREE) return true;
 		}
 	}
 	return false;
 }
 
 /* Show the rois in rviz */
-void SemanticGoalsGenerator::showVisualization(){
-	jsk_recognition_msgs::PolygonArray polygonArray;
-	polygonArray.header.frame_id = mapTopic_;
-	polygonArray.header.stamp = ros::Time::now();
+void SemanticGoalsGenerator::show_visualization(){
+	polygon_msgs::msg::Polygon2DCollection polygon_array;
+	polygon_array.header.frame_id = map_topic_;
+	polygon_array.header.stamp = this->now();
 
-	visualization_msgs::MarkerArray namesArray;
+	visualization_msgs::msg::MarkerArray names_array;
 
-	for(int r = 0; r < roiList_.size(); r++){
-		// Create polygon marker
-		geometry_msgs::PolygonStamped polygonMk;
-		polygonMk.header.frame_id = mapTopic_;
-		polygonMk.header.stamp = ros::Time::now();
-
-		slg::Polygon polygon = roiList_[r].polygon;
-		for(int e = 0; e < polygon.size(); e++){
-			slg::Point2D p = polygon.getEdge(e).a;
-			geometry_msgs::Point32 pg; 
-			pg.x = p.x; pg.y = p.y; pg.z = 0.0;
-			polygonMk.polygon.points.push_back(pg);
-		}
-		polygonArray.polygons.push_back(polygonMk);
-		polygonArray.labels.push_back(r);
+	for (auto & roi: roi_list_){
+		// Push the polygon
+		polygon_array.polygons.push_back(polygon_utils::polygon3Dto2D(roi.polygon));
 
 		// Create label
-		visualization_msgs::Marker labelMk;
-		labelMk.header.frame_id = mapTopic_;
-		labelMk.header.stamp = ros::Time::now();
-		labelMk.ns = "labelroi";
-		labelMk.id = r;
-		labelMk.text = roiList_[r].getName();
-		labelMk.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-		labelMk.action = visualization_msgs::Marker::ADD;
-		labelMk.pose.position.x = polygon.centroid().x;
-		labelMk.pose.position.y = polygon.centroid().y;
-		labelMk.pose.position.z = 0.05;
-		labelMk.pose.orientation.x = 0.0;
-		labelMk.pose.orientation.y = 0.0;
-		labelMk.pose.orientation.z = 0.0;
-		labelMk.pose.orientation.w = 1.0;
-		labelMk.scale.z = 0.5;
-		labelMk.color.r = 1.0;
-		labelMk.color.g = 1.0;
-		labelMk.color.b = 1.0;
-		labelMk.color.a = 1.0f;
-		namesArray.markers.push_back(labelMk);
+		visualization_msgs::msg::Marker label_marker;
+		label_marker.header.frame_id = map_topic_;
+		label_marker.header.stamp = this->now();
+		label_marker.ns = "labelroi";
+		label_marker.id = polygon_array.polygons.size();
+		label_marker.text = roi.get_name();
+		label_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+		label_marker.action = visualization_msgs::msg::Marker::ADD;
+		label_marker.pose.position.x = roi.polygon.centroid().x;
+		label_marker.pose.position.y = roi.polygon.centroid().y;
+		label_marker.pose.position.z = 0.05;
+		label_marker.pose.orientation.x = 0.0;
+		label_marker.pose.orientation.y = 0.0;
+		label_marker.pose.orientation.z = 0.0;
+		label_marker.pose.orientation.w = 1.0;
+		label_marker.scale.z = 0.5;
+		label_marker.color.r = 1.0;
+		label_marker.color.g = 1.0;
+		label_marker.color.b = 1.0;
+		label_marker.color.a = 1.0f;
+		names_array.markers.push_back(label_marker);
 	}
 
-	roisVizPub_.publish(polygonArray);
-	roisNamesVizPub_.publish(namesArray);
+	polygon_viz_pub_->publish(polygon_array);
+	names_viz_pub_->publish(names_array);
 }
 
 int main(int argc, char** argv){
-	ros::init(argc, argv, "semantic_goals_generator");
-	ros::NodeHandle node("");
-	ros::NodeHandle node_private("~");
-
-	try{
-		ROS_INFO("[Semantic goals generator]: Initializing node");
-		SemanticGoalsGenerator detector(node, node_private);
-		ros::spin();
-	}catch(const char* s){
-		ROS_FATAL_STREAM("[Semantic goals generator]: " << s);
-	}catch(...){
-		ROS_FATAL_STREAM("[Semantic goals generator]: Unexpected error");
-	}
-
+	rclcpp::init(argc, argv);
+	auto node = std::make_shared<SemanticGoalsGenerator>();
+	rclcpp::spin(node);
+	rclcpp::shutdown();
 	return 0;
 }

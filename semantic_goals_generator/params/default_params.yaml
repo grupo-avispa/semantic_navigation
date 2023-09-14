@@ -1,0 +1,7 @@
+semantic_goals_generator:
+  ros__parameters:
+    map_topic: "map"
+    is_costmap: false
+    full_map: false
+    inflation_radius: 0.5
+    rois_filename: ''

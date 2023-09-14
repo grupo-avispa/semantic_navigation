@@ -1,6 +1,6 @@
 # semantic_goals_generator
 
-![ROS](https://img.shields.io/badge/ros-melodic-blue?style=for-the-badge&logo=ros&logoColor=white)
+![ROS2](https://img.shields.io/badge/ros2-humble-blue?logo=ros&logoColor=white)
 
 ## Overview
 
@@ -19,13 +19,13 @@ In addition to the random navigation goals service, it's also included:
 - A service to request the ROI name of a known position.
 - A latched publisher of the ROI name where the robot is.
 
-**Keywords:** ROS, navigation, semantic, social
+**Keywords:** ROS2, navigation, semantic, social
 
 ### License
 
 **Author: Alberto Tudela<br />**
 
-The semantic_goals_generator package has been tested under [ROS] Melodic on [Ubuntu] 18.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
+The semantic_goals_generator package has been tested under [ROS2] Humble on [Ubuntu] 22.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
 ## Installation
 
@@ -33,51 +33,49 @@ The semantic_goals_generator package has been tested under [ROS] Melodic on [Ubu
 
 #### Dependencies
 
-- [Robot Operating System (ROS)](http://wiki.ros.org) (middleware for robotics),
-- [simple_laser_geometry](https://github.com/ajtudela/simple_laser_geometry) (Library and messages to interact with laser related geometry),
-- [jsk_recognition_msgs](https://jsk-visualization.readthedocs.io/en/latest/index.html) (jsk_visualization)
-
-	sudo rosdep install --from-paths src
+- [Robot Operating System (ROS) 2](https://docs.ros.org/en/humble/) (middleware for robotics),
+- [slg_msgs](https://github.com/ajtudela/slg_msgs) (Library and messages to interact with laser related geometry - use Humble branch),
+- [polygon_ros](https://github.com/MetroRobots/polygon_ros/) (Polygon visualization)
 
 #### Building
 
-To build from source, clone the latest version from the main repository into your catkin workspace and compile the package using
+To build from source, clone the latest version from the main repository into your colcon workspace and compile the package using
 
-	cd catkin_workspace/src
+	cd colcon_workspace/src
 	git clone https://gitlab.com/ajtudela/semantic_navigation.git
 	cd ../
-	rosdep install --from-paths . --ignore-src
-	catkin_make
+	rosdep install -i --from-path src --rosdistro humble -y
+	colcon build
 
 ## Usage
 
 For the goals generator service, launch the node as follows:
 
-	roslaunch semantic_goals_generator semantic_goals_generator.launch
+	ros2 launch semantic_goals_generator semantic_goals_generator.launch
 
 You can send a service to request goals as follows:
 
-	rosservice call /semantic_goals '{n: 1, roi_name: "roi_0", direction: "inside", border: 0.1}'
+	ros2 service call /semantic_goals '{n: 1, roi_name: "roi_0", direction: "inside", border: 0.1}'
 
 whereby the first argument is the number of goal locations to be generated (here 1), the second argument is the name of a ROI specified that match the list in the configuration file (here roi_0), the orientation of the goals (here inside) and the distance from the border of the ROI (here 0.1). 
 The result of the pose generation is additionally published on the topic `/semantic_goals` in order to visualize the result in [RViz].
 
 If the service is called with an empty ROI or the ROI is not in the configuration file, the full map is considered as ROI by default. 
 
-	rosservice call /semantic_goals '{n: 100, roi_name: {}, direction: "random", border: 0.0}'
+	ros2 service call /semantic_goals '{n: 100, roi_name: {}, direction: "random", border: 0.0}'
 
 
 If a specified ROI includes a point that is outside the map, its *conflicting* coordinates are automatically adjusted to the map's bounding box.
 
 For the position service, to know the name of the ROI where the robot is, send the service request as follows:
 
-	rosservice call /semantic_position '{position.x: 0.0, position.y: 0.0, position.z: 0.0}'
+	ros2 service call /semantic_position '{position.x: 0.0, position.y: 0.0, position.z: 0.0}'
 
 ## Nodes
 
 ### semantic_goals_generator
 
-ROS Service to generate 2D navigation goals as described above.
+ROS2 Service to generate 2D navigation goals as described above.
 
 
 #### Subscribed Topics
@@ -86,27 +84,29 @@ ROS Service to generate 2D navigation goals as described above.
 
 	The map where the robot moves.
 
-* **`robot_pose`** ([geometry_msgs/PoseStamped])
-
-	The pose of the robot.
-
 #### Published Topics
 
 * **`semantic_goals`** ([geometry_msgs/PoseArray])
 
 	Topic where the random navigation goals are published.
 
-* **`semantic_position`** ([std_msgs/String])
-
-	Topic where the semantic location of the robot is published.
-
-* **`rois_viz`** ([jsk_recognition_msgs/PolygonArray])
+* **`polygons`** ([polygon_msgs/Polygon2DCollection])
 
 	Topic array with filled polygons of the Regions of Interest (ROIs).
 
-* **`rois_names_viz`** ([visualization_msgs/MarkerArray])
+* **`names`** ([visualization_msgs/MarkerArray])
 
 	Topic array with the names of the Regions of Interest (ROIs).
+
+#### Services
+
+* **`semantic_goals`** ([semantic_navigation_msgs/SemanticGoals])
+
+	Topic where the random navigation goals are published.
+
+* **`semantic_position`** ([semantic_navigation_msgs/SemanticPosition])
+
+	Topic where the semantic position of the robot is published.
 
 #### Parameters
 
@@ -129,11 +129,11 @@ ROS Service to generate 2D navigation goals as described above.
 
 
 [Ubuntu]: https://ubuntu.com/
-[ROS]: http://www.ros.org
-[Rviz]: http://wiki.ros.org/rviz
-[std_msgs/String]: http://docs.ros.org/api/std_msgs/html/msg/String.html
-[nav_msgs/OccupancyGrid]: http://docs.ros.org/api/nav_msgs/html/msg/OccupancyGrid.html
-[geometry_msgs/PoseArray]: http://docs.ros.org/api/geometry_msgs/html/msg/PoseArray.html
-[geometry_msgs/PoseStamped]: http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html
-[visualization_msgs/MarkerArray]: http://docs.ros.org/api/visualization_msgs/html/msg/MarkerArray.html
-[jsk_recognition_msgs/PolygonArray]: http://docs.ros.org/api/jsk_recognition_msgs/html/msg/PolygonArray.html
+[ROS2]: https://docs.ros.org/en/humble/
+[Rviz2]: https://github.com/ros2/rviz
+[nav_msgs/OccupancyGrid]: https://docs.ros2.org/humble/api/nav_msgs/msg/OccupancyGrid.html
+[geometry_msgs/PoseArray]: https://docs.ros2.org/humble/api/geometry_msgs/msg/PoseArray.html
+[polygon_msgs/Polygon2DCollection]: https://github.com/MetroRobots/polygon_ros/blob/main/polygon_msgs/msg/Polygon2DCollection.msg
+[visualization_msgs/MarkerArray]: https://docs.ros2.org/humble/api/visualization_msgs/msg/MarkerArray.html
+[semantic_navigation_msgs/SemanticGoals]: ../semantic_navigation_msgs/srv/SemanticGoals.srv
+[semantic_navigation_msgs/SemanticPosition]: ../semantic_navigation_msgs/srv/SemanticPosition.srv
