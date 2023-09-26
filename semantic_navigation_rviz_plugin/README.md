@@ -58,4 +58,5 @@ For the Semantic Annotation Tool:
 
 
 [Ubuntu]: https://ubuntu.com/
+[ROS2]: https://docs.ros.org/en/humble/
 [Rviz2]: https://github.com/ros2/rviz

@@ -110,6 +110,22 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 #### Parameters
 
+* **`goals_topic`** (string, default: "semantic_goals")
+
+	Topic where the random navigation goals are published.
+
+* **`polygons_topic`** (string, default: "polygons")
+
+	Topic array with filled polygons of the Regions of Interest (ROIs).
+
+* **`names_topic`** (string, default: "names")
+
+	Topic array with the names of the Regions of Interest (ROIs).
+
+* **`map_topic`** (string, default: "map")
+
+	Topic of the map where the robot moves.
+
 * **`is_costmap`** (bool, default: false)
 
 	If the map argument is a costmap, you should also set the flag `is_costmap` to `true`. Then the inflation radius in the service call is ignored (a costmap is already inflated)
