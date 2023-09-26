@@ -35,12 +35,13 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(): Node("semantic_goals_generator
 	get_params();
 
 	// Publishers
+	rclcpp::QoS latched_profile = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
 	goals_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>(
-		"semantic_goals", rclcpp::QoS(1).transient_local());
-	polygon_viz_pub_ = this->create_publisher<polygon_msgs::msg::Polygon2DCollection>(
-		"polygons", rclcpp::QoS(1).transient_local());
+		goals_topic_, latched_profile);
+	polygons_viz_pub_ = this->create_publisher<polygon_msgs::msg::Polygon2DCollection>(
+		polygons_topic_, latched_profile);
 	names_viz_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-		"names", rclcpp::QoS(1).transient_local());
+		names_topic_, latched_profile);
 
 	// Subscribers
 	map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
@@ -87,6 +88,27 @@ void SemanticGoalsGenerator::get_params(){
 		inflation_radius_);
 
 	// STRING PARAMS ..........................................................................
+	nav2_util::declare_parameter_if_not_declared(this, "goals_topic", 
+		rclcpp::ParameterValue("semantic_goals"), rcl_interfaces::msg::ParameterDescriptor()
+			.set__description("Name of the publisher for the goals"));
+	this->get_parameter("goals_topic", goals_topic_);
+	RCLCPP_INFO(this->get_logger(), "The parameter goals_topic is set to: [%s]", 
+		goals_topic_.c_str());
+	
+	nav2_util::declare_parameter_if_not_declared(this, "polygons_topic", 
+		rclcpp::ParameterValue("polygons"), rcl_interfaces::msg::ParameterDescriptor()
+			.set__description("Name of the publisher for the ROIs"));
+	this->get_parameter("polygons_topic", polygons_topic_);
+	RCLCPP_INFO(this->get_logger(), "The parameter polygons_topic is set to: [%s]", 
+		polygons_topic_.c_str());
+
+	nav2_util::declare_parameter_if_not_declared(this, "names_topic", 
+		rclcpp::ParameterValue("names"), rcl_interfaces::msg::ParameterDescriptor()
+			.set__description("Name of the publisher for the names for the visualization of the ROIs"));
+	this->get_parameter("names_topic", names_topic_);
+	RCLCPP_INFO(this->get_logger(), "The parameter names_topic is set to: [%s]", 
+		names_topic_.c_str());
+
 	nav2_util::declare_parameter_if_not_declared(this, "map_topic", 
 		rclcpp::ParameterValue("map"), rcl_interfaces::msg::ParameterDescriptor()
 			.set__description("Name of the map topic"));
@@ -137,7 +159,7 @@ void SemanticGoalsGenerator::get_roi_params(const std::string &filename){
 /* Map callback */
 void SemanticGoalsGenerator::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg){
 	std::lock_guard<std::recursive_mutex> cfl(mutex_);
-	RCLCPP_INFO(this->get_logger(), "Received a %d X %d map @ %.3f m/pix", 
+	RCLCPP_INFO_ONCE(this->get_logger(), "Received a %d X %d map @ %.3f m/pix", 
 		msg->info.width, msg->info.height, msg->info.resolution);
 
 	map_ = *msg;
@@ -358,7 +380,6 @@ void SemanticGoalsGenerator::show_visualization(){
 	polygon_array.header.stamp = this->now();
 
 	visualization_msgs::msg::MarkerArray names_array;
-
 	for (auto & roi: roi_list_){
 		// Push the polygon
 		polygon_array.polygons.push_back(polygon_utils::polygon3Dto2D(roi.polygon));
@@ -387,7 +408,7 @@ void SemanticGoalsGenerator::show_visualization(){
 		names_array.markers.push_back(label_marker);
 	}
 
-	polygon_viz_pub_->publish(polygon_array);
+	polygons_viz_pub_->publish(polygon_array);
 	names_viz_pub_->publish(names_array);
 }
 

@@ -1,5 +1,8 @@
 semantic_goals_generator:
   ros__parameters:
+    goals_topic: "semantic_goal/goals"
+    polygons_topic: "semantic_goal/polygons"
+    names_topic: "semantic_goal/names"
     map_topic: "map"
     is_costmap: false
     full_map: false

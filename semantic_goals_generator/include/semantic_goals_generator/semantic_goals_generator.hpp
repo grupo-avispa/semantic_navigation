@@ -60,7 +60,7 @@ class SemanticGoalsGenerator : public rclcpp::Node{
 		using SemanticPosition = semantic_navigation_msgs::srv::SemanticPosition;
 
 		rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr goals_pub_;
-		rclcpp::Publisher<polygon_msgs::msg::Polygon2DCollection>::SharedPtr polygon_viz_pub_;
+		rclcpp::Publisher<polygon_msgs::msg::Polygon2DCollection>::SharedPtr polygons_viz_pub_;
 		rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr names_viz_pub_;
 		rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
 
@@ -75,7 +75,8 @@ class SemanticGoalsGenerator : public rclcpp::Node{
 		float bbox_min_x_, bbox_max_x_, bbox_min_y_, bbox_max_y_;
 		float map_min_x_, map_max_x_, map_min_y_, map_max_y_;
 		float inflation_radius_, border_;
-		std::string map_topic_, direction_;
+		std::string goals_topic_, polygons_topic_, names_topic_, map_topic_;
+		std::string direction_;
 		std::vector<ROI> roi_list_;
 
 		void get_params();
