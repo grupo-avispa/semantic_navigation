@@ -1,88 +1,132 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(semantic_navigation_rviz_plugin)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  rviz
-  semantic_goals_generator
-  jsk_recognition_msgs
-  simple_laser_geometry
-)
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
-###################################
-## catkin specific configuration ##
-###################################
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-catkin_package(
-  CATKIN_DEPENDS semantic_goals_generator jsk_recognition_msgs simple_laser_geometry
-)
+# Qt5 boilerplate options from http://doc.qt.io/qt-5/cmake-manual.html
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+
+################################################
+## Find  dependencies                         ##
+################################################
+## Find ament macros and libraries
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rviz_common REQUIRED)
+find_package(rviz_rendering REQUIRED)
+find_package(semantic_navigation_msgs REQUIRED)
+find_package(slg_msgs REQUIRED)
+find_package(polygon_msgs REQUIRED)
+find_package(polygon_utils REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Widgets Test)
 
 ###########
 ## Build ##
 ###########
+set(semantic_navigation_headers_to_moc
+  include/${PROJECT_NAME}/semantic_annotation_tool.hpp
+  include/${PROJECT_NAME}/semantic_navigation_panel.hpp
+)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
   include
-  ${catkin_INCLUDE_DIRS}
 )
 
-## This plugin includes Qt widgets, so we must include Qt.
-## We'll use the version that rviz used so they are compatible.
-if(rviz_QT_VERSION VERSION_LESS "5")
-  message(STATUS "Using Qt4 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
-  find_package(Qt4 ${rviz_QT_VERSION} EXACT REQUIRED QtCore QtGui)
-  ## pull in all required include dirs, define QT_LIBRARIES, etc.
-  include(${QT_USE_FILE})
-  qt4_wrap_cpp(MOC_FILES
-  src/semanticNavigationPanel.h
-  src/semanticAnnotationTool.h
+## Declare a C++ library
+add_library(${PROJECT_NAME} SHARED
+  ${semantic_navigation_headers_to_moc}
+  src/semantic_annotation_tool.cpp
+  src/semantic_navigation_panel.cpp
 )
-else()
-  message(STATUS "Using Qt5 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
-  find_package(Qt5 ${rviz_QT_VERSION} EXACT REQUIRED Core Widgets)
-  ## make target_link_libraries(${QT_LIBRARIES}) pull in all required dependencies
-  set(QT_LIBRARIES Qt5::Widgets)
-  qt5_wrap_cpp(MOC_FILES
-  src/semanticNavigationPanel.h
-  src/semanticAnnotationTool.h
+ament_target_dependencies(${PROJECT_NAME}
+  rclcpp
+  rclcpp_action
+  pluginlib
+  rviz_common
+  rviz_rendering
+  semantic_navigation_msgs
+  slg_msgs
+  polygon_msgs
+  polygon_utils
+  visualization_msgs
+  nav2_util
+  Qt5
 )
-endif()
-
-add_definitions(-DQT_NO_KEYWORDS)
-
-set(SOURCE_FILES
-   src/semanticNavigationPanel.cpp
-   src/semanticAnnotationTool.cpp
-   ${MOC_FILES}
+target_include_directories(${PROJECT_NAME} PUBLIC
+  ${Qt5Widgets_INCLUDE_DIRS}
+)
+target_link_libraries(${PROJECT_NAME}
+  rviz_common::rviz_common
+  rviz_rendering::rviz_rendering
 )
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-add_library(${PROJECT_NAME} ${SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${catkin_LIBRARIES})
+# Causes the visibility macros to use dllexport rather than dllimport,
+# which is appropriate when building the dll but not consuming it.
+target_compile_definitions(${PROJECT_NAME} PRIVATE "SEMANTIC_NAVIGATION_RVIZ_PLUGIN_BUILDING_LIBRARY")
+
+# prevent pluginlib from using boost
+target_compile_definitions(${PROJECT_NAME} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
+pluginlib_export_plugin_description_file(rviz_common plugin_description.xml)
 
 #############
 ## Install ##
 #############
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  EXPORT ${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
-install(FILES plugin_description.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(
+  DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
+)
 
-install(DIRECTORY media/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/media)
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/icons"
+  DESTINATION "share/${PROJECT_NAME}"
+)
 
-install(DIRECTORY icons/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/icons)
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+# Export old-style CMake variables
+ament_export_include_directories("include/${PROJECT_NAME}")
+
+# Export modern CMake targets
+ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
+
+ament_export_dependencies(
+  rclcpp
+  rclcpp_action
+  pluginlib
+  rviz_common
+  rviz_rendering
+  semantic_navigation_msgs
+  slg_msgs
+  polygon_msgs
+  polygon_utils
+  visualization_msgs
+  nav2_util
+  Qt5
+)
+
+ament_package()

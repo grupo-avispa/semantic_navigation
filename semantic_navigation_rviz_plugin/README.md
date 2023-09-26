@@ -1,18 +1,18 @@
 # semantic_navigation_rviz_plugin
 
-![ROS](https://img.shields.io/badge/ros-melodic-blue?style=for-the-badge&logo=ros&logoColor=white)
+![ROS2](https://img.shields.io/badge/ros2-humble-blue?logo=ros&logoColor=white)
 
 ## Overview
 
-Panel for [RViz] to send the robot to a region of interest (ROI) and tool to save ROIs in a YAML file.
+Panel for [RViz2] to send the robot to a region of interest (ROI) and tool to save ROIs in a YAML file.
 
-**Keywords:** ROS, navigation, semantic, RVIZ
+**Keywords:** ROS2, navigation, semantic, Rviz2
 
 ### License
 
 **Author: Alberto Tudela<br />**
 
-The semantic_navigation_rviz_plugin package has been tested under [ROS] Melodic on [Ubuntu] 18.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
+The semantic_navigation_rviz_plugin package has been tested under [ROS2] Humble on [Ubuntu] 22.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
 ## Installation
 
@@ -20,40 +20,42 @@ The semantic_navigation_rviz_plugin package has been tested under [ROS] Melodic 
 
 #### Dependencies
 
-- [Robot Operating System (ROS)](http://wiki.ros.org) (middleware for robotics),
-- [simple_laser_geometry](https://github.com/ajtudela/simple_laser_geometry) (Library and messages to interact with laser related geometry),
-- [jsk_recognition_msgs](https://jsk-visualization.readthedocs.io/en/latest/index.html) (jsk_visualization)
-
-	sudo rosdep install --from-paths src
+- [Robot Operating System (ROS) 2](https://docs.ros.org/en/humble/) (middleware for robotics),
+- [slg_msgs](https://github.com/ajtudela/slg_msgs) (Library and messages to interact with laser related geometry - use Humble branch),
+- [polygon_ros](https://github.com/MetroRobots/polygon_ros/) (Polygon visualization)
 
 #### Building
 
-To build from source, clone the latest version from the main repository into your catkin workspace and compile the package using
+To build from source, clone the latest version from the main repository into your colcon workspace and compile the package using
 
-	cd catkin_workspace/src
+	cd colcon_workspace/src
 	git clone https://gitlab.com/ajtudela/semantic_navigation.git
 	cd ../
-	rosdep install --from-paths . --ignore-src
-	catkin_make
+	rosdep install -i --from-path src --rosdistro humble -y
+	colcon build
 
 ## Usage
 
 For the Semantic Navigation Panel:
 
-* Open Rviz and add the new panel. Then, write the room in the textbox and clic on "Send the robot to the room".
+* Open Rviz2 and add the new panel. Then, write the room in the textbox and click on "Send the robot to the room".
 * By default it will send one (1) goal with orientation inside the ROI and at 0.1m from the border.
 
-If you want to know where the robot is, clic on "Where is the robot?".
+If you want to know where the robot is, click on "Where is the robot?".
 
 For the Semantic Annotation Tool:
 
-* Open the plugin in Rviz by clicking "+" in the tool panel and select "Semantic Annotation".
-* In the Displays panel, add a display of jsk_rviz_plugins/PolygonArray type and make sure the name of the topic is "/rois_viz".
-* In the Displays panel, add a display of rviz/MarkerArray type and make sure the name of the topic is "/rois_names_viz".
+* Open the plugin in Rviz2 by clicking "+" in the tool panel and select "Semantic Annotation".
+* In the Displays panel, add a display of polygon_rviz_plugins/Polygons type and make sure the name of the topic is "/polygons".
+* In the Displays panel, add a display of rviz/MarkerArray type and make sure the name of the topic is "/names".
 * In the Tool properties panel, you can change the inflation radius, write the ROIs names splitted by a comma (,) and the YAML configuration filename. It will store in the config folder of semantic_goals_generator package.
-* Clic with the left button on the map to add new points to a polygon.
-* Clic with the right button to start a new polygon.
-* Clic with the middle button to erase all polygons, save them and start over.
+* Click with the left button on the map to add new points to a polygon.
+* Click with the right button to start a new polygon.
+* Click with the middle button to erase all polygons, save them and start over.
+
+## Future work
+- [ ] Use yaml_cpp_vendor to save the ROIs in a YAML file (specialize the YAML::convert<> template class).
 
 
-[Rviz]: http://wiki.ros.org/rviz
+[Ubuntu]: https://ubuntu.com/
+[Rviz2]: https://github.com/ros2/rviz
