@@ -233,7 +233,7 @@ bool SemanticGoalsGenerator::goals_generator_service(
 		request->n, request->roi_name.c_str());
 
 	// Get arguments
-	int n = request->n;
+	long unsigned int n = request->n;
 	for (const auto& roi: roi_list_){
 		if (roi.polygon.get_name() == request->roi_name){
 			current_roi = roi;
@@ -309,7 +309,7 @@ bool SemanticGoalsGenerator::goals_generator_service(
 				yaw = dist_pi(gen);
 			}
 			pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
-			RCLCPP_INFO(this->get_logger(), "Pose %i (x: %f, y: %f, yaw: %f)", 
+			RCLCPP_INFO(this->get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)", 
 				response->goals.poses.size()+1, pose.position.x, pose.position.y, yaw);
 
 			response->goals.poses.push_back(pose);

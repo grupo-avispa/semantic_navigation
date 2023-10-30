@@ -158,7 +158,7 @@ void semanticAnnotationTool::save_polygon(const std::string filename){
 	for (const auto& poly: polygons_){
 		polygonfile << "  - {name: '" << poly.get_name() <<"', yaw: '0.0', edges: [";
 		std::vector<slg::Edge> edges = poly.get_edges();
-		for (int e = 0; e < edges.size() - 1; e++){
+		for (long unsigned int e = 0; e < edges.size() - 1; e++){
 			slg::Edge edge = edges[e];
 			polygonfile << "[["<< edge.a.x << ", " << edge.a.y << "], [" << edge.b.x << ", " << edge.b.y << "]], " << std::endl;
 			polygonfile << "                              ";
