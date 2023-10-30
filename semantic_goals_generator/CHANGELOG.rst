@@ -2,6 +2,10 @@
 Changelog for package semantic_goals_generator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.3.1 (30-10-2023)
+------------------
+* Added rois_filename to launch file.
+
 2.3.0 (14-09-2023)
 ------------------
 * First ROS2 (Humble) version.

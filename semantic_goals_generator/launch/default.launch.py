@@ -17,16 +17,23 @@ def generate_launch_description():
     # Getting directories and launch-files
     semantic_goals_generator_dir = get_package_share_directory('semantic_goals_generator')
     default_params_file = os.path.join(semantic_goals_generator_dir, 'params', 'default_params.yaml')
-    rois_params_file = os.path.join(semantic_goals_generator_dir, 'params', 'rois.yaml')
+    default_rois_params_file = os.path.join(semantic_goals_generator_dir, 'params', 'rois.yaml')
 
     # Input parameters declaration
     params_file = LaunchConfiguration('params_file')
+    rois_params_file = LaunchConfiguration('rois_filename')
     log_level = LaunchConfiguration('log_level')
 
     declare_params_file_arg = DeclareLaunchArgument(
         'params_file',
         default_value = default_params_file,
-        description = 'Full path to the ROS2 parameters file with docking configuration'
+        description = 'Full path to the ROS2 parameters file with semantic goals generator configuration'
+    )
+
+    declare_rois_filename_arg = DeclareLaunchArgument(
+        'rois_filename',
+        default_value = default_rois_params_file,
+        description = 'Full path to the ROS2 parameters file with the ROIs'
     )
 
     declare_log_level_arg = DeclareLaunchArgument(
@@ -60,6 +67,7 @@ def generate_launch_description():
     )
     return LaunchDescription([
         declare_params_file_arg,
+        declare_rois_filename_arg,
         declare_log_level_arg,
         semantic_goals_generator_node
     ])
