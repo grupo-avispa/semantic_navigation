@@ -2,6 +2,10 @@
 Changelog for package semantic_goals_generator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.4.0 (03-11-2023)
+------------------
+* Added service for SemanticRegions.
+
 2.3.1 (30-10-2023)
 ------------------
 * Added rois_filename to launch file.

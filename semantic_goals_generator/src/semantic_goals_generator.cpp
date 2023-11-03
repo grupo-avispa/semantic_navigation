@@ -56,6 +56,9 @@ SemanticGoalsGenerator::SemanticGoalsGenerator(): Node("semantic_goals_generator
 	semantic_position_service_ = this->create_service<SemanticPosition>(
 		"semantic_position", 
 		std::bind(&SemanticGoalsGenerator::semantic_position_service, this, _1, _2));
+	semantic_regions_service_ = this->create_service<SemanticRegions>(
+		"semantic_regions", 
+		std::bind(&SemanticGoalsGenerator::semantic_regions_service, this, _1, _2));
 
 	show_visualization();
 }
@@ -229,7 +232,7 @@ bool SemanticGoalsGenerator::goals_generator_service(
 	
 	std::lock_guard<std::recursive_mutex> cfl(mutex_);
 	ROI current_roi;
-	RCLCPP_INFO(this->get_logger(), "Incoming service request: %i, %s", 
+	RCLCPP_INFO(this->get_logger(), "Incoming goals generator service request: [%i, %s]", 
 		request->n, request->roi_name.c_str());
 
 	// Get arguments
@@ -325,7 +328,7 @@ bool SemanticGoalsGenerator::semantic_position_service(
 	const std::shared_ptr<SemanticPosition::Request> request, 
 	std::shared_ptr<SemanticPosition::Response> response){
 
-	RCLCPP_INFO(this->get_logger(), "Incoming service request: [%f, %f]", 
+	RCLCPP_INFO(this->get_logger(), "Incoming semantic position service request: [%f, %f]", 
 		request->position.x, request->position.y);
 
 	// Get arguments and check if the point lies within ROI
@@ -339,6 +342,20 @@ bool SemanticGoalsGenerator::semantic_position_service(
 	response->roi_name = SemanticPosition::Response::UNKNOWN;
 	RCLCPP_FATAL(this->get_logger(), "Failed to get semantic position");
 	return false;
+}
+
+bool SemanticGoalsGenerator::semantic_regions_service(
+	const std::shared_ptr<SemanticRegions::Request> request, 
+	std::shared_ptr<SemanticRegions::Response> response){
+
+	RCLCPP_INFO(this->get_logger(), "Incoming regions service request");
+
+	// Get arguments and check if the point lies within ROI
+	for (auto & roi: roi_list_){
+		response->regions.push_back(roi.get_name());
+	}
+
+	return true;
 }
 
 /* Return the cell of the costmap */

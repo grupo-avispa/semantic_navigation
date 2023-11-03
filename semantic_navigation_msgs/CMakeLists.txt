@@ -23,6 +23,7 @@ find_package(geometry_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SemanticGoals.srv"
   "srv/SemanticPosition.srv"
+  "srv/SemanticRegions.srv"
   DEPENDENCIES builtin_interfaces geometry_msgs
 )
 

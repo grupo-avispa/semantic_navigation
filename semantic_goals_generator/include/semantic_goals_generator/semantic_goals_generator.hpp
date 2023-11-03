@@ -27,6 +27,7 @@
 #include "visualization_msgs/msg/marker_array.hpp"
 #include "semantic_navigation_msgs/srv/semantic_goals.hpp"
 #include "semantic_navigation_msgs/srv/semantic_position.hpp"
+#include "semantic_navigation_msgs/srv/semantic_regions.hpp"
 
 struct ROI{
 	slg::Polygon polygon;
@@ -58,6 +59,7 @@ class SemanticGoalsGenerator : public rclcpp::Node{
 	private:
 		using SemanticGoals = semantic_navigation_msgs::srv::SemanticGoals;
 		using SemanticPosition = semantic_navigation_msgs::srv::SemanticPosition;
+		using SemanticRegions = semantic_navigation_msgs::srv::SemanticRegions;
 
 		rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr goals_pub_;
 		rclcpp::Publisher<polygon_msgs::msg::Polygon2DCollection>::SharedPtr polygons_viz_pub_;
@@ -66,6 +68,7 @@ class SemanticGoalsGenerator : public rclcpp::Node{
 
 		rclcpp::Service<SemanticGoals>::SharedPtr goals_generator_service_;
 		rclcpp::Service<SemanticPosition>::SharedPtr semantic_position_service_;
+		rclcpp::Service<SemanticRegions>::SharedPtr semantic_regions_service_;
 
 		std::recursive_mutex mutex_;
 		nav_msgs::msg::OccupancyGrid map_;
@@ -85,6 +88,8 @@ class SemanticGoalsGenerator : public rclcpp::Node{
 			std::shared_ptr<SemanticGoals::Response> response);
 		bool semantic_position_service(const std::shared_ptr<SemanticPosition::Request> request,
 			std::shared_ptr<SemanticPosition::Response> response);
+		bool semantic_regions_service(const std::shared_ptr<SemanticRegions::Request> request,
+			std::shared_ptr<SemanticRegions::Response> response);
 		void map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
 		
 		void show_visualization();
