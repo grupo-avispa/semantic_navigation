@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_rviz_plugin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.4 (16-05-2024)
+------------------
+* Fix errors and bump to version of slg_msgs 3.9.0.
+
 1.0.3 (18-05-2022)
 ------------------
 * Clean list of ROIs names for spaces.
