@@ -2,6 +2,10 @@
 Changelog for package semantic_goals_generator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.4.1 (16-05-2024)
+------------------
+* Fix errors and bump to version of slg_msgs 3.9.0.
+
 2.4.0 (03-11-2023)
 ------------------
 * Added service for SemanticRegions.

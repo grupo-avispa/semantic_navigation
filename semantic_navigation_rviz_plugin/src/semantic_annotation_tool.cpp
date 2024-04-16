@@ -116,7 +116,7 @@ int semanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent& e
 		point.y = point_projection_on_xy_plane.second.y;
 		point.z = 0.0;
 		// Create the new polygon
-		current_polygon.add_point(point);
+		current_polygon.add_point(slg::Point2D(point));
 		polygons_.push_back(current_polygon);
 		// Check the name vector with the bigger size and resize and fill the other one
 		if (names_.size() < polygons_.size()){

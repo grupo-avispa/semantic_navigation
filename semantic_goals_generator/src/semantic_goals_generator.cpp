@@ -150,7 +150,7 @@ void SemanticGoalsGenerator::get_roi_params(const std::string &filename){
 			for (const auto& edge : roi["edges"]) {
 				slg::Point2D a(edge[0][0].as<float>(), edge[0][1].as<float>());
 				slg::Point2D b(edge[1][0].as<float>(), edge[1][1].as<float>());
-				new_roi.polygon.add_edge({a,b});
+				new_roi.polygon.add_edge(slg::Edge(a,b));
 			}
 			roi_list_.push_back(new_roi);
 		}

@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
 	<name>semantic_navigation_rviz_plugin</name>
-	<version>1.1.0</version>
+	<version>1.0.4</version>
 	<description>Panel for Rviz2 to send the robot to a ROI and tool to save ROIs in a YAML file.</description>
 	<maintainer email="ajtudela@gmail.com">Alberto Tudela</maintainer>
 	<license>TODO</license>
