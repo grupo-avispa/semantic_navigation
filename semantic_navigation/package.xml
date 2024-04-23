@@ -1,17 +1,17 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-	<name>semantic_navigation</name>
-	<version>0.1.0</version>
-	<description>A ROS metapackage for semantic navigation. Includes goals generation and semantic position services and Rviz plugin.</description>
-	<maintainer email="ajtudela@gmail.com">Alberto Tudela</maintainer>
-	<author email="ajtudela@gmail.com">Alberto Tudela</author>
-	<license>GPL</license>
-	<buildtool_depend>ament_cmake</buildtool_depend>
-	<exec_depend>semantic_navigation_msgs</exec_depend>
-	<exec_depend>semantic_goals_generator</exec_depend>
-	<exec_depend>semantic_navigation_rviz_plugin</exec_depend>
-	<export>
-		<build_type>ament_cmake</build_type>
-	</export>
+  <name>semantic_navigation</name>
+  <version>0.1.0</version>
+  <description>A ROS metapackage for semantic navigation. Includes goals generation and semantic position services and Rviz plugin.</description>
+  <maintainer email="ajtudela@gmail.com">Alberto Tudela</maintainer>
+  <license>Apache-2.0</license>
+  <author email="ajtudela@gmail.com">Alberto Tudela</author>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>semantic_goals_generator</exec_depend>
+  <exec_depend>semantic_navigation_msgs</exec_depend>
+  <exec_depend>semantic_navigation_rviz_plugin</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

@@ -1,7 +1,5 @@
 # semantic_goals_generator
 
-![ROS2](https://img.shields.io/badge/ros2-humble-blue?logo=ros&logoColor=white)
-
 ## Overview
 
 ROS Service to generate 2D navigation goals with orientation in a specifed region of interest (ROI). These ROIs are described by a polygon 
@@ -18,34 +16,6 @@ There are optional parameters like:
 In addition to the random navigation goals service, it's also included:
 - A service to request the ROI name of a known position.
 - A latched publisher of the ROI name where the robot is.
-
-**Keywords:** ROS2, navigation, semantic, social
-
-### License
-
-**Author: Alberto Tudela<br />**
-
-The semantic_goals_generator package has been tested under [ROS2] Humble on [Ubuntu] 22.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
-
-## Installation
-
-### Building from Source
-
-#### Dependencies
-
-- [Robot Operating System (ROS) 2](https://docs.ros.org/en/humble/) (middleware for robotics),
-- [slg_msgs](https://github.com/ajtudela/slg_msgs) (Library and messages to interact with laser related geometry - use Humble branch),
-- [polygon_ros](https://github.com/MetroRobots/polygon_ros/) (Polygon visualization)
-
-#### Building
-
-To build from source, clone the latest version from the main repository into your colcon workspace and compile the package using
-
-	cd colcon_workspace/src
-	git clone https://gitlab.com/ajtudela/semantic_navigation.git
-	cd ../
-	rosdep install -i --from-path src --rosdistro humble -y
-	colcon build
 
 ## Usage
 
@@ -143,10 +113,6 @@ ROS2 Service to generate 2D navigation goals as described above.
 	The filepath of the configuration file including the names of regions of interests (ROIs) defined by its edges and the inflation radius of the robot's footprint as above.
 
 
-
-[Ubuntu]: https://ubuntu.com/
-[ROS2]: https://docs.ros.org/en/humble/
-[Rviz2]: https://github.com/ros2/rviz
 [nav_msgs/OccupancyGrid]: https://docs.ros2.org/humble/api/nav_msgs/msg/OccupancyGrid.html
 [geometry_msgs/PoseArray]: https://docs.ros2.org/humble/api/geometry_msgs/msg/PoseArray.html
 [polygon_msgs/Polygon2DCollection]: https://github.com/MetroRobots/polygon_ros/blob/main/polygon_msgs/msg/Polygon2DCollection.msg

@@ -1,38 +1,8 @@
 # semantic_navigation_rviz_plugin
 
-![ROS2](https://img.shields.io/badge/ros2-humble-blue?logo=ros&logoColor=white)
-
 ## Overview
 
 Panel for [RViz2] to send the robot to a region of interest (ROI) and tool to save ROIs in a YAML file.
-
-**Keywords:** ROS2, navigation, semantic, Rviz2
-
-### License
-
-**Author: Alberto Tudela<br />**
-
-The semantic_navigation_rviz_plugin package has been tested under [ROS2] Humble on [Ubuntu] 22.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
-
-## Installation
-
-### Building from Source
-
-#### Dependencies
-
-- [Robot Operating System (ROS) 2](https://docs.ros.org/en/humble/) (middleware for robotics),
-- [slg_msgs](https://github.com/ajtudela/slg_msgs) (Library and messages to interact with laser related geometry - use Humble branch),
-- [polygon_ros](https://github.com/MetroRobots/polygon_ros/) (Polygon visualization)
-
-#### Building
-
-To build from source, clone the latest version from the main repository into your colcon workspace and compile the package using
-
-	cd colcon_workspace/src
-	git clone https://gitlab.com/ajtudela/semantic_navigation.git
-	cd ../
-	rosdep install -i --from-path src --rosdistro humble -y
-	colcon build
 
 ## Usage
 
@@ -56,7 +26,3 @@ For the Semantic Annotation Tool:
 ## Future work
 - [ ] Use yaml_cpp_vendor to save the ROIs in a YAML file (specialize the YAML::convert<> template class).
 
-
-[Ubuntu]: https://ubuntu.com/
-[ROS2]: https://docs.ros.org/en/humble/
-[Rviz2]: https://github.com/ros2/rviz
