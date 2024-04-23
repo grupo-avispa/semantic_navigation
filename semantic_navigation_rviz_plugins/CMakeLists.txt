@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(semantic_navigation_rviz_plugin)
+project(semantic_navigation_rviz_plugins)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to Release as none was specified.")

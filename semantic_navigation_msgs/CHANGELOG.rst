@@ -2,6 +2,13 @@
 Changelog for package semantic_navigation_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.0 (XX-XX-XXXX)
+------------------
+* Update License to Apache 2.0.
+* Update CMakelists.txt and package.xml with new compilation flags.
+* Improve format and style.
+* Update documentation.
+
 1.1.0 (03-11-2023)
 ------------------
 * Added SemanticRegions.srv action file.

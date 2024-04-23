@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SEMANTIC_NAVIGATION_RVIZ_PLUGIN__SEMANTIC_ANNOTATION_TOOL_HPP_
-#define SEMANTIC_NAVIGATION_RVIZ_PLUGIN__SEMANTIC_ANNOTATION_TOOL_HPP_
+#ifndef SEMANTIC_NAVIGATION_RVIZ_PLUGINS__SEMANTIC_ANNOTATION_TOOL_HPP_
+#define SEMANTIC_NAVIGATION_RVIZ_PLUGINS__SEMANTIC_ANNOTATION_TOOL_HPP_
 
 #include <memory>
 #include <string>
@@ -40,11 +40,11 @@ class VisualizationManager;
 class ViewportMouseEvent;
 }
 
-namespace semantic_navigation_rviz_plugin
+namespace semantic_navigation_rviz_plugins
 {
 
 /**
- * @class semanticAnnotationTool
+ * @class semantic_navigation_rviz_plugins::semanticAnnotationTool
  * @brief Tool to annotate regions of interest (ROIs) in the map.
  */
 class semanticAnnotationTool : public rviz_common::Tool
@@ -121,6 +121,6 @@ private:
   std::string filename_;
 };
 
-}  // namespace semantic_navigation_rviz_plugin
+}  // namespace semantic_navigation_rviz_plugins
 
-#endif  // SEMANTIC_NAVIGATION_RVIZ_PLUGIN__SEMANTIC_ANNOTATION_TOOL_HPP_
+#endif  // SEMANTIC_NAVIGATION_RVIZ_PLUGINS__SEMANTIC_ANNOTATION_TOOL_HPP_

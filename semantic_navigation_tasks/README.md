@@ -1,4 +1,4 @@
-# semantic_goals_generator
+# semantic_navigation_tasks
 
 ## Overview
 
@@ -21,7 +21,7 @@ In addition to the random navigation goals service, it's also included:
 
 For the goals generator service, launch the node as follows:
 
-	ros2 launch semantic_goals_generator semantic_goals_generator.launch
+	ros2 launch semantic_navigation_tasks semantic_navigation_tasks.launch
 
 You can send a service to request goals as follows:
 
@@ -43,7 +43,7 @@ For the position service, to know the name of the ROI where the robot is, send t
 
 ## Nodes
 
-### semantic_goals_generator
+### semantic_navigation_tasks
 
 ROS2 Service to generate 2D navigation goals as described above.
 

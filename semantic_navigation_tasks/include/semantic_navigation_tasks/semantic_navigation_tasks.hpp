@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SEMANTIC_GOALS_GENERATOR__SEMANTIC_GOALS_GENERATOR_HPP_
-#define SEMANTIC_GOALS_GENERATOR__SEMANTIC_GOALS_GENERATOR_HPP_
+#ifndef SEMANTIC_NAVIGATION_TASKS__SEMANTIC_NAVIGATION_TASKS_HPP_
+#define SEMANTIC_NAVIGATION_TASKS__SEMANTIC_NAVIGATION_TASKS_HPP_
 
 // C++
 #include <cmath>
@@ -61,18 +61,27 @@ struct ROI
   }
 };
 
+namespace semantic_navigation
+{
+
 /**
- * @class SemanticGoalsGenerator
+ * @class semantic_navigation::SemanticNavigationTasks
  * @brief Class to generate goals inside regions of interest (ROIs).
  */
-class SemanticGoalsGenerator : public rclcpp::Node
+class SemanticNavigationTasks : public rclcpp::Node
 {
 public:
   /**
    * @brief Construct a new Semantic Goals Generator object.
    *
    */
-  SemanticGoalsGenerator();
+  explicit SemanticNavigationTasks(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+
+  /**
+   * @brief Destroy the Semantic Goals Generator object.
+   *
+   */
+  ~SemanticNavigationTasks() = default;
 
 private:
   using SemanticGoals = semantic_navigation_msgs::srv::SemanticGoals;
@@ -185,4 +194,6 @@ private:
   std::vector<ROI> roi_list_;
 };
 
-#endif  // SEMANTIC_GOALS_GENERATOR__SEMANTIC_GOALS_GENERATOR_HPP_
+}  // namespace semantic_navigation
+
+#endif  // SEMANTIC_NAVIGATION_TASKS__SEMANTIC_NAVIGATION_TASKS_HPP_

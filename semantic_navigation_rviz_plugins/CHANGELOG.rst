@@ -1,6 +1,13 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package semantic_navigation_rviz_plugin
+Changelog for package semantic_navigation_rviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+3.0.0 (XX-XX-XXXX)
+------------------
+* Update License to Apache 2.0.
+* Update CMakelists.txt and package.xml with new compilation flags.
+* Improve format and style.
+* Update documentation.
 
 1.0.4 (16-05-2024)
 ------------------

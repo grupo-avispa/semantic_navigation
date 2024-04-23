@@ -15,14 +15,13 @@
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
-#include "semantic_goals_generator/semantic_goals_generator.hpp"
+#include "semantic_navigation_tasks/semantic_navigation_tasks.hpp"
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  // auto node = std::make_shared<semantic_navigation::SemanticGoalsGenerator>();
+  auto node = std::make_shared<semantic_navigation::SemanticNavigationTasks>();
   // rclcpp::spin(node->get_node_base_interface());
-  auto node = std::make_shared<SemanticGoalsGenerator>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

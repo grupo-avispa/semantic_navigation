@@ -35,9 +35,9 @@
 #include "rviz_rendering/render_window.hpp"
 #include "polygon_utils/polygon_utils.hpp"
 
-#include "semantic_navigation_rviz_plugin/semantic_annotation_tool.hpp"
+#include "semantic_navigation_rviz_plugins/semantic_annotation_tool.hpp"
 
-namespace semantic_navigation_rviz_plugin
+namespace semantic_navigation_rviz_plugins
 {
 
 semanticAnnotationTool::semanticAnnotationTool()
@@ -215,7 +215,7 @@ void semanticAnnotationTool::show_polygon_names()
   names_viz_pub_->publish(names_array);
 }
 
-}  // namespace semantic_navigation_rviz_plugin
+}  // namespace semantic_navigation_rviz_plugins
 
 #include <pluginlib/class_list_macros.hpp>  // NOLINT
-PLUGINLIB_EXPORT_CLASS(semantic_navigation_rviz_plugin::semanticAnnotationTool, rviz_common::Tool)
+PLUGINLIB_EXPORT_CLASS(semantic_navigation_rviz_plugins::semanticAnnotationTool, rviz_common::Tool)

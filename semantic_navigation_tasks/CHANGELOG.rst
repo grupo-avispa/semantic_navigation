@@ -1,6 +1,13 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package semantic_goals_generator
+Changelog for package semantic_navigation_tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+3.0.0 (XX-XX-XXXX)
+------------------
+* Update License to Apache 2.0.
+* Update CMakelists.txt and package.xml with new compilation flags.
+* Improve format and style.
+* Update documentation.
 
 2.4.1 (16-05-2024)
 ------------------

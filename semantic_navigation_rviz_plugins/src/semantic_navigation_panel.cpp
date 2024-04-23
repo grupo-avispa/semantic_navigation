@@ -19,9 +19,9 @@
 
 #include "rviz_common/display_context.hpp"
 #include "nav2_util/robot_utils.hpp"
-#include "semantic_navigation_rviz_plugin/semantic_navigation_panel.hpp"
+#include "semantic_navigation_rviz_plugins/semantic_navigation_panel.hpp"
 
-namespace semantic_navigation_rviz_plugin
+namespace semantic_navigation_rviz_plugins
 {
 
 semanticNavigationPanel::semanticNavigationPanel(QWidget * parent)
@@ -246,7 +246,9 @@ void semanticNavigationPanel::result_callback(
   }
 }
 
-}  // namespace semantic_navigation_rviz_plugin
+}  // namespace semantic_navigation_rviz_plugins
 
 #include <pluginlib/class_list_macros.hpp>  // NOLINT
-PLUGINLIB_EXPORT_CLASS(semantic_navigation_rviz_plugin::semanticNavigationPanel, rviz_common::Panel)
+PLUGINLIB_EXPORT_CLASS(
+  semantic_navigation_rviz_plugins::semanticNavigationPanel,
+  rviz_common::Panel)

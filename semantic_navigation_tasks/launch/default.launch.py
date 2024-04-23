@@ -26,10 +26,10 @@ from nav2_common.launch import RewrittenYaml
 
 def generate_launch_description():
     # Getting directories and launch-files
-    semantic_goals_generator_dir = get_package_share_directory('semantic_goals_generator')
+    semantic_navigation_tasks_dir = get_package_share_directory('semantic_navigation_tasks')
     default_params_file = os.path.join(
-        semantic_goals_generator_dir, 'params', 'default_params.yaml')
-    default_rois_params_file = os.path.join(semantic_goals_generator_dir, 'params', 'rois.yaml')
+        semantic_navigation_tasks_dir, 'params', 'default_params.yaml')
+    default_rois_params_file = os.path.join(semantic_navigation_tasks_dir, 'params', 'rois.yaml')
 
     # Input parameters declaration
     params_file = LaunchConfiguration('params_file')
@@ -66,20 +66,20 @@ def generate_launch_description():
         convert_types=True
     )
 
-    # Prepare the semantic goals generator node.
-    semantic_goals_generator_node = Node(
-        package='semantic_goals_generator',
+    # Prepare the semantic navigation tasks node.
+    semantic_navigation_tasks_node = Node(
+        package='semantic_navigation_tasks',
         namespace='',
-        executable='semantic_goals_generator',
-        name='semantic_goals_generator',
+        executable='semantic_navigation_tasks',
+        name='semantic_navigation_tasks',
         parameters=[configured_params],
         emulate_tty=True,
         output='screen',
-        arguments=['--ros-args', '--log-level', ['semantic_goals_generator:=', log_level]]
+        arguments=['--ros-args', '--log-level', ['semantic_navigation_tasks:=', log_level]]
     )
     return LaunchDescription([
         declare_params_file_arg,
         declare_rois_filename_arg,
         declare_log_level_arg,
-        semantic_goals_generator_node
+        semantic_navigation_tasks_node
     ])

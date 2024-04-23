@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(semantic_goals_generator)
+project(semantic_navigation_tasks)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to Release as none was specified.")
@@ -51,6 +51,7 @@ endif()
 # # Find ament macros and libraries
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(polygon_msgs REQUIRED)
@@ -74,6 +75,7 @@ include_directories(
 
 set(dependencies
   rclcpp
+  rclcpp_components
   geometry_msgs
   nav2_msgs
   polygon_msgs
@@ -91,7 +93,7 @@ set(library_name ${PROJECT_NAME}_core)
 set(executable_name ${PROJECT_NAME})
 
 # Add library
-add_library(${library_name} SHARED src/semantic_goals_generator.cpp)
+add_library(${library_name} SHARED src/semantic_navigation_tasks.cpp)
 ament_target_dependencies(${library_name} ${dependencies})
 
 # Add executable
@@ -99,7 +101,7 @@ add_executable(${executable_name} src/main.cpp)
 ament_target_dependencies(${executable_name} ${dependencies})
 target_link_libraries(${executable_name} ${library_name})
 
-rclcpp_components_register_nodes(${library_name} "semantic_navigation::SemanticGoalGsenerator")
+rclcpp_components_register_nodes(${library_name} "semantic_navigation::SemanticNavigationTasks")
 
 # ############
 # # Install ##

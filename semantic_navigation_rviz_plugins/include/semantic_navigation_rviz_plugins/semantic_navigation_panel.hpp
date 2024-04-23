@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SEMANTIC_NAVIGATION_RVIZ_PLUGIN__SEMANTIC_NAVIGATION_PANEL_HPP_
-#define SEMANTIC_NAVIGATION_RVIZ_PLUGIN__SEMANTIC_NAVIGATION_PANEL_HPP_
+#ifndef SEMANTIC_NAVIGATION_RVIZ_PLUGINS__SEMANTIC_NAVIGATION_PANEL_HPP_
+#define SEMANTIC_NAVIGATION_RVIZ_PLUGINS__SEMANTIC_NAVIGATION_PANEL_HPP_
 
 #include <QtWidgets>
 #include <memory>
@@ -32,11 +32,11 @@
 class QLineEdit;
 class QPushButton;
 
-namespace semantic_navigation_rviz_plugin
+namespace semantic_navigation_rviz_plugins
 {
 
 /**
- * @class semanticNavigationPanel
+ * @class semantic_navigation_rviz_plugins::semanticNavigationPanel
  * @brief Panel to send the robot to a room using semantic information.
  */
 class semanticNavigationPanel : public rviz_common::Panel
@@ -132,6 +132,6 @@ protected:
   QPushButton * request_room_button_;
 };
 
-}  // namespace semantic_navigation_rviz_plugin
+}  // namespace semantic_navigation_rviz_plugins
 
-#endif  // SEMANTIC_NAVIGATION_RVIZ_PLUGIN__SEMANTIC_NAVIGATION_PANEL_HPP_
+#endif  // SEMANTIC_NAVIGATION_RVIZ_PLUGINS__SEMANTIC_NAVIGATION_PANEL_HPP_

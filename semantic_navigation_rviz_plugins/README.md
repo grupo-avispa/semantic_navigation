@@ -1,4 +1,4 @@
-# semantic_navigation_rviz_plugin
+# semantic_navigation_rviz_plugins
 
 ## Overview
 
@@ -26,3 +26,4 @@ For the Semantic Annotation Tool:
 ## Future work
 - [ ] Use yaml_cpp_vendor to save the ROIs in a YAML file (specialize the YAML::convert<> template class).
 
+[Rviz2]: https://github.com/ros2/rviz

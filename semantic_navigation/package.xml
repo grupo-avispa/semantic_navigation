@@ -8,9 +8,9 @@
   <license>Apache-2.0</license>
   <author email="ajtudela@gmail.com">Alberto Tudela</author>
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <exec_depend>semantic_goals_generator</exec_depend>
   <exec_depend>semantic_navigation_msgs</exec_depend>
-  <exec_depend>semantic_navigation_rviz_plugin</exec_depend>
+  <exec_depend>semantic_navigation_tasks</exec_depend>
+  <exec_depend>semantic_navigation_rviz_plugins</exec_depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>
