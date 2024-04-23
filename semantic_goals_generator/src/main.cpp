@@ -20,8 +20,8 @@
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  //auto node = std::make_shared<semantic_navigation::SemanticGoalsGenerator>();
-  //rclcpp::spin(node->get_node_base_interface());
+  // auto node = std::make_shared<semantic_navigation::SemanticGoalsGenerator>();
+  // rclcpp::spin(node->get_node_base_interface());
   auto node = std::make_shared<SemanticGoalsGenerator>();
   rclcpp::spin(node);
   rclcpp::shutdown();
