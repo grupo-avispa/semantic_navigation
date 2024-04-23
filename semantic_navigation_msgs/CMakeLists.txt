@@ -28,9 +28,9 @@ find_package(rosidl_default_generators REQUIRED)
 # # Declare ROS messages, services and actions ##
 # ###############################################
 set(srv_files
-  "srv/SemanticGoals.srv"
-  "srv/SemanticPosition.srv"
-  "srv/SemanticRegions.srv"
+  "srv/GenerateRandomGoals.srv"
+  "srv/GetRegionName.srv"
+  "srv/ListAllRegions.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

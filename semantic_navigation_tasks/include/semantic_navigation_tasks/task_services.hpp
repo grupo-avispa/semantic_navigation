@@ -30,9 +30,9 @@
 #include "polygon_msgs/msg/polygon2_d_collection.hpp"
 #include "slg_msgs/polygon.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
-#include "semantic_navigation_msgs/srv/semantic_goals.hpp"
-#include "semantic_navigation_msgs/srv/semantic_position.hpp"
-#include "semantic_navigation_msgs/srv/semantic_regions.hpp"
+#include "semantic_navigation_msgs/srv/generate_random_goals.hpp"
+#include "semantic_navigation_msgs/srv/get_region_name.hpp"
+#include "semantic_navigation_msgs/srv/list_all_regions.hpp"
 
 struct ROI
 {
@@ -84,75 +84,75 @@ public:
   ~SemanticNavigationTasks() = default;
 
 private:
-  using SemanticGoals = semantic_navigation_msgs::srv::SemanticGoals;
-  using SemanticPosition = semantic_navigation_msgs::srv::SemanticPosition;
-  using SemanticRegions = semantic_navigation_msgs::srv::SemanticRegions;
+  using GenerateRandomGoals = semantic_navigation_msgs::srv::GenerateRandomGoals;
+  using GetRegionName = semantic_navigation_msgs::srv::GetRegionName;
+  using ListAllRegions = semantic_navigation_msgs::srv::ListAllRegions;
 
   /**
    * @brief Update parameters of the node.
    *
    */
-  void get_params();
+  void getParams();
 
   /**
-   * @brief Get the ROI parameters from a file.
+   * @brief Get the region parameters from a file.
    *
    * @param filename Name of the file.
    */
-  void get_roi_params(const std::string & filename);
+  void getRegionParams(const std::string & filename);
 
   /**
    * @brief Generate goals inside the regions of interest (ROIs).
    *
-   * @param request Request with the name of the ROI.
+   * @param request Request with the name of the region.
    * @param response Response with the goals.
    * @return true if the goals are generated.
    */
-  bool goals_generator_service(
-    const std::shared_ptr<SemanticGoals::Request> request,
-    std::shared_ptr<SemanticGoals::Response> response);
+  bool generateRandomGoalsService(
+    const std::shared_ptr<GenerateRandomGoals::Request> request,
+    std::shared_ptr<GenerateRandomGoals::Response> response);
 
   /**
-   * @brief Generate a random position inside the region of interest (ROI).
+   * @brief Get the name of the region of interest (ROI) from a position.
    *
-   * @param request Request with the name of the ROI.
+   * @param request Request with the name of the region.
    * @param response Response with the position.
    * @return true if the position is generated.
    */
-  bool semantic_position_service(
-    const std::shared_ptr<SemanticPosition::Request> request,
-    std::shared_ptr<SemanticPosition::Response> response);
+  bool getRegionNameService(
+    const std::shared_ptr<GetRegionName::Request> request,
+    std::shared_ptr<GetRegionName::Response> response);
 
   /**
-   * @brief Generate a list of regions of interest (ROIs).
+   * @brief Get the names of all the regions of interest (ROIs).
    *
-   * @param request Request with the name of the ROI.
-   * @param response Response with the ROIs.
-   * @return true if the ROIs are generated.
+   * @param request Request with the name of the region.
+   * @param response Response with the regions.
+   * @return true if the regions are generated.
    */
-  bool semantic_regions_service(
-    const std::shared_ptr<SemanticRegions::Request> request,
-    std::shared_ptr<SemanticRegions::Response> response);
+  bool listAllRegionsService(
+    const std::shared_ptr<ListAllRegions::Request> request,
+    std::shared_ptr<ListAllRegions::Response> response);
 
   /**
    * @brief Callback to update the map.
    *
    * @param msg Message with the map.
    */
-  void map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+  void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
 
   /**
    * @brief Show the visualization of the regions of interest (ROIs).
    *
    */
-  void show_visualization();
+  void showVisualization();
 
   /**
    * @brief Process the bounding box of the regions of interest (ROIs).
    *
    * @param roi Region of interest.
    */
-  void process_boundingbox(ROI roi);
+  void processBoundingbox(ROI roi);
 
   /**
    * @brief Get the cell value of the map.
@@ -170,16 +170,16 @@ private:
    * @param y Y coordinate.
    * @return true if the point is inside the map.
    */
-  bool in_collision(int x, int y);
+  bool inCollision(int x, int y);
 
   rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr goals_pub_;
   rclcpp::Publisher<polygon_msgs::msg::Polygon2DCollection>::SharedPtr polygons_viz_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr names_viz_pub_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
 
-  rclcpp::Service<SemanticGoals>::SharedPtr goals_generator_service_;
-  rclcpp::Service<SemanticPosition>::SharedPtr semantic_position_service_;
-  rclcpp::Service<SemanticRegions>::SharedPtr semantic_regions_service_;
+  rclcpp::Service<GenerateRandomGoals>::SharedPtr goals_generator_service_;
+  rclcpp::Service<GetRegionName>::SharedPtr get_region_name_service_;
+  rclcpp::Service<ListAllRegions>::SharedPtr list_all_regions_service_;
 
   std::recursive_mutex mutex_;
   nav_msgs::msg::OccupancyGrid map_;
@@ -190,8 +190,8 @@ private:
   float map_min_x_, map_max_x_, map_min_y_, map_max_y_;
   float inflation_radius_, border_;
   std::string goals_topic_, polygons_topic_, names_topic_, map_topic_;
-  std::string direction_;
-  std::vector<ROI> roi_list_;
+  std::string orientation_;
+  std::vector<ROI> region_list_;
 };
 
 }  // namespace semantic_navigation

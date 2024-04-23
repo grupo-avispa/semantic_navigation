@@ -8,6 +8,7 @@ Changelog for package semantic_navigation_msgs
 * Update CMakelists.txt and package.xml with new compilation flags.
 * Improve format and style.
 * Update documentation.
+* Rename services.
 
 1.1.0 (03-11-2023)
 ------------------

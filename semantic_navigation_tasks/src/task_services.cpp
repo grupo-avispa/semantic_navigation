@@ -37,10 +37,10 @@ using std::placeholders::_1, std::placeholders::_2;
 
 SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & options)
 : Node("semantic_navigation_tasks", options), border_(0.0),
-  direction_(SemanticGoals::Request::RANDOM)
+  orientation_(GenerateRandomGoals::Request::RANDOM)
 {
   // Initialize ROS parameters
-  get_params();
+  getParams();
 
   // Publishers
   rclcpp::QoS latched_profile = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
@@ -54,23 +54,23 @@ SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & opt
   // Subscribers
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
     map_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable(),
-    std::bind(&SemanticNavigationTasks::map_callback, this, _1));
+    std::bind(&SemanticNavigationTasks::mapCallback, this, _1));
 
   // Services
-  goals_generator_service_ = this->create_service<SemanticGoals>(
-    "semantic_goals",
-    std::bind(&SemanticNavigationTasks::goals_generator_service, this, _1, _2));
-  semantic_position_service_ = this->create_service<SemanticPosition>(
-    "semantic_position",
-    std::bind(&SemanticNavigationTasks::semantic_position_service, this, _1, _2));
-  semantic_regions_service_ = this->create_service<SemanticRegions>(
-    "semantic_regions",
-    std::bind(&SemanticNavigationTasks::semantic_regions_service, this, _1, _2));
+  goals_generator_service_ = this->create_service<GenerateRandomGoals>(
+    "generate_random_goals",
+    std::bind(&SemanticNavigationTasks::generateRandomGoalsService, this, _1, _2));
+  get_region_name_service_ = this->create_service<GetRegionName>(
+    "get_region_name",
+    std::bind(&SemanticNavigationTasks::getRegionNameService, this, _1, _2));
+  list_all_regions_service_ = this->create_service<ListAllRegions>(
+    "list_all_regions",
+    std::bind(&SemanticNavigationTasks::listAllRegionsService, this, _1, _2));
 
-  show_visualization();
+  showVisualization();
 }
 
-void SemanticNavigationTasks::get_params()
+void SemanticNavigationTasks::getParams()
 {
   // BOOLEAN PARAMS ..........................................................................
   nav2_util::declare_parameter_if_not_declared(
@@ -143,14 +143,14 @@ void SemanticNavigationTasks::get_params()
   RCLCPP_INFO(
     this->get_logger(), "The parameter rois_filename is set to: [%s]", rois_filename.c_str());
 
-  get_roi_params(rois_filename);
-  if (roi_list_.empty()) {
+  getRegionParams(rois_filename);
+  if (region_list_.empty()) {
     RCLCPP_ERROR(this->get_logger(), "The list of ROIs could not be found");
     exit(1);
   }
 }
 
-void SemanticNavigationTasks::get_roi_params(const std::string & filename)
+void SemanticNavigationTasks::getRegionParams(const std::string & filename)
 {
   RCLCPP_INFO(this->get_logger(), "Reading ROIs from file: %s", filename.c_str());
   YAML::Node config = YAML::LoadFile(filename);
@@ -168,14 +168,14 @@ void SemanticNavigationTasks::get_roi_params(const std::string & filename)
         slg::Point2D b(edge[1][0].as<float>(), edge[1][1].as<float>());
         new_roi.polygon.add_edge(slg::Edge(a, b));
       }
-      roi_list_.push_back(new_roi);
+      region_list_.push_back(new_roi);
     }
   } else {
     RCLCPP_ERROR(this->get_logger(), "No ROIs found in file [%s]", filename.c_str());
   }
 }
 
-void SemanticNavigationTasks::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
+void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 {
   std::lock_guard<std::recursive_mutex> cfl(mutex_);
   RCLCPP_INFO_ONCE(
@@ -190,7 +190,7 @@ void SemanticNavigationTasks::map_callback(const nav_msgs::msg::OccupancyGrid::S
   map_max_y_ = map_.info.origin.position.y + map_.info.height * map_.info.resolution;
 }
 
-void SemanticNavigationTasks::process_boundingbox(ROI roi)
+void SemanticNavigationTasks::processBoundingbox(ROI roi)
 {
   // Region of interest (ROI) must lie inside the map boundaries
   // If ROI is empty, the whole map is treated as ROI by default
@@ -244,32 +244,32 @@ void SemanticNavigationTasks::process_boundingbox(ROI roi)
     cell_min_x_, cell_min_y_, cell_max_x_, cell_max_y_);
 }
 
-bool SemanticNavigationTasks::goals_generator_service(
-  const std::shared_ptr<SemanticGoals::Request> request,
-  std::shared_ptr<SemanticGoals::Response> response)
+bool SemanticNavigationTasks::generateRandomGoalsService(
+  const std::shared_ptr<GenerateRandomGoals::Request> request,
+  std::shared_ptr<GenerateRandomGoals::Response> response)
 {
   std::lock_guard<std::recursive_mutex> cfl(mutex_);
-  ROI current_roi;
+  ROI current_region;
   RCLCPP_INFO(
     this->get_logger(), "Incoming goals generator service request: [%i, %s]",
-    request->n, request->roi_name.c_str());
+    request->n, request->region_name.c_str());
 
   // Get arguments
   uint64_t n = request->n;
-  for (const auto & roi : roi_list_) {
-    if (roi.polygon.get_name() == request->roi_name) {
-      current_roi = roi;
+  for (const auto & roi : region_list_) {
+    if (roi.polygon.get_name() == request->region_name) {
+      current_region = roi;
       break;
     }
   }
-  direction_ = request->direction;
+  orientation_ = request->orientation;
   border_ = request->border;
 
   // If the requested ROI is empty and we don't want to use the full map
-  if (current_roi.empty() && !full_map_) {
+  if (current_region.empty() && !full_map_) {
     RCLCPP_FATAL(
       this->get_logger(), "The requested ROI [%s], could not be found in the list",
-      request->roi_name.c_str());
+      request->region_name.c_str());
     return false;
   }
 
@@ -282,7 +282,7 @@ bool SemanticNavigationTasks::goals_generator_service(
   inflated_footprint_size_ = static_cast<int>(inflation_radius_ / map_.info.resolution) + 1;
 
   // Process bounding box
-  process_boundingbox(current_roi);
+  processBoundingbox(current_region);
 
   // Generate response
   response->goals.header.frame_id = map_topic_;
@@ -305,27 +305,27 @@ bool SemanticNavigationTasks::goals_generator_service(
     pose.position.y = cell_y * map_.info.resolution + map_.info.origin.position.y;
 
     // If the point lies within ROI and is not in collision
-    if (current_roi.in_roi(pose.position.x, pose.position.y) &&
-      !in_collision(cell_x, cell_y) &&
-      current_roi.distance_from_borders(pose.position.x, pose.position.y, border_))
+    if (current_region.in_roi(pose.position.x, pose.position.y) &&
+      !inCollision(cell_x, cell_y) &&
+      current_region.distance_from_borders(pose.position.x, pose.position.y, border_))
     {
       // Generate orientation
       double yaw;
-      if (direction_ == SemanticGoals::Request::OUTSIDE) {
+      if (orientation_ == GenerateRandomGoals::Request::OUTSIDE) {
         yaw = atan2(
-          (pose.position.y - current_roi.polygon.centroid().y),
-          (pose.position.x - current_roi.polygon.centroid().x));
-      } else if (direction_ == SemanticGoals::Request::INSIDE) {
+          (pose.position.y - current_region.polygon.centroid().y),
+          (pose.position.x - current_region.polygon.centroid().x));
+      } else if (orientation_ == GenerateRandomGoals::Request::INSIDE) {
         yaw = atan2(
-          (pose.position.y - current_roi.polygon.centroid().y),
-          (pose.position.x - current_roi.polygon.centroid().x)) + M_PI;
-      } else if (direction_ == SemanticGoals::Request::STORED) {
-        if (current_roi.yaw > -M_PI && current_roi.yaw < M_PI) {
-          yaw = current_roi.yaw;
+          (pose.position.y - current_region.polygon.centroid().y),
+          (pose.position.x - current_region.polygon.centroid().x)) + M_PI;
+      } else if (orientation_ == GenerateRandomGoals::Request::STORED) {
+        if (current_region.yaw > -M_PI && current_region.yaw < M_PI) {
+          yaw = current_region.yaw;
         } else {
           yaw = dist_pi(gen);
         }
-      } else if (direction_ == SemanticGoals::Request::REQUESTED) {
+      } else if (orientation_ == GenerateRandomGoals::Request::REQUESTED) {
         if (request->yaw > -M_PI && request->yaw < M_PI) {
           yaw = request->yaw;
         } else {
@@ -347,36 +347,36 @@ bool SemanticNavigationTasks::goals_generator_service(
   return true;
 }
 
-bool SemanticNavigationTasks::semantic_position_service(
-  const std::shared_ptr<SemanticPosition::Request> request,
-  std::shared_ptr<SemanticPosition::Response> response)
+bool SemanticNavigationTasks::getRegionNameService(
+  const std::shared_ptr<GetRegionName::Request> request,
+  std::shared_ptr<GetRegionName::Response> response)
 {
   RCLCPP_INFO(
     this->get_logger(), "Incoming semantic position service request: [%f, %f]",
     request->position.x, request->position.y);
 
   // Get arguments and check if the point lies within ROI
-  for (auto & roi : roi_list_) {
+  for (auto & roi : region_list_) {
     if (roi.in_roi(request->position.x, request->position.y)) {
-      response->roi_name = roi.get_name();
+      response->region_name = roi.get_name();
       return true;
     }
   }
 
-  response->roi_name = SemanticPosition::Response::UNKNOWN;
+  response->region_name = GetRegionName::Response::UNKNOWN;
   RCLCPP_FATAL(this->get_logger(), "Failed to get semantic position");
   return false;
 }
 
-bool SemanticNavigationTasks::semantic_regions_service(
-  const std::shared_ptr<SemanticRegions::Request>/* request */,
-  std::shared_ptr<SemanticRegions::Response> response)
+bool SemanticNavigationTasks::listAllRegionsService(
+  const std::shared_ptr<ListAllRegions::Request>/* request */,
+  std::shared_ptr<ListAllRegions::Response> response)
 {
   RCLCPP_INFO(this->get_logger(), "Incoming regions service request");
 
   // Get arguments and check if the point lies within ROI
-  for (auto & roi : roi_list_) {
-    response->regions.push_back(roi.get_name());
+  for (auto & roi : region_list_) {
+    response->region_names.push_back(roi.get_name());
   }
 
   return true;
@@ -392,7 +392,7 @@ int8_t SemanticNavigationTasks::cell(unsigned int x, unsigned int y)
   return map_.data[x + map_.info.width * y];
 }
 
-bool SemanticNavigationTasks::in_collision(int x, int y)
+bool SemanticNavigationTasks::inCollision(int x, int y)
 {
   int x_min, x_max, y_min, y_max;
 
@@ -414,14 +414,14 @@ bool SemanticNavigationTasks::in_collision(int x, int y)
   return false;
 }
 
-void SemanticNavigationTasks::show_visualization()
+void SemanticNavigationTasks::showVisualization()
 {
   polygon_msgs::msg::Polygon2DCollection polygon_array;
   polygon_array.header.frame_id = map_topic_;
   polygon_array.header.stamp = this->now();
 
   visualization_msgs::msg::MarkerArray names_array;
-  for (auto & roi : roi_list_) {
+  for (auto & roi : region_list_) {
     // Push the polygon
     polygon_array.polygons.push_back(polygon_utils::polygon3Dto2D(roi.polygon));
 

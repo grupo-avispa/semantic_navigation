@@ -1,0 +1,4 @@
+# Request / response service to get the list of the regions
+
+---
+string[] region_names # Regions list

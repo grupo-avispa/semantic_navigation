@@ -1,4 +1,0 @@
-# Request / response service to get the list of the zones
-
----
-string[] 		regions				# Zones

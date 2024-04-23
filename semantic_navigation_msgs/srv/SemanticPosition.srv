@@ -1,8 +1,0 @@
-# Request / response service to get the name of a ROI
-
-geometry_msgs/Point 		position			# Position
----
-string 						roi_name			# Name of the roi 
-
-# Constans
-string 						UNKNOWN = unknown

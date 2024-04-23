@@ -61,8 +61,8 @@ void SemanticNavigationPanel::onInitialize()
   ros_node_ = lock->get_raw_node();
 
   // Service clients
-  goals_generator_client_ = ros_node_->create_client<SemanticGoals>("semantic_goals");
-  semantic_position_client_ = ros_node_->create_client<SemanticPosition>("semantic_position");
+  goals_generator_client_ = ros_node_->create_client<GenerateRandomGoals>("generate_random_goals");
+  region_name_client_ = ros_node_->create_client<GetRegionName>("get_region_name");
 
   // Initialize transform buffer and listener
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(ros_node_->get_clock());
@@ -128,14 +128,14 @@ void SemanticNavigationPanel::generate_goals()
 
   // Send the request and wait for the response
   geometry_msgs::msg::PoseArray goals;
-  auto request = std::make_shared<SemanticGoals::Request>();
+  auto request = std::make_shared<GenerateRandomGoals::Request>();
   request->n = 1;
-  request->roi_name = room_name_.toStdString();
-  request->direction = semantic_navigation_msgs::srv::SemanticGoals::Request::INSIDE;
+  request->region_name = room_name_.toStdString();
+  request->orientation = semantic_navigation_msgs::srv::GenerateRandomGoals::Request::INSIDE;
   request->border = 0.1;
   auto result = goals_generator_client_->async_send_request(
     request,
-    [this](rclcpp::Client<SemanticGoals>::SharedFuture future) {
+    [this](rclcpp::Client<GenerateRandomGoals>::SharedFuture future) {
       if (future.get()->goals.poses.size() > 0) {
         // Send goals to the navigation stack
         geometry_msgs::msg::PoseStamped goal;
@@ -162,7 +162,7 @@ void SemanticNavigationPanel::request_room()
     return;
   }
 
-  while (!semantic_position_client_->wait_for_service(std::chrono::seconds(1))) {
+  while (!region_name_client_->wait_for_service(std::chrono::seconds(1))) {
     if (!rclcpp::ok()) {
       RCLCPP_ERROR(
         ros_node_->get_logger(),
@@ -173,16 +173,16 @@ void SemanticNavigationPanel::request_room()
   }
 
   // Send the request and wait for the response
-  auto request = std::make_shared<SemanticPosition::Request>();
+  auto request = std::make_shared<GetRegionName::Request>();
   request->position.x = robot_pose.pose.position.x;
   request->position.y = robot_pose.pose.position.y;
-  auto result = semantic_position_client_->async_send_request(
+  auto result = region_name_client_->async_send_request(
     request,
-    [this](rclcpp::Client<SemanticPosition>::SharedFuture future) {
-      if (future.get()->roi_name !=
-      semantic_navigation_msgs::srv::SemanticPosition::Response::UNKNOWN)
+    [this](rclcpp::Client<GetRegionName>::SharedFuture future) {
+      if (future.get()->region_name !=
+      semantic_navigation_msgs::srv::GetRegionName::Response::UNKNOWN)
       {
-        room_name_ = QString::fromStdString(future.get()->roi_name);
+        room_name_ = QString::fromStdString(future.get()->region_name);
         room_name_editor_->setText(room_name_);
       } else {
         room_name_editor_->setText("I don't know where the robot is.");

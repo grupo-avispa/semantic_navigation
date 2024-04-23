@@ -26,8 +26,8 @@
 #include "rviz_common/panel.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
-#include "semantic_navigation_msgs/srv/semantic_goals.hpp"
-#include "semantic_navigation_msgs/srv/semantic_position.hpp"
+#include "semantic_navigation_msgs/srv/generate_random_goals.hpp"
+#include "semantic_navigation_msgs/srv/get_region_name.hpp"
 
 class QLineEdit;
 class QPushButton;
@@ -92,8 +92,8 @@ protected Q_SLOTS:
   void update_room_name();
 
 protected:
-  using SemanticGoals = semantic_navigation_msgs::srv::SemanticGoals;
-  using SemanticPosition = semantic_navigation_msgs::srv::SemanticPosition;
+  using GenerateRandomGoals = semantic_navigation_msgs::srv::GenerateRandomGoals;
+  using GetRegionName = semantic_navigation_msgs::srv::GetRegionName;
   using NavigateToPose = nav2_msgs::action::NavigateToPose;
   using GoalHandleNavigateToPose = rclcpp_action::ClientGoalHandle<NavigateToPose>;
 
@@ -119,8 +119,8 @@ protected:
   void result_callback(const GoalHandleNavigateToPose::WrappedResult & result);
 
   rclcpp::Node::SharedPtr ros_node_;
-  rclcpp::Client<SemanticGoals>::SharedPtr goals_generator_client_;
-  rclcpp::Client<SemanticPosition>::SharedPtr semantic_position_client_;
+  rclcpp::Client<GenerateRandomGoals>::SharedPtr goals_generator_client_;
+  rclcpp::Client<GetRegionName>::SharedPtr region_name_client_;
 
   rclcpp_action::Client<NavigateToPose>::SharedPtr navigation_client_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
