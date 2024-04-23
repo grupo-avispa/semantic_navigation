@@ -112,9 +112,12 @@ protected:
   /**
    * @brief Get the region parameters from a file.
    *
-   * @param filename Name of the file.
+   * @param filepath Name of the file.
+   * @param regions Regions of interest.
+   * @return true if the regions are loaded.
    */
-  void getRegionParams(const std::string & filename);
+  bool getRegionsFromFile(
+    const std::string & filename, std::vector<semantic_navigation::ROI> & regions);
 
   /**
    * @brief Generate goals inside the regions of interest (ROIs).
@@ -159,16 +162,18 @@ protected:
   /**
    * @brief Create a collection of polygons.
    *
+   * @param list List of regions of interest.
    * @return polygon_msgs::msg::Polygon2DCollection Collection of polygons.
    */
-  polygon_msgs::msg::Polygon2DCollection createPolygons();
+  polygon_msgs::msg::Polygon2DCollection createPolygons(std::vector<ROI> list);
 
   /**
    * @brief Create a collection of markers with the names of the regions.
    *
+   * @param list List of regions of interest.
    * @return visualization_msgs::msg::MarkerArray Collection of markers.
    */
-  visualization_msgs::msg::MarkerArray createNames();
+  visualization_msgs::msg::MarkerArray createNames(std::vector<ROI> list);
 
   /**
    * @brief Process the bounding box of the regions of interest (ROIs).

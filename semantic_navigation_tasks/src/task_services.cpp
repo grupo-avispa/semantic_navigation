@@ -117,8 +117,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter rois_filename is set to: [%s]", rois_filename.c_str());
 
-  getRegionParams(rois_filename);
-  if (region_list_.empty()) {
+  if (!getRegionsFromFile(rois_filename, region_list_)) {
     RCLCPP_ERROR(get_logger(), "The list of ROIs could not be found");
     return nav2_util::CallbackReturn::FAILURE;
   }
@@ -161,8 +160,8 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_activate(
   names_viz_pub_->on_activate();
 
   // Publish polygons and names
-  polygons_viz_pub_->publish(createPolygons());
-  names_viz_pub_->publish(createNames());
+  polygons_viz_pub_->publish(createPolygons(region_list_));
+  names_viz_pub_->publish(createNames(region_list_));
 
   // Create bond connection
   createBond();
@@ -207,7 +206,9 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_shutdown(const rclcpp_life
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
-void SemanticNavigationTasks::getRegionParams(const std::string & filename)
+
+bool SemanticNavigationTasks::getRegionsFromFile(
+  const std::string & filename, std::vector<semantic_navigation::ROI> & regions)
 {
   RCLCPP_INFO(get_logger(), "Reading ROIs from file: %s", filename.c_str());
   YAML::Node config = YAML::LoadFile(filename);
@@ -225,11 +226,13 @@ void SemanticNavigationTasks::getRegionParams(const std::string & filename)
         slg::Point2D b(edge[1][0].as<float>(), edge[1][1].as<float>());
         new_roi.polygon.add_edge(slg::Edge(a, b));
       }
-      region_list_.push_back(new_roi);
+      regions.push_back(new_roi);
     }
   } else {
     RCLCPP_ERROR(get_logger(), "No ROIs found in file [%s]", filename.c_str());
+    return false;
   }
+  return true;
 }
 
 void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
@@ -471,23 +474,24 @@ bool SemanticNavigationTasks::inCollision(int x, int y)
   return false;
 }
 
-polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons()
+polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons(
+  std::vector<ROI> list)
 {
   polygon_msgs::msg::Polygon2DCollection polygon_array;
   polygon_array.header.frame_id = map_topic_;
   polygon_array.header.stamp = this->now();
 
-  for (auto & roi : region_list_) {
+  for (auto & roi : list) {
     polygon_array.polygons.push_back(polygon_utils::polygon3Dto2D(roi.polygon));
   }
 
   return polygon_array;
 }
 
-visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames()
+visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(std::vector<ROI> list)
 {
   visualization_msgs::msg::MarkerArray names_array;
-  for (auto & roi : region_list_) {
+  for (auto & roi : list) {
     // Create label
     visualization_msgs::msg::Marker label_marker;
     label_marker.header.frame_id = map_topic_;
