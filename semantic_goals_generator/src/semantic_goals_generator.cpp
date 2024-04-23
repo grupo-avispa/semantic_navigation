@@ -345,7 +345,7 @@ bool SemanticGoalsGenerator::semantic_position_service(
 }
 
 bool SemanticGoalsGenerator::semantic_regions_service(
-	const std::shared_ptr<SemanticRegions::Request> request, 
+	const std::shared_ptr<SemanticRegions::Request> /* request */, 
 	std::shared_ptr<SemanticRegions::Response> response){
 
 	RCLCPP_INFO(this->get_logger(), "Incoming regions service request");
@@ -359,9 +359,9 @@ bool SemanticGoalsGenerator::semantic_regions_service(
 }
 
 /* Return the cell of the costmap */
-int8_t SemanticGoalsGenerator::cell(int x, int y){
+int8_t SemanticGoalsGenerator::cell(unsigned int x, unsigned int y){
 	// Return 'unknown' if out of bounds
-	if (x < 0 || y < 0 || x >= map_.info.width  || y >= map_.info.height){
+	if (x >= map_.info.width  || y >= map_.info.height){
 		return nav2_util::OCC_GRID_UNKNOWN;
 	}
 
@@ -427,12 +427,4 @@ void SemanticGoalsGenerator::show_visualization(){
 
 	polygons_viz_pub_->publish(polygon_array);
 	names_viz_pub_->publish(names_array);
-}
-
-int main(int argc, char** argv){
-	rclcpp::init(argc, argv);
-	auto node = std::make_shared<SemanticGoalsGenerator>();
-	rclcpp::spin(node);
-	rclcpp::shutdown();
-	return 0;
 }

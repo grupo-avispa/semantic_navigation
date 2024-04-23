@@ -128,13 +128,13 @@ void semanticNavigationPanel::generate_goals(){
 	request->direction = semantic_navigation_msgs::srv::SemanticGoals::Request::INSIDE;
 	request->border = 0.1;
 	auto result = goals_generator_client_->async_send_request(request, 
-		[this](rclcpp::Client<SemanticGoals>::SharedFuture result){
-			if (result.get()->goals.poses.size() > 0){
+		[this](rclcpp::Client<SemanticGoals>::SharedFuture future){
+			if (future.get()->goals.poses.size() > 0){
 				// Send goals to the navigation stack
 				geometry_msgs::msg::PoseStamped goal;
 				goal.header.frame_id = "map";
 				goal.header.stamp = ros_node_->now();
-				goal.pose = result.get()->goals.poses[0];
+				goal.pose = future.get()->goals.poses[0];
 				navigate_to_pose(goal);
 				room_name_editor_->setText("");
 			}else{
@@ -169,10 +169,10 @@ void semanticNavigationPanel::request_room(){
 	request->position.x = robot_pose.pose.position.x;
 	request->position.y = robot_pose.pose.position.y;
 	auto result = semantic_position_client_->async_send_request(request, 
-		[this](rclcpp::Client<SemanticPosition>::SharedFuture result){
-			if (result.get()->roi_name != 
+		[this](rclcpp::Client<SemanticPosition>::SharedFuture future){
+			if (future.get()->roi_name != 
 				semantic_navigation_msgs::srv::SemanticPosition::Response::UNKNOWN){
-				room_name_ = QString::fromStdString(result.get()->roi_name);
+				room_name_ = QString::fromStdString(future.get()->roi_name);
 				room_name_editor_->setText(room_name_);
 			}else{
 				room_name_editor_->setText("I don't know where the robot is.");

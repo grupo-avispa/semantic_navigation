@@ -94,7 +94,7 @@ class SemanticGoalsGenerator : public rclcpp::Node{
 		
 		void show_visualization();
 		void process_boundingbox(ROI roi);
-		int8_t cell(int x, int y);
+		int8_t cell(unsigned int x, unsigned int y);
 		bool in_collision(int x, int y);
 };
 
