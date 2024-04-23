@@ -8,6 +8,9 @@ Changelog for package semantic_navigation_tasks
 * Update CMakelists.txt and package.xml with new compilation flags.
 * Improve format and style.
 * Update documentation.
+* Converted to Lifecycle node.
+* Converted to component.
+* Added composable nodes in launch file.
 
 2.4.1 (16-05-2024)
 ------------------

@@ -25,41 +25,16 @@
 
 // ROS
 #include "rclcpp/rclcpp.hpp"
+#include "nav2_util/lifecycle_node.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "polygon_msgs/msg/polygon2_d_collection.hpp"
-#include "slg_msgs/polygon.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 #include "semantic_navigation_msgs/srv/generate_random_goals.hpp"
 #include "semantic_navigation_msgs/srv/get_region_name.hpp"
 #include "semantic_navigation_msgs/srv/list_all_regions.hpp"
+#include "semantic_navigation_tasks/roi.hpp"
 
-struct ROI
-{
-  slg::Polygon polygon;
-  float yaw;
-
-  inline bool empty() {return polygon.empty();}
-  inline void clear() {return polygon.clear();}
-  inline std::string get_name() {return polygon.get_name();}
-  inline void set_name(std::string name) {polygon.set_name(name);}
-
-  /* Check if a point is inside the region of interest (ROI) */
-  bool in_roi(float x, float y)
-  {
-    if (polygon.size() == 0) {return true;}
-    return polygon.contains(slg::Point2D(x, y));
-  }
-
-  /* Check if the point is at distance from all borders */
-  bool distance_from_borders(float x, float y, float border)
-  {
-    for (auto & edge : polygon.get_edges()) {
-      if (edge.distance(slg::Point2D(x, y)) < border) {return false;}
-    }
-    return true;
-  }
-};
 
 namespace semantic_navigation
 {
@@ -68,7 +43,7 @@ namespace semantic_navigation
  * @class semantic_navigation::SemanticNavigationTasks
  * @brief Class to generate goals inside regions of interest (ROIs).
  */
-class SemanticNavigationTasks : public rclcpp::Node
+class SemanticNavigationTasks : public nav2_util::LifecycleNode
 {
 public:
   /**
@@ -83,16 +58,56 @@ public:
    */
   ~SemanticNavigationTasks() = default;
 
-private:
+protected:
   using GenerateRandomGoals = semantic_navigation_msgs::srv::GenerateRandomGoals;
   using GetRegionName = semantic_navigation_msgs::srv::GetRegionName;
   using ListAllRegions = semantic_navigation_msgs::srv::ListAllRegions;
 
   /**
-   * @brief Update parameters of the node.
+   * @brief Configures the modules parameters and member variables
    *
+   * Configures modules plugin.
+   * @param state LifeCycle Node's state
+   * @return Success or Failure
+   * @throw pluginlib::PluginlibException When failed to initialize module
+   * plugin
    */
-  void getParams();
+  nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
+
+  /**
+   * @brief Activates member variables
+   *
+   * Activates the modules
+   * @param state LifeCycle Node's state
+   * @return Success or Failure
+   */
+  nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
+
+  /**
+   * @brief Deactivates member variables
+   *
+   * Deactivates the modules.
+   * @param state LifeCycle Node's state
+   * @return Success or Failure
+   */
+  nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
+
+  /**
+   * @brief Calls clean up states and resets member variables.
+   *
+   * module clean up state is called, and resets rest of the
+   * variables
+   * @param state LifeCycle Node's state
+   * @return Success or Failure
+   */
+  nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
+
+  /**
+   * @brief Called when in Shutdown state
+   * @param state LifeCycle Node's state
+   * @return Success or Failure
+   */
+  nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
   /**
    * @brief Get the region parameters from a file.
@@ -142,17 +157,25 @@ private:
   void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
 
   /**
-   * @brief Show the visualization of the regions of interest (ROIs).
+   * @brief Create a collection of polygons.
    *
+   * @return polygon_msgs::msg::Polygon2DCollection Collection of polygons.
    */
-  void showVisualization();
+  polygon_msgs::msg::Polygon2DCollection createPolygons();
+
+  /**
+   * @brief Create a collection of markers with the names of the regions.
+   *
+   * @return visualization_msgs::msg::MarkerArray Collection of markers.
+   */
+  visualization_msgs::msg::MarkerArray createNames();
 
   /**
    * @brief Process the bounding box of the regions of interest (ROIs).
    *
    * @param roi Region of interest.
    */
-  void processBoundingbox(ROI roi);
+  void processBoundingbox(semantic_navigation::ROI roi);
 
   /**
    * @brief Get the cell value of the map.
@@ -172,9 +195,11 @@ private:
    */
   bool inCollision(int x, int y);
 
-  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr goals_pub_;
-  rclcpp::Publisher<polygon_msgs::msg::Polygon2DCollection>::SharedPtr polygons_viz_pub_;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr names_viz_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseArray>::SharedPtr goals_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<polygon_msgs::msg::Polygon2DCollection>::SharedPtr
+    polygons_viz_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr
+    names_viz_pub_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
 
   rclcpp::Service<GenerateRandomGoals>::SharedPtr goals_generator_service_;
@@ -191,7 +216,7 @@ private:
   float inflation_radius_, border_;
   std::string goals_topic_, polygons_topic_, names_topic_, map_topic_;
   std::string orientation_;
-  std::vector<ROI> region_list_;
+  std::vector<semantic_navigation::ROI> region_list_;
 };
 
 }  // namespace semantic_navigation

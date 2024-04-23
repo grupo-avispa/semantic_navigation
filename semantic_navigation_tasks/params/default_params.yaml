@@ -1,4 +1,4 @@
-semantic_navigation_tasks:
+semantic_navigation:
   ros__parameters:
     goals_topic: "semantic_goal/goals"
     polygons_topic: "semantic_goal/polygons"
