@@ -53,15 +53,14 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(nav2_msgs REQUIRED)
+find_package(nav2_util REQUIRED)
 find_package(polygon_msgs REQUIRED)
 find_package(polygon_utils REQUIRED)
-find_package(semantic_navigation_msgs REQUIRED)
-find_package(slg_msgs REQUIRED)
-find_package(visualization_msgs REQUIRED)
-find_package(nav2_util REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(slg_msgs REQUIRED)
+find_package(semantic_navigation_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 
 # ##########
@@ -77,15 +76,14 @@ set(dependencies
   rclcpp
   rclcpp_components
   geometry_msgs
-  nav2_msgs
+  nav2_util
   polygon_msgs
   polygon_utils
-  semantic_navigation_msgs
-  slg_msgs
-  visualization_msgs
-  nav2_util
   tf2
   tf2_geometry_msgs
+  slg_msgs
+  semantic_navigation_msgs
+  visualization_msgs
   yaml_cpp_vendor
 )
 
