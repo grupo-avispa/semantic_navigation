@@ -78,7 +78,6 @@ void semanticNavigationPanel::update_room_name()
   set_room_name(room_name_editor_->text());
 }
 
-/* Set the topic name we are publishing to. */
 void semanticNavigationPanel::set_room_name(const QString & name)
 {
   // Only take action if the name has changed.
@@ -98,17 +97,12 @@ void semanticNavigationPanel::set_room_name(const QString & name)
   request_room_button_->setEnabled(room_name_ == "");
 }
 
-/* Save all configuration data from this panel to the given
- * Config object.  It is important here that you call save()
- * on the parent class so the class id and panel name get saved.
- */
 void semanticNavigationPanel::save(rviz_common::Config config)const
 {
   rviz_common::Panel::save(config);
   config.mapSetValue("Room", room_name_);
 }
 
-/* Load all configuration data for this panel from the given Config object. */
 void semanticNavigationPanel::load(const rviz_common::Config & config)
 {
   rviz_common::Panel::load(config);
@@ -120,7 +114,6 @@ void semanticNavigationPanel::load(const rviz_common::Config & config)
   }
 }
 
-/* Generate goals */
 void semanticNavigationPanel::generate_goals()
 {
   while (!goals_generator_client_->wait_for_service(std::chrono::seconds(1))) {
@@ -159,7 +152,6 @@ void semanticNavigationPanel::generate_goals()
   update_room_name();
 }
 
-/* Request the location of the robot */
 void semanticNavigationPanel::request_room()
 {
   // Transform the robot position to the map frame

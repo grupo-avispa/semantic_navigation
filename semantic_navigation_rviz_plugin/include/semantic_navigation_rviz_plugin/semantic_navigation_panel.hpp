@@ -35,23 +35,60 @@ class QPushButton;
 namespace semantic_navigation_rviz_plugin
 {
 
+/**
+ * @class semanticNavigationPanel
+ * @brief Panel to send the robot to a room using semantic information.
+ */
 class semanticNavigationPanel : public rviz_common::Panel
 {
   Q_OBJECT
 
 public:
+  /**
+   * @brief Constructor.
+   */
   explicit semanticNavigationPanel(QWidget * parent = 0);
+
+  /**
+   * @brief Destructor.
+   */
   ~semanticNavigationPanel() override = default;
+
+  /**
+   * @brief Initialize the panel.
+   */
   void onInitialize() override;
+
+  /**
+   * @brief Load the configuration of the panel.
+   */
   void load(const rviz_common::Config & config) override;
+
+  /**
+   * @brief Save the configuration of the panel.
+   */
   void save(rviz_common::Config config) const override;
 
 public Q_SLOTS:
+  /**
+   * @brief Generate goals to send the robot to the room.
+   */
   void set_room_name(const QString & name);
 
 protected Q_SLOTS:
+  /**
+   * @brief Generate goals to send the robot to the room.
+   */
   void generate_goals();
+
+  /**
+   * @brief Request the location of the robot.
+   */
   void request_room();
+
+  /**
+   * @brief Update the room name.
+   */
   void update_room_name();
 
 protected:
@@ -60,8 +97,25 @@ protected:
   using NavigateToPose = nav2_msgs::action::NavigateToPose;
   using GoalHandleNavigateToPose = rclcpp_action::ClientGoalHandle<NavigateToPose>;
 
+  /**
+   * @brief Send the robot to a pose.
+   *
+   * @param pose Pose to send the robot.
+   */
   void navigate_to_pose(geometry_msgs::msg::PoseStamped pose);
+
+  /**
+   * @brief Callback to get the response of the goal.
+   *
+   * @param goal_handle Handle of the goal.
+   */
   void goal_response_callback(const GoalHandleNavigateToPose::SharedPtr & goal_handle);
+
+  /**
+   * @brief Callback to get the result of the goal.
+   *
+   * @param result Result of the goal.
+   */
   void result_callback(const GoalHandleNavigateToPose::WrappedResult & result);
 
   rclcpp::Node::SharedPtr ros_node_;

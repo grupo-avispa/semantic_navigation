@@ -43,26 +43,68 @@ class ViewportMouseEvent;
 namespace semantic_navigation_rviz_plugin
 {
 
+/**
+ * @class semanticAnnotationTool
+ * @brief Tool to annotate regions of interest (ROIs) in the map.
+ */
 class semanticAnnotationTool : public rviz_common::Tool
 {
   Q_OBJECT
 
 public:
+  /**
+   * @brief Constructor.
+   */
   semanticAnnotationTool();
+
+  /**
+   * @brief Destructor.
+   */
   ~semanticAnnotationTool() override = default;
+
+  /**
+   * @brief Initialize the tool.
+   */
   void onInitialize() override;
+
+  /**
+   * @brief Activate the tool.
+   */
   void activate() override;
+
+  /**
+   * @brief Deactivate the tool.
+   */
   void deactivate() override;
+
+  /**
+   * @brief Process the mouse event.
+   * - Click with the left button on the map to add new points to a polygon.
+   * - Click with the right button to start a new polygon.
+   * - Click with the middle button to erase all polygons, save them and start over.
+   * @param event Mouse event
+   */
   int processMouseEvent(rviz_common::ViewportMouseEvent & event) override;
 
 public Q_SLOTS:
+  /**
+   * @brief Update the properties of the tool.
+   */
   void update_property();
 
 protected:
   std::shared_ptr<rviz_rendering::ViewportProjectionFinder> projection_finder_;
 
 private:
+  /**
+   * @brief Save the polygons in a YAML file.
+   * @param filename Name of the file.
+   */
   void save_polygon(const std::string filename);
+
+  /**
+   * @brief Show the names of the polygons in the map.
+   */
   void show_polygon_names();
 
   rclcpp::Node::SharedPtr ros_node_;

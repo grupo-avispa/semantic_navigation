@@ -40,7 +40,6 @@
 namespace semantic_navigation_rviz_plugin
 {
 
-/* Constructor */
 semanticAnnotationTool::semanticAnnotationTool()
 : rviz_common::Tool()
 {
@@ -58,7 +57,6 @@ semanticAnnotationTool::semanticAnnotationTool()
     getPropertyContainer(), SLOT(update_property()), this);
 }
 
-/* Initialize */
 void semanticAnnotationTool::onInitialize()
 {
   auto lock = context_->getRosNodeAbstraction().lock();
@@ -73,7 +71,6 @@ void semanticAnnotationTool::onInitialize()
   update_property();
 }
 
-/* Update properties */
 void semanticAnnotationTool::update_property()
 {
   inflation_radius_ = inflation_property_->getFloat();
@@ -89,19 +86,16 @@ void semanticAnnotationTool::update_property()
   }
 }
 
-/* Activation  */
 void semanticAnnotationTool::activate()
 {
   onInitialize();
   RCLCPP_INFO(ros_node_->get_logger(), "Semantic annotation tool started!");
 }
 
-/* Deactivate */
 void semanticAnnotationTool::deactivate()
 {
 }
 
-/* Handling mouse events */
 int semanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & event)
 {
   polygon_msgs::msg::Polygon2DCollection polygon_array;
@@ -156,7 +150,6 @@ int semanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & 
   return 0;
 }
 
-/* Save polygon into a file */
 void semanticAnnotationTool::save_polygon(const std::string filename)
 {
   std::string filepath = ament_index_cpp::get_package_share_directory("semantic_goals_generator") +
@@ -183,7 +176,6 @@ void semanticAnnotationTool::save_polygon(const std::string filename)
   polygonfile.close();
 }
 
-/* Show polygon names */
 void semanticAnnotationTool::show_polygon_names()
 {
   visualization_msgs::msg::MarkerArray names_array;

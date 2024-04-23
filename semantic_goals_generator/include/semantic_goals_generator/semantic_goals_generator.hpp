@@ -61,9 +61,17 @@ struct ROI
   }
 };
 
+/**
+ * @class SemanticGoalsGenerator
+ * @brief Class to generate goals inside regions of interest (ROIs).
+ */
 class SemanticGoalsGenerator : public rclcpp::Node
 {
 public:
+  /**
+   * @brief Construct a new Semantic Goals Generator object.
+   *
+   */
   SemanticGoalsGenerator();
 
 private:
@@ -71,21 +79,88 @@ private:
   using SemanticPosition = semantic_navigation_msgs::srv::SemanticPosition;
   using SemanticRegions = semantic_navigation_msgs::srv::SemanticRegions;
 
+  /**
+   * @brief Update parameters of the node.
+   *
+   */
   void get_params();
+
+  /**
+   * @brief Get the ROI parameters from a file.
+   *
+   * @param filename Name of the file.
+   */
   void get_roi_params(const std::string & filename);
+
+  /**
+   * @brief Generate goals inside the regions of interest (ROIs).
+   *
+   * @param request Request with the name of the ROI.
+   * @param response Response with the goals.
+   * @return true if the goals are generated.
+   */
   bool goals_generator_service(
     const std::shared_ptr<SemanticGoals::Request> request,
     std::shared_ptr<SemanticGoals::Response> response);
+
+  /**
+   * @brief Generate a random position inside the region of interest (ROI).
+   *
+   * @param request Request with the name of the ROI.
+   * @param response Response with the position.
+   * @return true if the position is generated.
+   */
   bool semantic_position_service(
     const std::shared_ptr<SemanticPosition::Request> request,
     std::shared_ptr<SemanticPosition::Response> response);
+
+  /**
+   * @brief Generate a list of regions of interest (ROIs).
+   *
+   * @param request Request with the name of the ROI.
+   * @param response Response with the ROIs.
+   * @return true if the ROIs are generated.
+   */
   bool semantic_regions_service(
     const std::shared_ptr<SemanticRegions::Request> request,
     std::shared_ptr<SemanticRegions::Response> response);
+
+  /**
+   * @brief Callback to update the map.
+   *
+   * @param msg Message with the map.
+   */
   void map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+
+  /**
+   * @brief Show the visualization of the regions of interest (ROIs).
+   *
+   */
   void show_visualization();
+
+  /**
+   * @brief Process the bounding box of the regions of interest (ROIs).
+   *
+   * @param roi Region of interest.
+   */
   void process_boundingbox(ROI roi);
+
+  /**
+   * @brief Get the cell value of the map.
+   *
+   * @param x X coordinate.
+   * @param y Y coordinate.
+   * @return uint8_t Value of the cell.
+   */
   int8_t cell(unsigned int x, unsigned int y);
+
+  /**
+   * @brief Check if a point is inside the map.
+   *
+   * @param x X coordinate.
+   * @param y Y coordinate.
+   * @return true if the point is inside the map.
+   */
   bool in_collision(int x, int y);
 
   rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr goals_pub_;

@@ -32,7 +32,6 @@
 
 using std::placeholders::_1, std::placeholders::_2;
 
-/* Initialize the subscribers and publishers */
 SemanticGoalsGenerator::SemanticGoalsGenerator()
 : Node("semantic_goals_generator"), border_(0.0),
   direction_(SemanticGoals::Request::RANDOM)
@@ -68,7 +67,6 @@ SemanticGoalsGenerator::SemanticGoalsGenerator()
   show_visualization();
 }
 
-/* Update parameters of the node */
 void SemanticGoalsGenerator::get_params()
 {
   // BOOLEAN PARAMS ..........................................................................
@@ -149,7 +147,6 @@ void SemanticGoalsGenerator::get_params()
   }
 }
 
-/* Get rois from YAML file */
 void SemanticGoalsGenerator::get_roi_params(const std::string & filename)
 {
   RCLCPP_INFO(this->get_logger(), "Reading ROIs from file: %s", filename.c_str());
@@ -175,7 +172,6 @@ void SemanticGoalsGenerator::get_roi_params(const std::string & filename)
   }
 }
 
-/* Map callback */
 void SemanticGoalsGenerator::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 {
   std::lock_guard<std::recursive_mutex> cfl(mutex_);
@@ -191,7 +187,6 @@ void SemanticGoalsGenerator::map_callback(const nav_msgs::msg::OccupancyGrid::Sh
   map_max_y_ = map_.info.origin.position.y + map_.info.height * map_.info.resolution;
 }
 
-/* Calculate bounding box for ROI */
 void SemanticGoalsGenerator::process_boundingbox(ROI roi)
 {
   // Region of interest (ROI) must lie inside the map boundaries
@@ -246,7 +241,6 @@ void SemanticGoalsGenerator::process_boundingbox(ROI roi)
     cell_min_x_, cell_min_y_, cell_max_x_, cell_max_y_);
 }
 
-/* Service for sending random goals based on labeled rois */
 bool SemanticGoalsGenerator::goals_generator_service(
   const std::shared_ptr<SemanticGoals::Request> request,
   std::shared_ptr<SemanticGoals::Response> response)
@@ -350,7 +344,6 @@ bool SemanticGoalsGenerator::goals_generator_service(
   return true;
 }
 
-/* Service for request the semantic pose  */
 bool SemanticGoalsGenerator::semantic_position_service(
   const std::shared_ptr<SemanticPosition::Request> request,
   std::shared_ptr<SemanticPosition::Response> response)
@@ -386,7 +379,6 @@ bool SemanticGoalsGenerator::semantic_regions_service(
   return true;
 }
 
-/* Return the cell of the costmap */
 int8_t SemanticGoalsGenerator::cell(unsigned int x, unsigned int y)
 {
   // Return 'unknown' if out of bounds
@@ -397,7 +389,6 @@ int8_t SemanticGoalsGenerator::cell(unsigned int x, unsigned int y)
   return map_.data[x + map_.info.width * y];
 }
 
-/* Check if a point is in collision */
 bool SemanticGoalsGenerator::in_collision(int x, int y)
 {
   int x_min, x_max, y_min, y_max;
@@ -420,7 +411,6 @@ bool SemanticGoalsGenerator::in_collision(int x, int y)
   return false;
 }
 
-/* Show the rois in rviz */
 void SemanticGoalsGenerator::show_visualization()
 {
   polygon_msgs::msg::Polygon2DCollection polygon_array;
