@@ -15,7 +15,7 @@
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
-#include "semantic_navigation_tasks/semantic_navigation_tasks.hpp"
+#include "semantic_navigation_tasks/task_services.hpp"
 
 int main(int argc, char ** argv)
 {

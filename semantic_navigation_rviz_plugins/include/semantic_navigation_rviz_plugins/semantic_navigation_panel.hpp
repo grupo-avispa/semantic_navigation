@@ -36,10 +36,10 @@ namespace semantic_navigation_rviz_plugins
 {
 
 /**
- * @class semantic_navigation_rviz_plugins::semanticNavigationPanel
+ * @class semantic_navigation_rviz_plugins::SemanticNavigationPanel
  * @brief Panel to send the robot to a room using semantic information.
  */
-class semanticNavigationPanel : public rviz_common::Panel
+class SemanticNavigationPanel : public rviz_common::Panel
 {
   Q_OBJECT
 
@@ -47,12 +47,12 @@ public:
   /**
    * @brief Constructor.
    */
-  explicit semanticNavigationPanel(QWidget * parent = 0);
+  explicit SemanticNavigationPanel(QWidget * parent = 0);
 
   /**
    * @brief Destructor.
    */
-  ~semanticNavigationPanel() override = default;
+  ~SemanticNavigationPanel() override = default;
 
   /**
    * @brief Initialize the panel.

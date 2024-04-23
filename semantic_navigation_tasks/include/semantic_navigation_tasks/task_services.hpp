@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SEMANTIC_NAVIGATION_TASKS__SEMANTIC_NAVIGATION_TASKS_HPP_
-#define SEMANTIC_NAVIGATION_TASKS__SEMANTIC_NAVIGATION_TASKS_HPP_
+#ifndef SEMANTIC_NAVIGATION_TASKS__TASK_SERVICES_HPP_
+#define SEMANTIC_NAVIGATION_TASKS__TASK_SERVICES_HPP_
 
 // C++
 #include <cmath>
@@ -196,4 +196,4 @@ private:
 
 }  // namespace semantic_navigation
 
-#endif  // SEMANTIC_NAVIGATION_TASKS__SEMANTIC_NAVIGATION_TASKS_HPP_
+#endif  // SEMANTIC_NAVIGATION_TASKS__TASK_SERVICES_HPP_

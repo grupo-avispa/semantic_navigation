@@ -24,7 +24,7 @@
 namespace semantic_navigation_rviz_plugins
 {
 
-semanticNavigationPanel::semanticNavigationPanel(QWidget * parent)
+SemanticNavigationPanel::SemanticNavigationPanel(QWidget * parent)
 : Panel(parent)
 {
   // We lay out the "room name" text entry field using a QLabel and a QLineEdit in a QHBoxLayout.
@@ -55,7 +55,7 @@ semanticNavigationPanel::semanticNavigationPanel(QWidget * parent)
   connect(room_name_editor_, SIGNAL(textChanged(QString)), this, SLOT(update_room_name()));
 }
 
-void semanticNavigationPanel::onInitialize()
+void SemanticNavigationPanel::onInitialize()
 {
   auto lock = getDisplayContext()->getRosNodeAbstraction().lock();
   ros_node_ = lock->get_raw_node();
@@ -73,12 +73,12 @@ void semanticNavigationPanel::onInitialize()
  * This is connected to QLineEdit::editingFinished() which fires when the user presses
  * Enter or Tab or otherwise moves focus away.
  */
-void semanticNavigationPanel::update_room_name()
+void SemanticNavigationPanel::update_room_name()
 {
   set_room_name(room_name_editor_->text());
 }
 
-void semanticNavigationPanel::set_room_name(const QString & name)
+void SemanticNavigationPanel::set_room_name(const QString & name)
 {
   // Only take action if the name has changed.
   if (name != room_name_) {
@@ -97,13 +97,13 @@ void semanticNavigationPanel::set_room_name(const QString & name)
   request_room_button_->setEnabled(room_name_ == "");
 }
 
-void semanticNavigationPanel::save(rviz_common::Config config)const
+void SemanticNavigationPanel::save(rviz_common::Config config)const
 {
   rviz_common::Panel::save(config);
   config.mapSetValue("Room", room_name_);
 }
 
-void semanticNavigationPanel::load(const rviz_common::Config & config)
+void SemanticNavigationPanel::load(const rviz_common::Config & config)
 {
   rviz_common::Panel::load(config);
   QString rName;
@@ -114,7 +114,7 @@ void semanticNavigationPanel::load(const rviz_common::Config & config)
   }
 }
 
-void semanticNavigationPanel::generate_goals()
+void SemanticNavigationPanel::generate_goals()
 {
   while (!goals_generator_client_->wait_for_service(std::chrono::seconds(1))) {
     if (!rclcpp::ok()) {
@@ -152,7 +152,7 @@ void semanticNavigationPanel::generate_goals()
   update_room_name();
 }
 
-void semanticNavigationPanel::request_room()
+void SemanticNavigationPanel::request_room()
 {
   // Transform the robot position to the map frame
   geometry_msgs::msg::PoseStamped robot_pose;
@@ -191,7 +191,7 @@ void semanticNavigationPanel::request_room()
   update_room_name();
 }
 
-void semanticNavigationPanel::navigate_to_pose(geometry_msgs::msg::PoseStamped pose)
+void SemanticNavigationPanel::navigate_to_pose(geometry_msgs::msg::PoseStamped pose)
 {
   // Create the action client that will send the goal to the navigation stack.
   navigation_client_ = rclcpp_action::create_client<NavigateToPose>(ros_node_, "navigate_to_pose");
@@ -210,14 +210,14 @@ void semanticNavigationPanel::navigate_to_pose(geometry_msgs::msg::PoseStamped p
   RCLCPP_INFO(ros_node_->get_logger(), "Sending goal request");
   auto send_goal_options = rclcpp_action::Client<NavigateToPose>::SendGoalOptions();
   send_goal_options.goal_response_callback =
-    std::bind(&semanticNavigationPanel::goal_response_callback, this, std::placeholders::_1);
+    std::bind(&SemanticNavigationPanel::goal_response_callback, this, std::placeholders::_1);
   send_goal_options.result_callback =
-    std::bind(&semanticNavigationPanel::result_callback, this, std::placeholders::_1);
+    std::bind(&SemanticNavigationPanel::result_callback, this, std::placeholders::_1);
 
   auto goal_handle_future = navigation_client_->async_send_goal(goal_msg, send_goal_options);
 }
 
-void semanticNavigationPanel::goal_response_callback(
+void SemanticNavigationPanel::goal_response_callback(
   const GoalHandleNavigateToPose::SharedPtr & goal_handle)
 {
   if (!goal_handle) {
@@ -227,7 +227,7 @@ void semanticNavigationPanel::goal_response_callback(
   }
 }
 
-void semanticNavigationPanel::result_callback(
+void SemanticNavigationPanel::result_callback(
   const GoalHandleNavigateToPose::WrappedResult & result)
 {
   switch (result.code) {
@@ -250,5 +250,5 @@ void semanticNavigationPanel::result_callback(
 
 #include <pluginlib/class_list_macros.hpp>  // NOLINT
 PLUGINLIB_EXPORT_CLASS(
-  semantic_navigation_rviz_plugins::semanticNavigationPanel,
+  semantic_navigation_rviz_plugins::SemanticNavigationPanel,
   rviz_common::Panel)

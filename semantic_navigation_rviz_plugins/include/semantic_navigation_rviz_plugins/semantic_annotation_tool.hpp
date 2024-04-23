@@ -44,10 +44,10 @@ namespace semantic_navigation_rviz_plugins
 {
 
 /**
- * @class semantic_navigation_rviz_plugins::semanticAnnotationTool
+ * @class semantic_navigation_rviz_plugins::SemanticAnnotationTool
  * @brief Tool to annotate regions of interest (ROIs) in the map.
  */
-class semanticAnnotationTool : public rviz_common::Tool
+class SemanticAnnotationTool : public rviz_common::Tool
 {
   Q_OBJECT
 
@@ -55,12 +55,12 @@ public:
   /**
    * @brief Constructor.
    */
-  semanticAnnotationTool();
+  SemanticAnnotationTool();
 
   /**
    * @brief Destructor.
    */
-  ~semanticAnnotationTool() override = default;
+  ~SemanticAnnotationTool() override = default;
 
   /**
    * @brief Initialize the tool.

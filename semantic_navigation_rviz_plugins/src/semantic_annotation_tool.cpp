@@ -40,7 +40,7 @@
 namespace semantic_navigation_rviz_plugins
 {
 
-semanticAnnotationTool::semanticAnnotationTool()
+SemanticAnnotationTool::SemanticAnnotationTool()
 : rviz_common::Tool()
 {
   projection_finder_ = std::make_shared<rviz_rendering::ViewportProjectionFinder>();
@@ -57,7 +57,7 @@ semanticAnnotationTool::semanticAnnotationTool()
     getPropertyContainer(), SLOT(update_property()), this);
 }
 
-void semanticAnnotationTool::onInitialize()
+void SemanticAnnotationTool::onInitialize()
 {
   auto lock = context_->getRosNodeAbstraction().lock();
   ros_node_ = lock->get_raw_node();
@@ -71,7 +71,7 @@ void semanticAnnotationTool::onInitialize()
   update_property();
 }
 
-void semanticAnnotationTool::update_property()
+void SemanticAnnotationTool::update_property()
 {
   inflation_radius_ = inflation_property_->getFloat();
   filename_ = filename_property_->getStdString();
@@ -86,17 +86,17 @@ void semanticAnnotationTool::update_property()
   }
 }
 
-void semanticAnnotationTool::activate()
+void SemanticAnnotationTool::activate()
 {
   onInitialize();
   RCLCPP_INFO(ros_node_->get_logger(), "Semantic annotation tool started!");
 }
 
-void semanticAnnotationTool::deactivate()
+void SemanticAnnotationTool::deactivate()
 {
 }
 
-int semanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & event)
+int SemanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & event)
 {
   polygon_msgs::msg::Polygon2DCollection polygon_array;
   polygon_array.header.frame_id = "map";
@@ -150,7 +150,7 @@ int semanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & 
   return 0;
 }
 
-void semanticAnnotationTool::save_polygon(const std::string filename)
+void SemanticAnnotationTool::save_polygon(const std::string filename)
 {
   std::string filepath = ament_index_cpp::get_package_share_directory("semantic_goals_generator") +
     "/params/" + filename + ".yaml";
@@ -176,7 +176,7 @@ void semanticAnnotationTool::save_polygon(const std::string filename)
   polygonfile.close();
 }
 
-void semanticAnnotationTool::show_polygon_names()
+void SemanticAnnotationTool::show_polygon_names()
 {
   visualization_msgs::msg::MarkerArray names_array;
   int p = 0;
@@ -218,4 +218,4 @@ void semanticAnnotationTool::show_polygon_names()
 }  // namespace semantic_navigation_rviz_plugins
 
 #include <pluginlib/class_list_macros.hpp>  // NOLINT
-PLUGINLIB_EXPORT_CLASS(semantic_navigation_rviz_plugins::semanticAnnotationTool, rviz_common::Tool)
+PLUGINLIB_EXPORT_CLASS(semantic_navigation_rviz_plugins::SemanticAnnotationTool, rviz_common::Tool)

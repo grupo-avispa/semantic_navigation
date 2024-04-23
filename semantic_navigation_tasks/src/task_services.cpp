@@ -28,7 +28,7 @@
 #include "polygon_utils/polygon_utils.hpp"
 
 // Semantic Goals
-#include "semantic_navigation_tasks/semantic_navigation_tasks.hpp"
+#include "semantic_navigation_tasks/task_services.hpp"
 
 namespace semantic_navigation
 {

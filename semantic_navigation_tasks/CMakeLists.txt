@@ -93,7 +93,7 @@ set(library_name ${PROJECT_NAME}_core)
 set(executable_name ${PROJECT_NAME})
 
 # Add library
-add_library(${library_name} SHARED src/semantic_navigation_tasks.cpp)
+add_library(${library_name} SHARED src/task_services.cpp)
 ament_target_dependencies(${library_name} ${dependencies})
 
 # Add executable
