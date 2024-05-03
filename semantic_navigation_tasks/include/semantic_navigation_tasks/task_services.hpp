@@ -21,6 +21,7 @@
 #include <mutex>
 #include <random>
 #include <string>
+#include <tuple>
 #include <vector>
 
 // ROS
@@ -38,6 +39,8 @@
 
 namespace semantic_navigation
 {
+
+using CellLimits = std::tuple<int, int, int, int>;
 
 /**
  * @class semantic_navigation::SemanticNavigationTasks
@@ -176,11 +179,13 @@ protected:
   visualization_msgs::msg::MarkerArray createNames(std::vector<ROI> list);
 
   /**
-   * @brief Process the bounding box of the regions of interest (ROIs).
+   * @brief Process the bounding box of the regions of interest (ROIs) inside the map.
    *
+   * @param map Map.
    * @param roi Region of interest.
+   * @return CellLimits Limits of the cells.
    */
-  void processBoundingbox(semantic_navigation::ROI roi);
+  CellLimits processBoundingBox(const nav_msgs::msg::OccupancyGrid & map, ROI roi);
 
   /**
    * @brief Get the cell value of the map.
@@ -215,9 +220,6 @@ protected:
   nav_msgs::msg::OccupancyGrid map_;
   bool is_costmap_, full_map_;
   int inflated_footprint_size_;
-  int cell_min_x_, cell_max_x_, cell_min_y_, cell_max_y_;
-  float bbox_min_x_, bbox_max_x_, bbox_min_y_, bbox_max_y_;
-  float map_min_x_, map_max_x_, map_min_y_, map_max_y_;
   float inflation_radius_, border_;
   std::string goals_topic_, polygons_topic_, names_topic_, map_topic_;
   std::string orientation_;

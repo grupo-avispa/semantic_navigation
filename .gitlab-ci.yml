@@ -1,0 +1,55 @@
+stages:
+  - build
+  - test
+
+variables:
+  ROS_DISTRO: humble
+  COLCON_WS: $CI_BUILDS_DIR/ros_ws
+
+image: ros:$ROS_DISTRO-ros-base
+
+before_script:
+  - apt-get update -qq
+  - source /opt/ros/$ROS_DISTRO/setup.bash
+
+build:
+  stage: build
+  script:
+    # Create a colcon workspace ros_ws (like the one in Github ros-tooling/action-ros-ci)
+    - mkdir -p $COLCON_WS/src
+    # Copy the project to the colcon workspace
+    - cp -r $CI_PROJECT_DIR $COLCON_WS/src/$CI_PROJECT_NAME
+    - cd $COLCON_WS
+    # Install dependencies and build the workspace
+    - rosdep install --from-paths src --ignore-src -r -y
+    - colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug
+    # Copy build and install directories to the CI_PROJECT_DIR (to be able to use them in the test stage)
+    - cp -r $COLCON_WS/build $CI_PROJECT_DIR
+    - cp -r $COLCON_WS/install $CI_PROJECT_DIR
+    - cp -r $COLCON_WS/src $CI_PROJECT_DIR
+  artifacts:
+    paths:
+      - build/
+      - install/
+      - src/
+    expire_in: 10 mins
+
+test:
+  stage: test
+  script:
+    # Create a colcon workspace ros_ws (like the one in Github ros-tooling/action-ros-ci)
+    - mkdir -p $COLCON_WS
+    # Copy the build and install directories to the colcon workspace
+    - cp -r $CI_PROJECT_DIR/build $COLCON_WS/build
+    - cp -r $CI_PROJECT_DIR/install $COLCON_WS/install
+    - cp -r $CI_PROJECT_DIR/src $COLCON_WS/src
+    - cd $COLCON_WS
+    # Test the workspace
+    - source $COLCON_WS/install/local_setup.bash
+    - colcon test --event-handlers console_cohesion+ --return-code-on-test-failure
+    - colcon test-result --verbose
+  artifacts:
+    paths:
+      - $COLCON_WS/log/
+    reports:
+      junit: $COLCON_WS/build/*/test_results/*/*.xml

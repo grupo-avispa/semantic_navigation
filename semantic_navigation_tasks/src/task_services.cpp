@@ -133,8 +133,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
 
   // Subscribers
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
-    map_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable(),
-    std::bind(&SemanticNavigationTasks::mapCallback, this, _1));
+    map_topic_, latched_profile, std::bind(&SemanticNavigationTasks::mapCallback, this, _1));
 
   // Services
   goals_generator_service_ = this->create_service<GenerateRandomGoals>(
@@ -244,64 +243,70 @@ void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::Sh
 
   map_ = *msg;
 
-  map_min_x_ = map_.info.origin.position.x;
-  map_max_x_ = map_.info.origin.position.x + map_.info.width * map_.info.resolution;
-  map_min_y_ = map_.info.origin.position.y;
-  map_max_y_ = map_.info.origin.position.y + map_.info.height * map_.info.resolution;
+  inflated_footprint_size_ = static_cast<int>(inflation_radius_ / map_.info.resolution) + 1;
 }
 
-void SemanticNavigationTasks::processBoundingbox(ROI roi)
+semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
+  const nav_msgs::msg::OccupancyGrid & map, ROI roi)
 {
+  int map_min_x = map.info.origin.position.x;
+  int map_max_x = map.info.origin.position.x + map.info.width * map.info.resolution;
+  int map_min_y = map.info.origin.position.y;
+  int map_max_y = map.info.origin.position.y + map.info.height * map.info.resolution;
+
   // Region of interest (ROI) must lie inside the map boundaries
   // If ROI is empty, the whole map is treated as ROI by default
+  float bbox_min_x, bbox_max_x, bbox_min_y, bbox_max_y;
   if (roi.empty()) {
-    bbox_min_x_ = map_min_x_;
-    bbox_max_x_ = map_max_x_;
-    bbox_min_y_ = map_min_y_;
-    bbox_max_y_ = map_max_y_;
+    bbox_min_x = map_min_x;
+    bbox_max_x = map_max_x;
+    bbox_min_y = map_min_y;
+    bbox_max_y = map_max_y;
     RCLCPP_INFO(get_logger(), "No ROI specified, full map is used");
   } else {
     // If the ROI is outside the map, adjust to map boundaries
     // Determine bounding box of ROI
-    bbox_min_x_ = std::numeric_limits<double>::infinity();
-    bbox_max_x_ = -std::numeric_limits<double>::infinity();
-    bbox_min_y_ = std::numeric_limits<double>::infinity();
-    bbox_max_y_ = -std::numeric_limits<double>::infinity();
+    bbox_min_x = std::numeric_limits<double>::infinity();
+    bbox_max_x = -std::numeric_limits<double>::infinity();
+    bbox_min_y = std::numeric_limits<double>::infinity();
+    bbox_max_y = -std::numeric_limits<double>::infinity();
 
     slg::Polygon polygon_roi = roi.polygon;
     for (int e = 0; e < polygon_roi.size(); e++) {
       slg::Point2D p = polygon_roi.get_edge(e).a;
 
-      if (p.x < map_min_x_) {p.x = map_min_x_;}
-      if (p.x > map_max_x_) {p.x = map_max_x_;}
+      if (p.x < map_min_x) {p.x = map_min_x;}
+      if (p.x > map_max_x) {p.x = map_max_x;}
 
-      if (p.x < bbox_min_x_) {bbox_min_x_ = p.x;}
-      if (p.x > bbox_max_x_) {bbox_max_x_ = p.x;}
+      if (p.x < bbox_min_x) {bbox_min_x = p.x;}
+      if (p.x > bbox_max_x) {bbox_max_x = p.x;}
 
-      if (p.y < map_min_y_) {p.y = map_min_y_;}
-      if (p.y > map_max_y_) {p.y = map_max_y_;}
+      if (p.y < map_min_y) {p.y = map_min_y;}
+      if (p.y > map_max_y) {p.y = map_max_y;}
 
-      if (p.y < bbox_min_y_) {bbox_min_y_ = p.y;}
-      if (p.y > bbox_max_y_) {bbox_max_y_ = p.y;}
+      if (p.y < bbox_min_y) {bbox_min_y = p.y;}
+      if (p.y > bbox_max_y) {bbox_max_y = p.y;}
     }
   }
 
   // Calculate bounding box for cell array
-  cell_min_x_ = static_cast<int>((bbox_min_x_ - map_.info.origin.position.x) /
-    map_.info.resolution);
-  cell_max_x_ = static_cast<int>((bbox_max_x_ - map_.info.origin.position.x) /
-    map_.info.resolution);
-  cell_min_y_ = static_cast<int>((bbox_min_y_ - map_.info.origin.position.y) /
-    map_.info.resolution);
-  cell_max_y_ = static_cast<int>((bbox_max_y_ - map_.info.origin.position.y) /
-    map_.info.resolution);
+  int cell_min_x =
+    static_cast<int>((bbox_min_x - map_.info.origin.position.x) / map_.info.resolution);
+  int cell_max_x =
+    static_cast<int>((bbox_max_x - map_.info.origin.position.x) / map_.info.resolution);
+  int cell_min_y =
+    static_cast<int>((bbox_min_y - map_.info.origin.position.y) / map_.info.resolution);
+  int cell_max_y =
+    static_cast<int>((bbox_max_y - map_.info.origin.position.y) / map_.info.resolution);
 
   RCLCPP_INFO(
     get_logger(), "ROI bounding box (meters): (%f,%f) (%f,%f)",
-    bbox_min_x_, bbox_min_y_, bbox_max_x_, bbox_max_y_);
+    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y);
   RCLCPP_INFO(
     get_logger(), "ROI bounding box (cells): (%i,%i) (%i,%i)",
-    cell_min_x_, cell_min_y_, cell_max_x_, cell_max_y_);
+    cell_min_x, cell_min_y, cell_max_x, cell_max_y);
+
+  return CellLimits(cell_min_x, cell_max_x, cell_min_y, cell_max_y);
 }
 
 bool SemanticNavigationTasks::generateRandomGoalsService(
@@ -339,10 +344,8 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
     return false;
   }
 
-  inflated_footprint_size_ = static_cast<int>(inflation_radius_ / map_.info.resolution) + 1;
-
   // Process bounding box
-  processBoundingbox(current_region);
+  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = processBoundingBox(map_, current_region);
 
   // Generate response
   response->goals.header.frame_id = map_topic_;
@@ -350,8 +353,8 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
   // Generate random goal pose
   std::random_device rd;       // obtain a random number from hardware
   std::mt19937 gen(rd());       // seed the generator
-  std::uniform_int_distribution<int> dist_x(cell_min_x_, cell_max_x_);       // define the range
-  std::uniform_int_distribution<int> dist_y(cell_min_y_, cell_max_y_);       // define the range
+  std::uniform_int_distribution<int> dist_x(cell_min_x, cell_max_x);       // define the range
+  std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
   std::uniform_real_distribution<double> dist_pi(0.0, 2 * M_PI);
 
   int count = 0;
@@ -445,7 +448,7 @@ bool SemanticNavigationTasks::listAllRegionsService(
 int8_t SemanticNavigationTasks::cell(unsigned int x, unsigned int y)
 {
   // Return 'unknown' if out of bounds
-  if (x >= map_.info.width || y >= map_.info.height) {
+  if (x > map_.info.width || y > map_.info.height) {
     return nav2_util::OCC_GRID_UNKNOWN;
   }
 
@@ -457,8 +460,7 @@ bool SemanticNavigationTasks::inCollision(int x, int y)
   int x_min, x_max, y_min, y_max;
 
   if (is_costmap_) {
-    if (cell(x, y) != nav2_util::OCC_GRID_FREE) {return true;}
-    return false;
+    return cell(x, y) != nav2_util::OCC_GRID_FREE;
   }
 
   x_min = x - inflated_footprint_size_;
@@ -468,7 +470,9 @@ bool SemanticNavigationTasks::inCollision(int x, int y)
 
   for (int i = x_min; i < x_max; i++) {
     for (int j = y_min; j < y_max; j++) {
-      if (cell(i, j) != nav2_util::OCC_GRID_FREE) {return true;}
+      if (cell(i, j) != nav2_util::OCC_GRID_FREE) {
+        return true;
+      }
     }
   }
   return false;

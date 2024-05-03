@@ -18,6 +18,7 @@
 #include "lifecycle_msgs/msg/state.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/node_utils.hpp"
+#include "nav2_util/occ_grid_values.hpp"
 #include "semantic_navigation_tasks/task_services.hpp"
 
 class SemanticNavigationTasksFixture : public semantic_navigation::SemanticNavigationTasks
@@ -40,6 +41,44 @@ public:
   visualization_msgs::msg::MarkerArray createNames(std::vector<semantic_navigation::ROI> list)
   {
     return SemanticNavigationTasks::createNames(list);
+  }
+
+  semantic_navigation::CellLimits processBoundingBox(
+    const nav_msgs::msg::OccupancyGrid & map, semantic_navigation::ROI roi)
+  {
+    return SemanticNavigationTasks::processBoundingBox(map, roi);
+  }
+
+  int8_t cell(unsigned int x, unsigned int y)
+  {
+    return SemanticNavigationTasks::cell(x, y);
+  }
+
+  bool inCollision(int x, int y)
+  {
+    return SemanticNavigationTasks::inCollision(x, y);
+  }
+
+  nav_msgs::msg::OccupancyGrid getMap()
+  {
+    return map_;
+  }
+
+  void setMap(nav_msgs::msg::OccupancyGrid map) {map_ = map;}
+  void setIsCostmap(bool is_costmap) {is_costmap_ = is_costmap;}
+  void setFullMap(bool full_map) {full_map_ = full_map;}
+  void setInflationRadius(double inflation_radius) {inflation_radius_ = inflation_radius;}
+  void setInflatedFootprintSize(double inflation_radius, double resolution)
+  {
+    inflated_footprint_size_ = static_cast<int>(inflation_radius / resolution) + 1;
+  }
+
+  void createFreeMap(int width, int height, double resolution)
+  {
+    map_.info.width = width;
+    map_.info.height = height;
+    map_.info.resolution = resolution;
+    map_.data = std::vector<int8_t>(width * height, nav2_util::OCC_GRID_FREE);
   }
 };
 
@@ -97,13 +136,28 @@ TEST(SemanticNavigationTasksTest, getRegionsFromFile) {
 
   // Check the results
   EXPECT_TRUE(result);
-  EXPECT_EQ(regions.size(), 2);
-  EXPECT_EQ(regions[0].get_name(), "roi_0");
+  EXPECT_EQ(regions.size(), 4);
+  EXPECT_EQ(regions[0].get_name(), "small1");
   EXPECT_EQ(regions[0].polygon.size(), 4);
   EXPECT_DOUBLE_EQ(regions[0].yaw, 0.0);
-  EXPECT_EQ(regions[1].get_name(), "roi_1");
+  EXPECT_EQ(regions[1].get_name(), "small2");
   EXPECT_EQ(regions[1].polygon.size(), 4);
   EXPECT_DOUBLE_EQ(regions[1].yaw, 1.5);
+  EXPECT_EQ(regions[2].get_name(), "big");
+  EXPECT_EQ(regions[2].polygon.size(), 4);
+  EXPECT_DOUBLE_EQ(regions[2].yaw, 1.5);
+  EXPECT_EQ(regions[3].get_name(), "outside");
+  EXPECT_EQ(regions[3].polygon.size(), 4);
+  EXPECT_DOUBLE_EQ(regions[3].yaw, 1.5);
+
+  // Now try to get the regions from a file with empty regions
+  filename = pkg + "/test/test_empty_rois.yaml";
+
+  // Get the regions
+  result = node->getRegionsFromFile(filename, regions);
+
+  // Check the results
+  EXPECT_FALSE(result);
 }
 
 TEST(SemanticNavigationTasksTest, createPolygons) {
@@ -119,10 +173,11 @@ TEST(SemanticNavigationTasksTest, createPolygons) {
   node->getRegionsFromFile(filename, regions);
 
   // Create the polygons
+  node->createFreeMap(10, 10, 0.5);
   auto polygons = node->createPolygons(regions);
 
   // Check the results
-  EXPECT_DOUBLE_EQ(polygons.polygons.size(), 2);
+  EXPECT_DOUBLE_EQ(polygons.polygons.size(), 4);
   EXPECT_DOUBLE_EQ(polygons.polygons[0].points.size(), 4);
   EXPECT_DOUBLE_EQ(polygons.polygons[0].points[0].x, 0.0);
   EXPECT_DOUBLE_EQ(polygons.polygons[0].points[0].y, 0.0);
@@ -160,14 +215,15 @@ TEST(SemanticNavigationTasksTest, createNames) {
   node->getRegionsFromFile(filename, regions);
 
   // Create the names
+  node->createFreeMap(10, 10, 0.5);
   auto names = node->createNames(regions);
 
   // Check the results
-  EXPECT_EQ(names.markers.size(), 2);
+  EXPECT_EQ(names.markers.size(), 4);
   EXPECT_EQ(names.markers[0].type, visualization_msgs::msg::Marker::TEXT_VIEW_FACING);
-  EXPECT_EQ(names.markers[0].text, "roi_0");
+  EXPECT_EQ(names.markers[0].text, "small1");
   EXPECT_EQ(names.markers[1].type, visualization_msgs::msg::Marker::TEXT_VIEW_FACING);
-  EXPECT_EQ(names.markers[1].text, "roi_1");
+  EXPECT_EQ(names.markers[1].text, "small2");
 
   // Clean up
   node->deactivate();
@@ -175,7 +231,140 @@ TEST(SemanticNavigationTasksTest, createNames) {
   node->shutdown();
 }
 
-TEST(SemanticNavigationTasksTest, generateRandomGoals) {
+TEST(SemanticNavigationTasksTest, processBoundingBoxEmptyRegion) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Create a map of 10x10 cells
+  node->createFreeMap(10, 10, 0.5);
+
+  // Process the bounding box
+  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = node->processBoundingBox(
+    node->getMap(), semantic_navigation::ROI());
+
+  // Check the results
+  EXPECT_EQ(cell_min_x, 0);
+  EXPECT_EQ(cell_max_x, 10);
+  EXPECT_EQ(cell_min_y, 0);
+  EXPECT_EQ(cell_max_y, 10);
+}
+
+TEST(SemanticNavigationTasksTest, processBoundingBox) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Set the rois
+  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  std::string filename = pkg + "/test/test_rois.yaml";
+
+  // Get the regions
+  std::vector<semantic_navigation::ROI> regions;
+  node->getRegionsFromFile(filename, regions);
+
+  // Create a map of 10x10 cells
+  node->createFreeMap(10, 10, 0.5);
+
+  // Process the bounding box for a 1x1 square region
+  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = node->processBoundingBox(
+    node->getMap(), regions[0]);
+  // Check the results: it should be a 1x1 square
+  EXPECT_EQ(cell_min_x, 0);
+  EXPECT_EQ(cell_max_x, 2);
+  EXPECT_EQ(cell_min_y, 0);
+  EXPECT_EQ(cell_max_y, 2);
+
+  // Process the bounding box for a region bigger than the map
+  std::tie(cell_min_x, cell_max_x, cell_min_y, cell_max_y) = node->processBoundingBox(
+    node->getMap(), regions[2]);
+  // Check the results: it should be the whole map
+  EXPECT_EQ(cell_min_x, 10);
+  EXPECT_EQ(cell_max_x, 10);
+  EXPECT_EQ(cell_min_y, 10);
+  EXPECT_EQ(cell_max_y, 10);
+
+  // Process the bounding box for a region outside the map
+  std::tie(cell_min_x, cell_max_x, cell_min_y, cell_max_y) = node->processBoundingBox(
+    node->getMap(), regions[3]);
+  // Check the results: it should be zero
+  EXPECT_EQ(cell_min_x, 0);
+  EXPECT_EQ(cell_max_x, 0);
+  EXPECT_EQ(cell_min_y, 0);
+  EXPECT_EQ(cell_max_y, 0);
+}
+
+TEST(SemanticNavigationTasksTest, cellCheck) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Create a map of 10x10 cells
+  node->createFreeMap(10, 10, 0.5);
+
+  // Check the cells inside the map
+  EXPECT_EQ(node->cell(2, 2), nav2_util::OCC_GRID_FREE);
+  EXPECT_EQ(node->cell(5, 5), nav2_util::OCC_GRID_FREE);
+  // Check the cells in the limits of the map
+  EXPECT_EQ(node->cell(0, 0), nav2_util::OCC_GRID_FREE);
+  EXPECT_EQ(node->cell(10, 10), nav2_util::OCC_GRID_FREE);
+  // Check the cells outside the limits of the map
+  EXPECT_EQ(node->cell(0, 13), nav2_util::OCC_GRID_UNKNOWN);
+  EXPECT_EQ(node->cell(13, 0), nav2_util::OCC_GRID_UNKNOWN);
+  EXPECT_EQ(node->cell(13, 13), nav2_util::OCC_GRID_UNKNOWN);
+}
+
+TEST(SemanticNavigationTasksTest, inCollision) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Create a map of 10x10 cells
+  node->createFreeMap(10, 10, 0.5);
+  // Set the map
+  node->setIsCostmap(false);
+  node->setFullMap(false);
+  node->setInflationRadius(0.5);
+  node->setInflatedFootprintSize(0.5, 0.5);
+
+  // Check the points in the limits of the map
+  EXPECT_TRUE(node->inCollision(0, 0));
+  EXPECT_TRUE(node->inCollision(10, 10));
+  // Check the points inside the map
+  EXPECT_FALSE(node->inCollision(2, 2));
+  EXPECT_FALSE(node->inCollision(8, 8));
+
+  // Now set a cell as occupied
+  auto map = node->getMap();
+  map.data[0] = nav2_util::OCC_GRID_OCCUPIED;
+  node->setMap(map);
+  // Check the results
+  EXPECT_TRUE(node->inCollision(0, 0));
+}
+
+TEST(SemanticNavigationTasksTest, inCollisionCostmap) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Create a map of 10x10 cells
+  node->createFreeMap(10, 10, 0.5);
+  // Set the map
+  node->setIsCostmap(true);
+  node->setFullMap(false);
+  node->setInflationRadius(0.5);
+  node->setInflatedFootprintSize(0.5, 0.5);
+
+  // Check if the point is in collision
+  EXPECT_FALSE(node->inCollision(0, 0));
+  EXPECT_FALSE(node->inCollision(10, 10));
+  EXPECT_FALSE(node->inCollision(2, 2));
+  EXPECT_FALSE(node->inCollision(8, 8));
+
+  // Set a cell as occupied
+  auto map = node->getMap();
+  map.data[0] = nav2_util::OCC_GRID_OCCUPIED;
+  node->setMap(map);
+  // Check if the point is in collision
+  EXPECT_TRUE(node->inCollision(0, 0));
+}
+
+TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyRegion) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
@@ -209,6 +398,99 @@ TEST(SemanticNavigationTasksTest, generateRandomGoals) {
   } else {
     RCLCPP_ERROR(node->get_logger(), "Service call failed");
   }
+
+  // Check results
+  EXPECT_EQ(resp->goals.poses.size(), 0);
+
+  // Cleaning up
+  node->deactivate();
+  node->cleanup();
+  node->shutdown();
+}
+
+TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyMap) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Set the test rois filename config parameter
+  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  nav2_util::declare_parameter_if_not_declared(
+    node, "rois_filename", rclcpp::ParameterValue(pkg + "/test/test_rois.yaml"));
+
+  // Configure
+  node->configure();
+  node->activate();
+
+  // Create the client service
+  auto req = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Request>();
+  req->n = 1;
+  req->region_name = "small1";
+  auto client = node->create_client<semantic_navigation_msgs::srv::GenerateRandomGoals>(
+    "generate_random_goals");
+
+  // Wait for the service to be available
+  ASSERT_TRUE(client->wait_for_service());
+
+  // Call the service
+  auto result = client->async_send_request(req);
+
+  // Wait for the result
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
+  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
+    RCLCPP_INFO(node->get_logger(), "Service call successful");
+    resp = result.get();
+  } else {
+    RCLCPP_ERROR(node->get_logger(), "Service call failed");
+  }
+
+  // Check results
+  EXPECT_EQ(resp->goals.poses.size(), 0);
+
+  // Cleaning up
+  node->deactivate();
+  node->cleanup();
+  node->shutdown();
+}
+
+TEST(SemanticNavigationTasksTest, generateRandomGoalsRegion) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Set the test rois filename config parameter
+  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  nav2_util::declare_parameter_if_not_declared(
+    node, "rois_filename", rclcpp::ParameterValue(pkg + "/test/test_rois.yaml"));
+  // Create a map of 10x10 cells
+  node->createFreeMap(10, 10, 0.5);
+
+  // Configure
+  node->configure();
+  node->activate();
+
+  // Create the client service
+  auto req = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Request>();
+  req->n = 1;
+  req->region_name = "small1";
+  auto client = node->create_client<semantic_navigation_msgs::srv::GenerateRandomGoals>(
+    "generate_random_goals");
+
+  // Wait for the service to be available
+  ASSERT_TRUE(client->wait_for_service());
+
+  // Call the service
+  auto result = client->async_send_request(req);
+
+  // Wait for the result
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
+  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
+    RCLCPP_INFO(node->get_logger(), "Service call successful");
+    resp = result.get();
+  } else {
+    RCLCPP_ERROR(node->get_logger(), "Service call failed");
+  }
+
+  // Check results
+  EXPECT_EQ(resp->goals.poses.size(), 1);
 
   // Cleaning up
   node->deactivate();
@@ -252,7 +534,7 @@ TEST(SemanticNavigationTasksTest, getRegionNameInside) {
   }
 
   // Check results
-  EXPECT_EQ(resp->region_name, "roi_0");
+  EXPECT_EQ(resp->region_name, "small1");
 
   // Cleaning up
   node->deactivate();
@@ -338,7 +620,7 @@ TEST(SemanticNavigationTasksTest, listAllRegions) {
   }
 
   // Check results
-  EXPECT_EQ(resp->region_names.size(), 2);
+  EXPECT_EQ(resp->region_names.size(), 4);
 
   // Cleaning up
   node->deactivate();

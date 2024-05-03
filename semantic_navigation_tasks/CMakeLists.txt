@@ -123,7 +123,7 @@ install(DIRECTORY launch params
 )
 
 
-install(FILES test/test_rois.yaml
+install(FILES test/test_rois.yaml test/test_empty_rois.yaml
   DESTINATION share/${PROJECT_NAME}/test
 )
 
