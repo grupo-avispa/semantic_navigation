@@ -268,7 +268,7 @@ semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
     bbox_min_y = std::numeric_limits<double>::infinity();
     bbox_max_y = -std::numeric_limits<double>::infinity();
 
-    for (auto p : region.polygon.points) {
+    for (auto & p : region.polygon.points) {
       if (p.x < map_min_x) {p.x = map_min_x;}
       if (p.x > map_max_x) {p.x = map_max_x;}
 
@@ -350,8 +350,8 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
   std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
   std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
 
-  int count = 0;
-  while ( (response->goals.poses.size() < n)) {
+  unsigned int count = 0;
+  while (response->goals.poses.size() < n && count < n * 100) {
     count += 1;
     int cell_x = dist_x(gen);
     int cell_y = dist_y(gen);
@@ -363,10 +363,10 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
     pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
     pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
 
-    // If the point lies within Region and is not in collision
+    // If the point lies within region and is not in collision
     if (current_region.isPointInside(pose.position.x, pose.position.y) &&
-      !inCollision(cell_x, cell_y) &&
-      current_region.distance_from_borders(pose.position.x, pose.position.y, border_))
+      current_region.isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border_) &&
+      !inCollision(cell_x, cell_y))
     {
       // Generate orientation depending on the request
       orientationFromRequest(pose, current_region, request->orientation, request->yaw);
@@ -391,7 +391,7 @@ bool SemanticNavigationTasks::getRegionNameService(
     request->position.x, request->position.y);
 
   // Get arguments and check if the point lies within the region
-  for (auto & region : region_list_) {
+  for (const auto & region : region_list_) {
     if (region.isPointInside(request->position.x, request->position.y)) {
       response->region_name = region.name;
       return true;
@@ -410,7 +410,7 @@ bool SemanticNavigationTasks::listAllRegionsService(
   RCLCPP_INFO(get_logger(), "Incoming regions service request");
 
   // Get arguments and check if the point lies within the region
-  for (auto & region : region_list_) {
+  for (const auto & region : region_list_) {
     response->region_names.push_back(region.name);
   }
 
@@ -484,7 +484,7 @@ polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons(
 visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(std::vector<Region> list)
 {
   visualization_msgs::msg::MarkerArray names_array;
-  for (auto & region : list) {
+  for (const auto & region : list) {
     // Create label
     visualization_msgs::msg::Marker label_marker;
     label_marker.header.frame_id = map_topic_;

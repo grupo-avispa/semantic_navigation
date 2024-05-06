@@ -1,5 +1,13 @@
 find_package(ament_index_cpp REQUIRED)
 
+# Test for regions
+ament_add_gtest(test_regions
+test_regions.cpp
+)
+ament_target_dependencies(test_regions
+  ${dependencies} ament_index_cpp
+)
+
 # Test for tasks
 ament_add_gtest(test_tasks
   test_tasks.cpp

@@ -15,6 +15,7 @@
 #ifndef SEMANTIC_NAVIGATION_TASKS__REGION_HPP_
 #define SEMANTIC_NAVIGATION_TASKS__REGION_HPP_
 
+#include <math.h>
 #include <string>
 
 #include "geometry_msgs/msg/point.hpp"
@@ -50,7 +51,7 @@ struct Region
   }
 
   /**
-   * @brief Checks if point is inside polygon
+   * @brief Checks if point is inside polygon.
    * @param point Given point to check
    * @return True if given point is inside polygon, otherwise false
    */
@@ -59,18 +60,33 @@ struct Region
     return polygon_utils::isInside(polygon, x, y);
   }
 
-  /* Check if the point is at distance from all borders */
-  bool distance_from_borders(float x, float y, float border)
+  /**
+   * @brief Check if the point is at least a certain distance from all borders.
+   * @param x X coordinate of the point
+   * @param y Y coordinate of the point
+   * @param distance Minimum distance from the borders
+   * @return bool if given point is inside polygon
+   */
+  bool isPointAtLeastDistanceFromBorders(float x, float y, float distance)
   {
     for (unsigned int i = 0; i < polygon.points.size(); i = i + 2) {
       if (distanceToLine(
           x, y,
           polygon.points[i].x, polygon.points[i].y,
-          polygon.points[i + 1].x, polygon.points[i + 1].y) < border)
+          polygon.points[i + 1].x, polygon.points[i + 1].y) < distance)
       {
         return false;
       }
     }
+    // Check distance from the last point to the first point
+    if (distanceToLine(
+        x, y,
+        polygon.points.back().x, polygon.points.back().y,
+        polygon.points.front().x, polygon.points.front().y) < distance)
+    {
+      return false;
+    }
+
     return true;
   }
 
@@ -98,7 +114,7 @@ struct Region
       yy = y0 + param * D;
     }
 
-    return hypot(xx - pX, yy - pY);
+    return std::hypot(xx - pX, yy - pY);
   }
 };
 

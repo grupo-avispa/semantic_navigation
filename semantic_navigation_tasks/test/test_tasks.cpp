@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Alberto J. Tudela Roldán
+// Copyright (c) 2024 Alberto J. Tudela Roldán
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ TEST(SemanticNavigationTasksTest, configure) {
 
   // Now, set a not valid regions filename
   std::string pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  node->set_parameter(rclcpp::Parameter("regions_filename", "test_empty.yaml"));
+  node->set_parameter(rclcpp::Parameter("regions_filename", pkg + "regions_test_empty.yaml"));
 
   // Configure the node
   node->configure();
@@ -120,7 +120,7 @@ TEST(SemanticNavigationTasksTest, configure) {
   EXPECT_EQ(node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
   // New, set a valid regions filename
-  node->set_parameter(rclcpp::Parameter("regions_filename", pkg + "/test/test_regions.yaml"));
+  node->set_parameter(rclcpp::Parameter("regions_filename", pkg + "/test/regions_test.yaml"));
 
   // Configure the node
   node->configure();
@@ -150,7 +150,7 @@ TEST(SemanticNavigationTasksTest, getRegionsFromFile) {
 
   // Set the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_regions.yaml";
+  std::string filename = pkg + "/test/regions_test.yaml";
 
   // Get the regions
   std::vector<semantic_navigation::Region> regions;
@@ -202,7 +202,7 @@ TEST(SemanticNavigationTasksTest, getRegionsFromFile) {
 
 
   // Now try to get the regions from a file with empty regions
-  filename = pkg + "/test/test_empty_regions.yaml";
+  filename = pkg + "/test/regions_test_empty.yaml";
 
   // Get the regions
   result = node->getRegionsFromFile(filename, regions);
@@ -219,7 +219,7 @@ TEST(SemanticNavigationTasksTest, createPolygons) {
 
   // Create the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_regions.yaml";
+  std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
 
@@ -261,7 +261,7 @@ TEST(SemanticNavigationTasksTest, createNames) {
 
   // Create the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_regions.yaml";
+  std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
 
@@ -306,7 +306,7 @@ TEST(SemanticNavigationTasksTest, processBoundingBox) {
 
   // Set the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_regions.yaml";
+  std::string filename = pkg + "/test/regions_test.yaml";
 
   // Get the regions
   std::vector<semantic_navigation::Region> regions;
@@ -421,7 +421,7 @@ TEST(SemanticNavigationTasksTest, orientationFromRequest) {
 
   // Create the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_regions.yaml";
+  std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
 
@@ -457,7 +457,7 @@ TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyRegion) {
   // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
 
   // Configure
   node->configure();
@@ -501,7 +501,7 @@ TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyMap) {
   // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
 
   // Configure
   node->configure();
@@ -545,7 +545,7 @@ TEST(SemanticNavigationTasksTest, generateRandomGoalsRegion) {
   // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
   // Create a map of 10x10 cells
   node->createFreeMap(10, 10, 0.5);
 
@@ -591,7 +591,7 @@ TEST(SemanticNavigationTasksTest, getRegionNameInside) {
   // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
 
   // Configure
   node->configure();
@@ -635,7 +635,7 @@ TEST(SemanticNavigationTasksTest, getRegionNameOutside) {
   // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
 
   // Configure
   node->configure();
@@ -679,7 +679,7 @@ TEST(SemanticNavigationTasksTest, listAllRegions) {
   // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
 
   // Configure
   node->configure();

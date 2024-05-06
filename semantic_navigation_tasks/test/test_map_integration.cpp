@@ -59,7 +59,7 @@ TEST(SemanticNavigationTasksTest, mapCallback) {
   auto semantic_node = std::make_shared<SemanticNavigationTasksFixture>();
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    semantic_node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
+    semantic_node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
   semantic_node->configure();
   semantic_node->activate();
 
