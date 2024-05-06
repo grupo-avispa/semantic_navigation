@@ -26,8 +26,8 @@
 #include "rviz_common/tool.hpp"
 #include "rviz_rendering/viewport_projection_finder.hpp"
 #include "polygon_msgs/msg/polygon2_d_collection.hpp"
-#include "slg_msgs/polygon.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include "semantic_navigation_tasks/region.hpp"
 
 namespace rviz_common
 {
@@ -114,7 +114,7 @@ private:
   rviz_common::properties::StringProperty * names_property_;
   rviz_common::properties::StringProperty * filename_property_;
 
-  std::vector<slg::Polygon> polygons_;
+  std::vector<semantic_navigation::Region> region_list_;
   std::vector<std::string> names_;
   bool new_polygon_;
   float inflation_radius_;

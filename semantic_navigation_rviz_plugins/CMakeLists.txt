@@ -60,7 +60,7 @@ find_package(pluginlib REQUIRED)
 find_package(rviz_common REQUIRED)
 find_package(rviz_rendering REQUIRED)
 find_package(semantic_navigation_msgs REQUIRED)
-find_package(slg_msgs REQUIRED)
+find_package(semantic_navigation_tasks REQUIRED)
 find_package(polygon_msgs REQUIRED)
 find_package(polygon_utils REQUIRED)
 find_package(visualization_msgs REQUIRED)
@@ -94,7 +94,7 @@ ament_target_dependencies(${PROJECT_NAME}
   rviz_common
   rviz_rendering
   semantic_navigation_msgs
-  slg_msgs
+  semantic_navigation_tasks
   polygon_msgs
   polygon_utils
   visualization_msgs

@@ -59,7 +59,6 @@ find_package(polygon_msgs REQUIRED)
 find_package(polygon_utils REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-find_package(slg_msgs REQUIRED)
 find_package(semantic_navigation_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
@@ -83,7 +82,6 @@ set(dependencies
   polygon_utils
   tf2
   tf2_geometry_msgs
-  slg_msgs
   semantic_navigation_msgs
   visualization_msgs
   yaml_cpp_vendor
@@ -125,7 +123,7 @@ install(DIRECTORY launch params
 )
 
 
-install(FILES test/test_rois.yaml test/test_empty_rois.yaml
+install(FILES test/test_regions.yaml test/test_empty_regions.yaml
   DESTINATION share/${PROJECT_NAME}/test
 )
 

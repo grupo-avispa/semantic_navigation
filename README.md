@@ -8,7 +8,7 @@
 A ROS metapackage for semantic navigation. At the moment the included packages are:
 
  * [semantic_navigation_msgs]: messages used by the semantic navigation packages.
- * [semantic_navigation_rviz_plugins]: [Rviz2] panel plugin to easily create ROIs and to send the robot to them.
+ * [semantic_navigation_rviz_plugins]: [Rviz2] panel plugin to easily create regions and to send the robot to them.
  * [semantic_navigation_tasks]: used to generate random navigation goals and semantic position services.
 
 ![Semantic navigation](doc/semantic.png)
@@ -29,7 +29,6 @@ The semantic_navigation package has been tested under [ROS2] Humble on [Ubuntu] 
 #### Dependencies
 
 - [Robot Operating System (ROS) 2](https://docs.ros.org/en/humble/) (middleware for robotics),
-- [slg_msgs](https://github.com/ajtudela/slg_msgs) (Library and messages to interact with laser related geometry - use Humble branch),
 - [polygon_ros](https://github.com/MetroRobots/polygon_ros/) (Polygon visualization)
 
 #### Building

@@ -2,19 +2,19 @@
 
 ## Overview
 
-ROS 2 Service to generate 2D navigation goals with orientation in a specifed region of interest (ROI). These ROIs are described by a polygon 
-defined by its edges in the map frame and a name. The service takes the number of navigation goals (*n*) and a ROI name (*roi_name*) and 
+ROS 2 Service to generate 2D navigation goals with orientation in a specifed region. These regionss are described by a polygon 
+defined by its edges in the map frame and a name. The service takes the number of navigation goals (*n*) and a region name (*region_name*) and 
 returns a list of goal poses. 
 
-The ROIs are stored in a YAML configuration file. Look for the examples in the `config` folder. The configuration file includes the names of the ROIs defined by its edges and its name.
+The regions are stored in a YAML configuration file. Look for the examples in the `config` folder. The configuration file includes the names of the regions defined by its edges and its name.
 
 There are optional parameters like:
-- Direction of the goal. The goal can be orientated `outside` the ROI, `inside` the ROI, `requested` (see below) or `random` by default.
-- Distance from the border of the ROI. The goal can be at a distance (in meters) from the border of the ROI. Default is 0.0.
+- Direction of the goal. The goal can be oriented `outside` the region, `inside` the region, `requested` (see below) or `random` by default.
+- Distance from the border of the region. The goal can be at a distance (in meters) from the border of the region. Default is 0.0.
 
 In addition to the random navigation goals service, it's also included:
-- A service to request the ROI name of a known position.
-- A latched publisher of the ROI name where the robot is.
+- A service to request the region name of a known position.
+- A latched publisher of the region name where the robot is.
 
 ## Usage
 
@@ -24,19 +24,19 @@ For the goals generator service, launch the node as follows:
 
 You can send a service to request goals as follows:
 
-	ros2 service call /generate_random_goals '{n: 1, roi_name: "roi_0", direction: "inside", border: 0.1}'
+	ros2 service call /generate_random_goals '{n: 1, region_name: "region_0", direction: "inside", border: 0.1}'
 
-whereby the first argument is the number of goal locations to be generated (here 1), the second argument is the name of a ROI specified that match the list in the configuration file (here roi_0), the orientation of the goals (here inside) and the distance from the border of the ROI (here 0.1). 
+whereby the first argument is the number of goal locations to be generated (here 1), the second argument is the name of a region specified that match the list in the configuration file (here region_0), the orientation of the goals (here inside) and the distance from the border of the region (here 0.1). 
 The result of the pose generation is additionally published on the topic `/semantic_goals` in order to visualize the result in [RViz].
 
-If the service is called with an empty ROI or the ROI is not in the configuration file, the full map is considered as ROI by default. 
+If the service is called with an empty region or the region is not in the configuration file, the full map is considered as region by default. 
 
-	ros2 service call /generate_random_goals '{n: 100, roi_name: {}, direction: "random", border: 0.0}'
+	ros2 service call /generate_random_goals '{n: 100, region_name: {}, direction: "random", border: 0.0}'
 
 
-If a specified ROI includes a point that is outside the map, its *conflicting* coordinates are automatically adjusted to the map's bounding box.
+If a specified region includes a point that is outside the map, its *conflicting* coordinates are automatically adjusted to the map's bounding box.
 
-For the position service, to know the name of the ROI where the robot is, send the service request as follows:
+For the position service, to know the name of the region where the robot is, send the service request as follows:
 
 	ros2 service call /get_region_name '{position.x: 0.0, position.y: 0.0, position.z: 0.0}'
 
@@ -61,25 +61,25 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 * **`polygons`** ([polygon_msgs/Polygon2DCollection])
 
-	Topic array with filled polygons of the Regions of Interest (ROIs).
+	Topic array with filled polygons of the regions.
 
 * **`names`** ([visualization_msgs/MarkerArray])
 
-	Topic array with the names of the Regions of Interest (ROIs).
+	Topic array with the names of the regions.
 
 #### Services
 
 * **`generate_random_goals`** ([semantic_navigation_msgs/GenerateRandomGoals])
 
-	Service to generate random navigation goals in a specified region of interest (ROI).
+	Service to generate random navigation goals in a specified region.
 
 * **`get_region_name`** ([semantic_navigation_msgs/GetRegionName])
 
-	Service to request the ROI name of a known position.
+	Service to request the region name of a known position.
 
 * **`list_all_regions`** ([semantic_navigation_msgs/ListAllRegions])
 
-	Service to list all the regions of interest (ROIs) defined in the configuration file.
+	Service to list all the regions defined in the configuration file.
 
 #### Parameters
 
@@ -89,11 +89,11 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 * **`polygons_topic`** (string, default: "polygons")
 
-	Topic array with filled polygons of the Regions of Interest (ROIs).
+	Topic array with filled polygons of the regions.
 
 * **`names_topic`** (string, default: "names")
 
-	Topic array with the names of the Regions of Interest (ROIs).
+	Topic array with the names of the regions.
 
 * **`map_topic`** (string, default: "map")
 
@@ -105,15 +105,15 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 * **`full_map`** (bool, default: false)
 
-	Option to choose the full map if a requested ROI is not found in the configuration file or reject the goal request.
+	Option to choose the full map if a requested region is not found in the configuration file or reject the goal request.
 
 * **`inflation_radius`** (float, default: 0.5)
 
 	The inflation radius of the robot's footprint.
 
-* **`rois`** (string, default: "rois.yaml")
+* **`regions`** (string, default: "regions.yaml")
 
-	The filepath of the configuration file including the names of regions of interests (ROIs) defined by its edges and the inflation radius of the robot's footprint as above.
+	The filepath of the configuration file including the names of regions defined by its points and name.
 
 
 [nav_msgs/OccupancyGrid]: https://docs.ros2.org/humble/api/nav_msgs/msg/OccupancyGrid.html

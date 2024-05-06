@@ -8,6 +8,7 @@ Changelog for package semantic_navigation_rviz_plugins
 * Update CMakelists.txt and package.xml with new compilation flags.
 * Improve format and style.
 * Update documentation.
+* Rename ROIS to regions.
 
 1.0.4 (16-05-2024)
 ------------------

@@ -29,25 +29,26 @@ public:
   : SemanticNavigationTasks() {}
 
   bool getRegionsFromFile(
-    const std::string & filename, std::vector<semantic_navigation::ROI> & regions)
+    const std::string & filename, std::vector<semantic_navigation::Region> & regions)
   {
     return SemanticNavigationTasks::getRegionsFromFile(filename, regions);
   }
 
-  polygon_msgs::msg::Polygon2DCollection createPolygons(std::vector<semantic_navigation::ROI> list)
+  polygon_msgs::msg::Polygon2DCollection createPolygons(
+    std::vector<semantic_navigation::Region> list)
   {
     return SemanticNavigationTasks::createPolygons(list);
   }
 
-  visualization_msgs::msg::MarkerArray createNames(std::vector<semantic_navigation::ROI> list)
+  visualization_msgs::msg::MarkerArray createNames(std::vector<semantic_navigation::Region> list)
   {
     return SemanticNavigationTasks::createNames(list);
   }
 
   semantic_navigation::CellLimits processBoundingBox(
-    const nav_msgs::msg::OccupancyGrid & map, semantic_navigation::ROI roi)
+    const nav_msgs::msg::OccupancyGrid & map, semantic_navigation::Region region)
   {
-    return SemanticNavigationTasks::processBoundingBox(map, roi);
+    return SemanticNavigationTasks::processBoundingBox(map, region);
   }
 
   int8_t cell(unsigned int x, unsigned int y)
@@ -61,10 +62,11 @@ public:
   }
 
   void orientationFromRequest(
-    geometry_msgs::msg::Pose & pose, const semantic_navigation::ROI & roi, std::string orientation,
-    double requested_yaw)
+    geometry_msgs::msg::Pose & pose, const semantic_navigation::Region & region,
+    std::string orientation, double requested_yaw)
   {
-    return SemanticNavigationTasks::orientationFromRequest(pose, roi, orientation, requested_yaw);
+    return SemanticNavigationTasks::orientationFromRequest(
+      pose, region, orientation, requested_yaw);
   }
 
   nav_msgs::msg::OccupancyGrid getMap()
@@ -94,8 +96,10 @@ TEST(SemanticNavigationTasksTest, configure) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set an empty rois filename config parameter
-  nav2_util::declare_parameter_if_not_declared(node, "rois_filename", rclcpp::ParameterValue(""));
+  // Set an empty regions filename config parameter
+  nav2_util::declare_parameter_if_not_declared(
+    node, "regions_filename",
+    rclcpp::ParameterValue(""));
 
   // Configure the node
   node->configure();
@@ -104,9 +108,9 @@ TEST(SemanticNavigationTasksTest, configure) {
   // Check results: the node should be in the unconfigured state as filename is empty
   EXPECT_EQ(node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
-  // Now, set a not valid rois filename
+  // Now, set a not valid regions filename
   std::string pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  node->set_parameter(rclcpp::Parameter("rois_filename", "test_empty.yaml"));
+  node->set_parameter(rclcpp::Parameter("regions_filename", "test_empty.yaml"));
 
   // Configure the node
   node->configure();
@@ -115,8 +119,8 @@ TEST(SemanticNavigationTasksTest, configure) {
   // Check results: the node should be in the unconfigured state as filename is not valid
   EXPECT_EQ(node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
-  // New, set a valid rois filename
-  node->set_parameter(rclcpp::Parameter("rois_filename", pkg + "/test/test_rois.yaml"));
+  // New, set a valid regions filename
+  node->set_parameter(rclcpp::Parameter("regions_filename", pkg + "/test/test_regions.yaml"));
 
   // Configure the node
   node->configure();
@@ -144,28 +148,61 @@ TEST(SemanticNavigationTasksTest, getRegionsFromFile) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the rois
+  // Set the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_rois.yaml";
+  std::string filename = pkg + "/test/test_regions.yaml";
 
   // Get the regions
-  std::vector<semantic_navigation::ROI> regions;
+  std::vector<semantic_navigation::Region> regions;
   bool result = node->getRegionsFromFile(filename, regions);
 
   // Check the results
   EXPECT_TRUE(result);
   EXPECT_EQ(regions.size(), 4);
-  EXPECT_EQ(regions[0].get_name(), "small1");
-  EXPECT_EQ(regions[0].polygon.size(), 4);
-  EXPECT_EQ(regions[1].get_name(), "small2");
-  EXPECT_EQ(regions[1].polygon.size(), 4);
-  EXPECT_EQ(regions[2].get_name(), "big");
-  EXPECT_EQ(regions[2].polygon.size(), 4);
-  EXPECT_EQ(regions[3].get_name(), "outside");
-  EXPECT_EQ(regions[3].polygon.size(), 4);
+  EXPECT_EQ(regions[0].name, "small1");
+  EXPECT_EQ(regions[0].size(), 4);
+  EXPECT_EQ(regions[0].polygon.points[0].x, 0.0);
+  EXPECT_EQ(regions[0].polygon.points[0].y, 0.0);
+  EXPECT_EQ(regions[0].polygon.points[1].x, 0.0);
+  EXPECT_EQ(regions[0].polygon.points[1].y, 1.0);
+  EXPECT_EQ(regions[0].polygon.points[2].x, 1.0);
+  EXPECT_EQ(regions[0].polygon.points[2].y, 1.0);
+  EXPECT_EQ(regions[0].polygon.points[3].x, 1.0);
+  EXPECT_EQ(regions[0].polygon.points[3].y, 0.0);
+  EXPECT_EQ(regions[1].name, "small2");
+  EXPECT_EQ(regions[1].size(), 4);
+  EXPECT_EQ(regions[1].polygon.points[0].x, 1.0);
+  EXPECT_EQ(regions[1].polygon.points[0].y, 1.0);
+  EXPECT_EQ(regions[1].polygon.points[1].x, 1.0);
+  EXPECT_EQ(regions[1].polygon.points[1].y, 2.0);
+  EXPECT_EQ(regions[1].polygon.points[2].x, 2.0);
+  EXPECT_EQ(regions[1].polygon.points[2].y, 2.0);
+  EXPECT_EQ(regions[1].polygon.points[3].x, 2.0);
+  EXPECT_EQ(regions[1].polygon.points[3].y, 1.0);
+  EXPECT_EQ(regions[2].name, "big");
+  EXPECT_EQ(regions[2].size(), 4);
+  EXPECT_EQ(regions[2].polygon.points[0].x, 12.0);
+  EXPECT_EQ(regions[2].polygon.points[0].y, 12.0);
+  EXPECT_EQ(regions[2].polygon.points[1].x, 12.0);
+  EXPECT_EQ(regions[2].polygon.points[1].y, 20.0);
+  EXPECT_EQ(regions[2].polygon.points[2].x, 20.0);
+  EXPECT_EQ(regions[2].polygon.points[2].y, 20.0);
+  EXPECT_EQ(regions[2].polygon.points[3].x, 20.0);
+  EXPECT_EQ(regions[2].polygon.points[3].y, 10.0);
+  EXPECT_EQ(regions[3].name, "outside");
+  EXPECT_EQ(regions[3].size(), 4);
+  EXPECT_EQ(regions[3].polygon.points[0].x, -12.0);
+  EXPECT_EQ(regions[3].polygon.points[0].y, -12.0);
+  EXPECT_EQ(regions[3].polygon.points[1].x, -12.0);
+  EXPECT_EQ(regions[3].polygon.points[1].y, -20.0);
+  EXPECT_EQ(regions[3].polygon.points[2].x, -20.0);
+  EXPECT_EQ(regions[3].polygon.points[2].y, -20.0);
+  EXPECT_EQ(regions[3].polygon.points[3].x, -20.0);
+  EXPECT_EQ(regions[3].polygon.points[3].y, -12.0);
+
 
   // Now try to get the regions from a file with empty regions
-  filename = pkg + "/test/test_empty_rois.yaml";
+  filename = pkg + "/test/test_empty_regions.yaml";
 
   // Get the regions
   result = node->getRegionsFromFile(filename, regions);
@@ -182,8 +219,8 @@ TEST(SemanticNavigationTasksTest, createPolygons) {
 
   // Create the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_rois.yaml";
-  std::vector<semantic_navigation::ROI> regions;
+  std::string filename = pkg + "/test/test_regions.yaml";
+  std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
 
   // Create the polygons
@@ -224,8 +261,8 @@ TEST(SemanticNavigationTasksTest, createNames) {
 
   // Create the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_rois.yaml";
-  std::vector<semantic_navigation::ROI> regions;
+  std::string filename = pkg + "/test/test_regions.yaml";
+  std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
 
   // Create the names
@@ -254,7 +291,7 @@ TEST(SemanticNavigationTasksTest, processBoundingBoxEmptyRegion) {
 
   // Process the bounding box
   auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = node->processBoundingBox(
-    node->getMap(), semantic_navigation::ROI());
+    node->getMap(), semantic_navigation::Region());
 
   // Check the results
   EXPECT_EQ(cell_min_x, 0);
@@ -267,12 +304,12 @@ TEST(SemanticNavigationTasksTest, processBoundingBox) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the rois
+  // Set the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_rois.yaml";
+  std::string filename = pkg + "/test/test_regions.yaml";
 
   // Get the regions
-  std::vector<semantic_navigation::ROI> regions;
+  std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
 
   // Create a map of 10x10 cells
@@ -384,8 +421,8 @@ TEST(SemanticNavigationTasksTest, orientationFromRequest) {
 
   // Create the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  std::string filename = pkg + "/test/test_rois.yaml";
-  std::vector<semantic_navigation::ROI> regions;
+  std::string filename = pkg + "/test/test_regions.yaml";
+  std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
 
   // Set the pose
@@ -398,13 +435,13 @@ TEST(SemanticNavigationTasksTest, orientationFromRequest) {
   node->orientationFromRequest(
     pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::OUTSIDE, 0.0);
   // Check the results
-  EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), 0.0);
+  EXPECT_NEAR(tf2::getYaw(pose.orientation), -2.356194, 1e-3);
 
   // Request the orientation inside the region
   node->orientationFromRequest(
     pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::INSIDE, 0.0);
   // Check the results
-  EXPECT_NEAR(tf2::getYaw(pose.orientation), 3.141592, 1e-3);
+  EXPECT_NEAR(tf2::getYaw(pose.orientation), 0.785398, 1e-3);
 
   // Request the orientation to a specific yaw
   node->orientationFromRequest(
@@ -417,10 +454,10 @@ TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyRegion) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the test rois filename config parameter
+  // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "rois_filename", rclcpp::ParameterValue(pkg + "/test/test_rois.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
 
   // Configure
   node->configure();
@@ -429,7 +466,7 @@ TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyRegion) {
   // Create the client service
   auto req = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Request>();
   req->n = 1;
-  req->region_name = "roi_0";
+  req->region_name = "region_0";
   auto client = node->create_client<semantic_navigation_msgs::srv::GenerateRandomGoals>(
     "generate_random_goals");
 
@@ -461,10 +498,10 @@ TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyMap) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the test rois filename config parameter
+  // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "rois_filename", rclcpp::ParameterValue(pkg + "/test/test_rois.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
 
   // Configure
   node->configure();
@@ -505,10 +542,10 @@ TEST(SemanticNavigationTasksTest, generateRandomGoalsRegion) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the test rois filename config parameter
+  // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "rois_filename", rclcpp::ParameterValue(pkg + "/test/test_rois.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
   // Create a map of 10x10 cells
   node->createFreeMap(10, 10, 0.5);
 
@@ -551,10 +588,10 @@ TEST(SemanticNavigationTasksTest, getRegionNameInside) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the test rois filename config parameter
+  // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "rois_filename", rclcpp::ParameterValue(pkg + "/test/test_rois.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
 
   // Configure
   node->configure();
@@ -595,10 +632,10 @@ TEST(SemanticNavigationTasksTest, getRegionNameOutside) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the test rois filename config parameter
+  // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "rois_filename", rclcpp::ParameterValue(pkg + "/test/test_rois.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
 
   // Configure
   node->configure();
@@ -639,10 +676,10 @@ TEST(SemanticNavigationTasksTest, listAllRegions) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the test rois filename config parameter
+  // Set the test regions filename config parameter
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   nav2_util::declare_parameter_if_not_declared(
-    node, "rois_filename", rclcpp::ParameterValue(pkg + "/test/test_rois.yaml"));
+    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/test_regions.yaml"));
 
   // Configure
   node->configure();

@@ -34,7 +34,7 @@
 #include "semantic_navigation_msgs/srv/generate_random_goals.hpp"
 #include "semantic_navigation_msgs/srv/get_region_name.hpp"
 #include "semantic_navigation_msgs/srv/list_all_regions.hpp"
-#include "semantic_navigation_tasks/roi.hpp"
+#include "semantic_navigation_tasks/region.hpp"
 
 
 namespace semantic_navigation
@@ -44,7 +44,7 @@ using CellLimits = std::tuple<int, int, int, int>;
 
 /**
  * @class semantic_navigation::SemanticNavigationTasks
- * @brief Class to generate goals inside regions of interest (ROIs).
+ * @brief Class to generate goals inside regions.
  */
 class SemanticNavigationTasks : public nav2_util::LifecycleNode
 {
@@ -120,10 +120,10 @@ protected:
    * @return true if the regions are loaded.
    */
   bool getRegionsFromFile(
-    const std::string & filename, std::vector<semantic_navigation::ROI> & regions);
+    const std::string & filename, std::vector<semantic_navigation::Region> & regions);
 
   /**
-   * @brief Generate goals inside the regions of interest (ROIs).
+   * @brief Generate goals inside the regions.
    *
    * @param request Request with the name of the region.
    * @param response Response with the goals.
@@ -134,7 +134,7 @@ protected:
     std::shared_ptr<GenerateRandomGoals::Response> response);
 
   /**
-   * @brief Get the name of the region of interest (ROI) from a position.
+   * @brief Get the name of the region from a position.
    *
    * @param request Request with the name of the region.
    * @param response Response with the position.
@@ -145,7 +145,7 @@ protected:
     std::shared_ptr<GetRegionName::Response> response);
 
   /**
-   * @brief Get the names of all the regions of interest (ROIs).
+   * @brief Get the names of all the regions.
    *
    * @param request Request with the name of the region.
    * @param response Response with the regions.
@@ -168,7 +168,7 @@ protected:
    * @param list List of regions of interest.
    * @return polygon_msgs::msg::Polygon2DCollection Collection of polygons.
    */
-  polygon_msgs::msg::Polygon2DCollection createPolygons(std::vector<ROI> list);
+  polygon_msgs::msg::Polygon2DCollection createPolygons(std::vector<Region> list);
 
   /**
    * @brief Create a collection of markers with the names of the regions.
@@ -176,16 +176,16 @@ protected:
    * @param list List of regions of interest.
    * @return visualization_msgs::msg::MarkerArray Collection of markers.
    */
-  visualization_msgs::msg::MarkerArray createNames(std::vector<ROI> list);
+  visualization_msgs::msg::MarkerArray createNames(std::vector<Region> list);
 
   /**
-   * @brief Process the bounding box of the regions of interest (ROIs) inside the map.
+   * @brief Process the bounding box of the regions inside the map.
    *
    * @param map Map.
-   * @param roi Region of interest.
+   * @param region Region of interest.
    * @return CellLimits Limits of the cells.
    */
-  CellLimits processBoundingBox(const nav_msgs::msg::OccupancyGrid & map, ROI roi);
+  CellLimits processBoundingBox(const nav_msgs::msg::OccupancyGrid & map, Region region);
 
   /**
    * @brief Get the cell value of the map.
@@ -213,12 +213,12 @@ protected:
    * - Random: random orientation.
    *
    * @param pose Pose of the goal.
-   * @param roi Region of interest.
+   * @param region Region of interest.
    * @param orientation Requested orientation in string format.
    * @param requested_yaw Requested yaw (Optional).
    */
   void orientationFromRequest(
-    geometry_msgs::msg::Pose & pose, const ROI & roi, std::string orientation,
+    geometry_msgs::msg::Pose & pose, const Region & region, std::string orientation,
     double requested_yaw);
 
   rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseArray>::SharedPtr goals_pub_;
@@ -238,7 +238,7 @@ protected:
   int inflated_footprint_size_;
   float inflation_radius_, border_;
   std::string goals_topic_, polygons_topic_, names_topic_, map_topic_;
-  std::vector<semantic_navigation::ROI> region_list_;
+  std::vector<semantic_navigation::Region> region_list_;
 };
 
 }  // namespace semantic_navigation

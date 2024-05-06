@@ -49,11 +49,11 @@ SemanticAnnotationTool::SemanticAnnotationTool()
     "Inflation radius", 0.5, "Inflation radius",
     getPropertyContainer(), SLOT(update_property()), this);
   names_property_ = new rviz_common::properties::StringProperty(
-    "ROIs names", "", "List of ROIs names",
+    "Regions names", "", "List of regions names",
     getPropertyContainer(), SLOT(update_property()), this);
   filename_property_ = new rviz_common::properties::StringProperty(
     "YAML config filename", QString::fromStdString("default"),
-    "Filename to save the ROIs located in the share folder.",
+    "Filename to save the regions located in the share folder.",
     getPropertyContainer(), SLOT(update_property()), this);
 }
 
@@ -101,34 +101,33 @@ int SemanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & 
   polygon_msgs::msg::Polygon2DCollection polygon_array;
   polygon_array.header.frame_id = "map";
   polygon_array.header.stamp = ros_node_->now();
-  slg::Polygon current_polygon;
+  semantic_navigation::Region current_region;
 
   auto point_projection_on_xy_plane = projection_finder_->getViewportPointProjectionOnXYPlane(
     event.panel->getRenderWindow(), event.x, event.y);
 
-  // Add points to polygon with left button
+  // Add points to the region with left button
   if (event.leftDown()) {
-    // Extract the last polygon
+    // Extract the last region
     if (!new_polygon_) {
-      current_polygon = polygons_.back();
-      polygons_.pop_back();
+      current_region = region_list_.back();
+      region_list_.pop_back();
     }
     // Capture the point from the map
-    geometry_msgs::msg::Point point;
+    polygon_msgs::msg::Point2D point;
     point.x = point_projection_on_xy_plane.second.x;
     point.y = point_projection_on_xy_plane.second.y;
-    point.z = 0.0;
     // Create the new polygon
-    current_polygon.add_point(slg::Point2D(point));
-    polygons_.push_back(current_polygon);
+    current_region.polygon.points.push_back(point);
+    region_list_.push_back(current_region);
     // Check the name vector with the bigger size and resize and fill the other one
-    if (names_.size() < polygons_.size()) {
-      names_.resize(polygons_.size(), "unknown");
+    if (names_.size() < region_list_.size()) {
+      names_.resize(region_list_.size(), "unknown");
     }
     // Publish it
-    for (unsigned int i = 0; i < polygons_.size(); i++) {
-      polygons_[i].set_name(names_[i]);
-      polygon_array.polygons.push_back(polygon_utils::polygon3Dto2D(polygons_[i]));
+    for (unsigned int i = 0; i < region_list_.size(); i++) {
+      region_list_[i].name = names_[i];
+      polygon_array.polygons.push_back(region_list_[i].polygon);
     }
     polygons_viz_pub_->publish(polygon_array);
 
@@ -141,7 +140,7 @@ int SemanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & 
     // Save and clear the polygons with central button
   } else if (event.middleUp()) {
     save_polygon(filename_);
-    polygons_.clear();
+    region_list_.clear();
     polygons_viz_pub_->publish(polygon_array);
     show_polygon_names();
     new_polygon_ = true;
@@ -152,46 +151,40 @@ int SemanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & 
 
 void SemanticAnnotationTool::save_polygon(const std::string filename)
 {
-  std::string filepath = ament_index_cpp::get_package_share_directory("semantic_goals_generator") +
+  std::string filepath = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks") +
     "/params/" + filename + ".yaml";
-  std::ofstream polygonfile(filepath, std::ofstream::app);
+  std::ofstream regionfile(filepath, std::ofstream::app);
 
-  polygonfile << "inflation_radius: " << inflation_radius_ << std::endl;
-  polygonfile << "rois:" << std::endl;
-  for (const auto & poly : polygons_) {
-    polygonfile << "  - {name: '" << poly.get_name() << "', yaw: '0.0', edges: [";
-    std::vector<slg::Edge> edges = poly.get_edges();
-    for (uint64_t e = 0; e < edges.size() - 1; e++) {
-      slg::Edge edge = edges[e];
-      polygonfile << "[[" << edge.a.x << ", " << edge.a.y << "], [" << edge.b.x << ", " <<
-        edge.b.y << "]], " << std::endl;
-      polygonfile << "                              ";
+  regionfile << "inflation_radius: " << inflation_radius_ << std::endl;
+  regionfile << "rois:" << std::endl;
+  for (const auto & region : region_list_) {
+    regionfile << "  - {name: '" << region.name << "', points: [";
+    auto points = region.polygon.points;
+    for (unsigned int p = 0; p < points.size() - 1; p++) {
+      regionfile << "[" << points[p].x << ", " << points[p].y << "], ";
     }
-    int edgesSize = edges.size();
-    polygonfile << "[[" << edges[edgesSize - 1].a.x << ", " << edges[edgesSize - 1].a.y << "], [" <<
-      edges[edgesSize - 1].b.x << ", " << edges[edgesSize - 1].b.y << "]]]}" << std::endl;
+    regionfile << "[" << points.back().x << ", " << points.back().y << "]}" << std::endl;
   }
-
-  polygonfile << "\n";
-  polygonfile.close();
+  regionfile << "\n";
+  regionfile.close();
 }
 
 void SemanticAnnotationTool::show_polygon_names()
 {
   visualization_msgs::msg::MarkerArray names_array;
   int p = 0;
-  for (auto & poly : polygons_) {
+  for (auto & region : region_list_) {
     // Create label
     visualization_msgs::msg::Marker label_marker;
     label_marker.header.frame_id = "map";
     label_marker.header.stamp = ros_node_->now();
     label_marker.ns = "labelroi";
     label_marker.id = p;
-    label_marker.text = poly.get_name();
+    label_marker.text = region.name;
     label_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
     label_marker.action = visualization_msgs::msg::Marker::ADD;
-    label_marker.pose.position.x = poly.centroid().x;
-    label_marker.pose.position.y = poly.centroid().y;
+    label_marker.pose.position.x = region.centroid().x;
+    label_marker.pose.position.y = region.centroid().y;
     label_marker.pose.position.z = 0.05;
     label_marker.pose.orientation.x = 0.0;
     label_marker.pose.orientation.y = 0.0;
@@ -206,7 +199,7 @@ void SemanticAnnotationTool::show_polygon_names()
     p++;
   }
 
-  if (polygons_.empty()) {
+  if (region_list_.empty()) {
     visualization_msgs::msg::Marker label_marker;
     label_marker.header.frame_id = "map";
     label_marker.action = visualization_msgs::msg::Marker::DELETEALL;

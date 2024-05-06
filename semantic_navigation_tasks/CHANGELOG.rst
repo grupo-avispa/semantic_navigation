@@ -11,6 +11,7 @@ Changelog for package semantic_navigation_tasks
 * Converted to Lifecycle node.
 * Converted to component.
 * Added composable nodes in launch file.
+* Rename ROIS to regions.
 
 2.4.1 (16-05-2024)
 ------------------

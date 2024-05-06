@@ -1,8 +1,8 @@
 <library path="semantic_navigation_rviz_plugins">
   <class name="semantic_navigation_rviz_plugins/SemanticNavigation" type="semantic_navigation_rviz_plugins::SemanticNavigationPanel" base_class_type="rviz_common::Panel">
-    <description>A panel widget allowing to send the robot to a room.</description>
+    <description>A panel widget allowing to send the robot to a region.</description>
   </class>
   <class name="semantic_navigation_rviz_plugins/SemanticAnnotation" type="semantic_navigation_rviz_plugins::SemanticAnnotationTool" base_class_type="rviz_common::Tool">
-    <description>Tool to create and save ROIs in a YAML file.</description>
+    <description>Tool to create and save regions in a YAML file.</description>
   </class>
 </library>
