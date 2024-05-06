@@ -52,6 +52,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(angles REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(polygon_msgs REQUIRED)
@@ -75,6 +76,7 @@ include_directories(
 set(dependencies
   rclcpp
   rclcpp_components
+  angles
   geometry_msgs
   nav2_util
   polygon_msgs

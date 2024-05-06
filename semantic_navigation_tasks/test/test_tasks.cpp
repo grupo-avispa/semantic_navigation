@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "gtest/gtest.h"
+#include "tf2/utils.h"
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include "lifecycle_msgs/msg/state.hpp"
@@ -59,6 +60,13 @@ public:
     return SemanticNavigationTasks::inCollision(x, y);
   }
 
+  void orientationFromRequest(
+    geometry_msgs::msg::Pose & pose, const semantic_navigation::ROI & roi, std::string orientation,
+    double requested_yaw)
+  {
+    return SemanticNavigationTasks::orientationFromRequest(pose, roi, orientation, requested_yaw);
+  }
+
   nav_msgs::msg::OccupancyGrid getMap()
   {
     return map_;
@@ -96,8 +104,18 @@ TEST(SemanticNavigationTasksTest, configure) {
   // Check results: the node should be in the unconfigured state as filename is empty
   EXPECT_EQ(node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
-  // New, we set the rois filename
+  // Now, set a not valid rois filename
   std::string pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  node->set_parameter(rclcpp::Parameter("rois_filename", "test_empty.yaml"));
+
+  // Configure the node
+  node->configure();
+  node->activate();
+
+  // Check results: the node should be in the unconfigured state as filename is not valid
+  EXPECT_EQ(node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
+
+  // New, set a valid rois filename
   node->set_parameter(rclcpp::Parameter("rois_filename", pkg + "/test/test_rois.yaml"));
 
   // Configure the node
@@ -139,16 +157,12 @@ TEST(SemanticNavigationTasksTest, getRegionsFromFile) {
   EXPECT_EQ(regions.size(), 4);
   EXPECT_EQ(regions[0].get_name(), "small1");
   EXPECT_EQ(regions[0].polygon.size(), 4);
-  EXPECT_DOUBLE_EQ(regions[0].yaw, 0.0);
   EXPECT_EQ(regions[1].get_name(), "small2");
   EXPECT_EQ(regions[1].polygon.size(), 4);
-  EXPECT_DOUBLE_EQ(regions[1].yaw, 1.5);
   EXPECT_EQ(regions[2].get_name(), "big");
   EXPECT_EQ(regions[2].polygon.size(), 4);
-  EXPECT_DOUBLE_EQ(regions[2].yaw, 1.5);
   EXPECT_EQ(regions[3].get_name(), "outside");
   EXPECT_EQ(regions[3].polygon.size(), 4);
-  EXPECT_DOUBLE_EQ(regions[3].yaw, 1.5);
 
   // Now try to get the regions from a file with empty regions
   filename = pkg + "/test/test_empty_rois.yaml";
@@ -362,6 +376,41 @@ TEST(SemanticNavigationTasksTest, inCollisionCostmap) {
   node->setMap(map);
   // Check if the point is in collision
   EXPECT_TRUE(node->inCollision(0, 0));
+}
+
+TEST(SemanticNavigationTasksTest, orientationFromRequest) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Create the regions
+  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  std::string filename = pkg + "/test/test_rois.yaml";
+  std::vector<semantic_navigation::ROI> regions;
+  node->getRegionsFromFile(filename, regions);
+
+  // Set the pose
+  geometry_msgs::msg::Pose pose;
+  pose.position.x = 0.5;
+  pose.position.y = 0.5;
+  pose.orientation.w = 1.0;
+
+  // Request the orientation outside the region
+  node->orientationFromRequest(
+    pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::OUTSIDE, 0.0);
+  // Check the results
+  EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), 0.0);
+
+  // Request the orientation inside the region
+  node->orientationFromRequest(
+    pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::INSIDE, 0.0);
+  // Check the results
+  EXPECT_NEAR(tf2::getYaw(pose.orientation), 3.141592, 1e-3);
+
+  // Request the orientation to a specific yaw
+  node->orientationFromRequest(
+    pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::REQUESTED, 1.0);
+  // Check the results
+  EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), 1.0);
 }
 
 TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyRegion) {

@@ -205,6 +205,22 @@ protected:
    */
   bool inCollision(int x, int y);
 
+  /**
+   * @brief Get the orientation depending on the request:
+   * - Outside: arrow pointing outside the region.
+   * - Inside: arrow pointing inside the region.
+   * - Requested: arrow pointing to the requested position.
+   * - Random: random orientation.
+   *
+   * @param pose Pose of the goal.
+   * @param roi Region of interest.
+   * @param orientation Requested orientation in string format.
+   * @param requested_yaw Requested yaw (Optional).
+   */
+  void orientationFromRequest(
+    geometry_msgs::msg::Pose & pose, const ROI & roi, std::string orientation,
+    double requested_yaw);
+
   rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseArray>::SharedPtr goals_pub_;
   rclcpp_lifecycle::LifecyclePublisher<polygon_msgs::msg::Polygon2DCollection>::SharedPtr
     polygons_viz_pub_;
@@ -222,7 +238,6 @@ protected:
   int inflated_footprint_size_;
   float inflation_radius_, border_;
   std::string goals_topic_, polygons_topic_, names_topic_, map_topic_;
-  std::string orientation_;
   std::vector<semantic_navigation::ROI> region_list_;
 };
 

@@ -25,7 +25,6 @@ namespace semantic_navigation
 struct ROI
 {
   slg::Polygon polygon;
-  float yaw;
 
   inline bool empty() {return polygon.empty();}
   inline void clear() {return polygon.clear();}

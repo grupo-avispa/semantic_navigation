@@ -16,6 +16,8 @@
 #include <limits>
 
 // ROS
+#include "angles/angles.h"
+#include "tf2/utils.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -38,8 +40,7 @@ using std::placeholders::_1, std::placeholders::_2;
 
 SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & options)
 : nav2_util::LifecycleNode("semantic_navigation_tasks", "", options),
-  border_(0.0),
-  orientation_(GenerateRandomGoals::Request::RANDOM)
+  border_(0.0)
 {
   RCLCPP_INFO(get_logger(), "Creating Semantic Navigation Tasks");
 }
@@ -205,7 +206,6 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_shutdown(const rclcpp_life
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
-
 bool SemanticNavigationTasks::getRegionsFromFile(
   const std::string & filename, std::vector<semantic_navigation::ROI> & regions)
 {
@@ -216,8 +216,7 @@ bool SemanticNavigationTasks::getRegionsFromFile(
   if (config["rois"]) {
     for (const auto & roi : config["rois"]) {
       ROI new_roi;
-      // Extract name and yaw
-      new_roi.yaw = roi["yaw"].as<float>();
+      // Extract name
       new_roi.set_name(roi["name"].as<std::string>());
       // Extract edges
       for (const auto & edge : roi["edges"]) {
@@ -327,7 +326,6 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
       break;
     }
   }
-  orientation_ = request->orientation;
   border_ = request->border;
 
   // If the requested ROI is empty and we don't want to use the full map
@@ -355,53 +353,32 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
   std::mt19937 gen(rd());       // seed the generator
   std::uniform_int_distribution<int> dist_x(cell_min_x, cell_max_x);       // define the range
   std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
-  std::uniform_real_distribution<double> dist_pi(0.0, 2 * M_PI);
+  std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
 
   int count = 0;
   while ( (response->goals.poses.size() < n)) {
     count += 1;
     int cell_x = dist_x(gen);
     int cell_y = dist_y(gen);
+    double yaw = dist_pi(gen);
 
+    // Set a random position and orientation for the goal
     geometry_msgs::msg::Pose pose;
-    pose.position.x = cell_x * map_.info.resolution + map_.info.origin.position.x;
-    pose.position.y = cell_y * map_.info.resolution + map_.info.origin.position.y;
+    pose.position.x = map_.info.origin.position.x + cell_x * map_.info.resolution;
+    pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
+    pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
 
     // If the point lies within ROI and is not in collision
     if (current_region.in_roi(pose.position.x, pose.position.y) &&
       !inCollision(cell_x, cell_y) &&
       current_region.distance_from_borders(pose.position.x, pose.position.y, border_))
     {
-      // Generate orientation
-      double yaw;
-      if (orientation_ == GenerateRandomGoals::Request::OUTSIDE) {
-        yaw = atan2(
-          (pose.position.y - current_region.polygon.centroid().y),
-          (pose.position.x - current_region.polygon.centroid().x));
-      } else if (orientation_ == GenerateRandomGoals::Request::INSIDE) {
-        yaw = atan2(
-          (pose.position.y - current_region.polygon.centroid().y),
-          (pose.position.x - current_region.polygon.centroid().x)) + M_PI;
-      } else if (orientation_ == GenerateRandomGoals::Request::STORED) {
-        if (current_region.yaw > -M_PI && current_region.yaw < M_PI) {
-          yaw = current_region.yaw;
-        } else {
-          yaw = dist_pi(gen);
-        }
-      } else if (orientation_ == GenerateRandomGoals::Request::REQUESTED) {
-        if (request->yaw > -M_PI && request->yaw < M_PI) {
-          yaw = request->yaw;
-        } else {
-          yaw = dist_pi(gen);
-        }
-      } else {
-        yaw = dist_pi(gen);
-      }
-      pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
+      // Generate orientation depending on the request
+      orientationFromRequest(pose, current_region, request->orientation, request->yaw);
       RCLCPP_INFO(
         get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)",
-        response->goals.poses.size() + 1, pose.position.x, pose.position.y, yaw);
-
+        response->goals.poses.size() + 1, pose.position.x, pose.position.y,
+        tf2::getYaw(pose.orientation));
       response->goals.poses.push_back(pose);
     }
   }
@@ -476,6 +453,25 @@ bool SemanticNavigationTasks::inCollision(int x, int y)
     }
   }
   return false;
+}
+
+void SemanticNavigationTasks::orientationFromRequest(
+  geometry_msgs::msg::Pose & pose, const ROI & roi, std::string orientation, double requested_yaw)
+{
+  double yaw;
+  if (orientation == GenerateRandomGoals::Request::OUTSIDE) {
+    yaw = atan2(
+      (pose.position.y - roi.polygon.centroid().y),
+      (pose.position.x - roi.polygon.centroid().x));
+  } else if (orientation == GenerateRandomGoals::Request::INSIDE) {
+    yaw = atan2(
+      (pose.position.y - roi.polygon.centroid().y),
+      (pose.position.x - roi.polygon.centroid().x)) + M_PI;
+  } else if (orientation == GenerateRandomGoals::Request::REQUESTED) {
+    yaw = angles::normalize_angle(requested_yaw);
+  }
+  RCLCPP_INFO(get_logger(), "Orientation: %s, Yaw: %f", orientation.c_str(), yaw);
+  pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
 }
 
 polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons(
