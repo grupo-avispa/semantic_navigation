@@ -19,13 +19,13 @@ target_link_libraries(test_tasks
   ${library_name}
 )
 
-# Test for map integration
-ament_add_gtest(test_map_integration
-test_map_integration.cpp
+# Test for integration
+ament_add_gtest(test_integration
+test_integration.cpp
 )
-ament_target_dependencies(test_map_integration
+ament_target_dependencies(test_integration
   ${dependencies} ament_index_cpp
 )
-target_link_libraries(test_map_integration
+target_link_libraries(test_integration
   ${library_name}
 )

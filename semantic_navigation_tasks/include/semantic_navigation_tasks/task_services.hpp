@@ -156,6 +156,17 @@ protected:
     std::shared_ptr<ListAllRegions::Response> response);
 
   /**
+   * @brief Generate random goals inside a region.
+   *
+   * @param n Number of goals.
+   * @param region Region of interest.
+   * @param limits Limits of the cells.
+   * @return geometry_msgs::msg::PoseArray Goals.
+   */
+  geometry_msgs::msg::PoseArray generateRandomGoals(
+    unsigned int n, Region region, CellLimits limits);
+
+  /**
    * @brief Callback to update the map.
    *
    * @param msg Message with the map.
@@ -204,6 +215,14 @@ protected:
    * @return true if the point is inside the map.
    */
   bool inCollision(int x, int y);
+
+  /**
+   * @brief Check if the point is valid (i.e., not in collision, inside the map and away from the
+   * border).
+   *
+   * @return bool True if the point is valid.
+   */
+  bool isPointValid(int x, int y, Region region, geometry_msgs::msg::Pose pose);
 
   /**
    * @brief Get the orientation depending on the request:

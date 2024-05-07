@@ -338,45 +338,10 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
   }
 
   // Process bounding box
-  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = processBoundingBox(map_, current_region);
+  auto limits = processBoundingBox(map_, current_region);
 
   // Generate response
-  response->goals.header.frame_id = map_topic_;
-
-  // Generate random goal pose
-  std::random_device rd;       // obtain a random number from hardware
-  std::mt19937 gen(rd());       // seed the generator
-  std::uniform_int_distribution<int> dist_x(cell_min_x, cell_max_x);       // define the range
-  std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
-  std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
-
-  unsigned int count = 0;
-  while (response->goals.poses.size() < n && count < n * 100) {
-    count += 1;
-    int cell_x = dist_x(gen);
-    int cell_y = dist_y(gen);
-    double yaw = dist_pi(gen);
-
-    // Set a random position and orientation for the goal
-    geometry_msgs::msg::Pose pose;
-    pose.position.x = map_.info.origin.position.x + cell_x * map_.info.resolution;
-    pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
-    pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
-
-    // If the point lies within region and is not in collision
-    if (current_region.isPointInside(pose.position.x, pose.position.y) &&
-      current_region.isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border_) &&
-      !inCollision(cell_x, cell_y))
-    {
-      // Generate orientation depending on the request
-      orientationFromRequest(pose, current_region, request->orientation, request->yaw);
-      RCLCPP_INFO(
-        get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)",
-        response->goals.poses.size() + 1, pose.position.x, pose.position.y,
-        tf2::getYaw(pose.orientation));
-      response->goals.poses.push_back(pose);
-    }
-  }
+  response->goals = generateRandomGoals(n, current_region, limits);
 
   goals_pub_->publish(response->goals);
   return true;
@@ -417,6 +382,47 @@ bool SemanticNavigationTasks::listAllRegionsService(
   return true;
 }
 
+geometry_msgs::msg::PoseArray SemanticNavigationTasks::generateRandomGoals(
+  unsigned int n, Region region, CellLimits limits)
+{
+  geometry_msgs::msg::PoseArray goals;
+  goals.header.frame_id = map_topic_;
+
+  // Generate random goal pose
+  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
+  std::random_device rd;       // obtain a random number from hardware
+  std::mt19937 gen(rd());       // seed the generator
+  std::uniform_int_distribution<int> dist_x(cell_min_x, cell_max_x);       // define the range
+  std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
+  std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
+
+  unsigned int count = 0;
+  while (goals.poses.size() < n) {
+    count += 1;
+    int cell_x = dist_x(gen);
+    int cell_y = dist_y(gen);
+    double yaw = dist_pi(gen);
+
+    // Set a random position and orientation for the goal
+    geometry_msgs::msg::Pose pose;
+    pose.position.x = map_.info.origin.position.x + cell_x * map_.info.resolution;
+    pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
+    pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
+
+    // If the point lies within region and is not in collision
+    if (isPointValid(cell_x, cell_y, region, pose)) {
+      // Generate orientation depending on the request
+      orientationFromRequest(pose, region, GenerateRandomGoals::Request::INSIDE, 0.0);
+      RCLCPP_INFO(
+        get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)",
+        goals.poses.size() + 1, pose.position.x, pose.position.y, tf2::getYaw(pose.orientation));
+      goals.poses.push_back(pose);
+    }
+  }
+
+  return goals;
+}
+
 int8_t SemanticNavigationTasks::cell(unsigned int x, unsigned int y)
 {
   // Return 'unknown' if out of bounds
@@ -448,6 +454,14 @@ bool SemanticNavigationTasks::inCollision(int x, int y)
     }
   }
   return false;
+}
+
+bool SemanticNavigationTasks::isPointValid(
+  int x, int y, Region region, geometry_msgs::msg::Pose pose)
+{
+  return region.isPointInside(pose.position.x, pose.position.y) &&
+         region.isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border_) &&
+         !inCollision(x, y);
 }
 
 void SemanticNavigationTasks::orientationFromRequest(

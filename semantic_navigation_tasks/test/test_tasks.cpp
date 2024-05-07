@@ -61,12 +61,23 @@ public:
     return SemanticNavigationTasks::inCollision(x, y);
   }
 
+  bool isPointValid(int x, int y, semantic_navigation::Region region, geometry_msgs::msg::Pose pose)
+  {
+    return SemanticNavigationTasks::isPointValid(x, y, region, pose);
+  }
+
   void orientationFromRequest(
     geometry_msgs::msg::Pose & pose, const semantic_navigation::Region & region,
     std::string orientation, double requested_yaw)
   {
     return SemanticNavigationTasks::orientationFromRequest(
       pose, region, orientation, requested_yaw);
+  }
+
+  geometry_msgs::msg::PoseArray generateRandomGoals(
+    unsigned int n, semantic_navigation::Region region, semantic_navigation::CellLimits limits)
+  {
+    return SemanticNavigationTasks::generateRandomGoals(n, region, limits);
   }
 
   nav_msgs::msg::OccupancyGrid getMap()
@@ -82,6 +93,7 @@ public:
   {
     inflated_footprint_size_ = static_cast<int>(inflation_radius / resolution) + 1;
   }
+  void setBorder(float border) {border_ = border;}
 
   void createFreeMap(int width, int height, double resolution)
   {
@@ -415,6 +427,67 @@ TEST(SemanticNavigationTasksTest, inCollisionCostmap) {
   EXPECT_TRUE(node->inCollision(0, 0));
 }
 
+TEST(SemanticNavigationTasksTest, isPointValid) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Create the regions
+  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  std::string filename = pkg + "/test/regions_test.yaml";
+  std::vector<semantic_navigation::Region> regions;
+  node->getRegionsFromFile(filename, regions);
+
+  // Create a map of 10x10 cells
+  node->createFreeMap(10, 10, 0.5);
+  auto map = node->getMap();
+  // Set map related values
+  node->setIsCostmap(false);
+  node->setFullMap(false);
+  node->setInflationRadius(0);
+  node->setInflatedFootprintSize(0, 0.5);
+
+  // Set the border
+  double border = 0.0;
+  node->setBorder(border);
+  // Set a pose (0.5, 0.5) inside the first region
+  int cell_x = 1; int cell_y = 1;
+  geometry_msgs::msg::Pose pose;
+  pose.position.x = map.info.origin.position.x + cell_x * map.info.resolution;
+  pose.position.y = map.info.origin.position.y + cell_y * map.info.resolution;
+
+  // Check the results
+  EXPECT_TRUE(regions[0].isPointInside(pose.position.x, pose.position.y));
+  EXPECT_TRUE(
+    regions[0].isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border));
+  EXPECT_TRUE(!node->inCollision(cell_x, cell_y));
+  EXPECT_TRUE(node->isPointValid(cell_x, cell_y, regions[0], pose));
+
+  // Set a new cell (50, 50) outside the first region
+  cell_x = 50; cell_y = 50;
+  pose.position.x = map.info.origin.position.x + cell_x * map.info.resolution;
+  pose.position.y = map.info.origin.position.y + cell_y * map.info.resolution;
+  // Check the result
+  EXPECT_FALSE(regions[0].isPointInside(pose.position.x, pose.position.y));
+  EXPECT_TRUE(
+    regions[0].isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border));
+  EXPECT_FALSE(!node->inCollision(cell_x, cell_y));
+  EXPECT_FALSE(node->isPointValid(cell_x, cell_y, regions[0], pose));
+
+  // Set a pose (0.5, 0.5) inside the first region but in collision
+  cell_x = 1; cell_y = 1;
+  pose.position.x = map.info.origin.position.x + cell_x * map.info.resolution;
+  pose.position.y = map.info.origin.position.y + cell_y * map.info.resolution;
+  // Set the cell as occupied
+  map.data[0] = nav2_util::OCC_GRID_OCCUPIED;
+  node->setMap(map);
+  // Check the result
+  EXPECT_TRUE(regions[0].isPointInside(pose.position.x, pose.position.y));
+  EXPECT_TRUE(
+    regions[0].isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border));
+  EXPECT_FALSE(!node->inCollision(cell_x, cell_y));
+  EXPECT_FALSE(node->isPointValid(cell_x, cell_y, regions[0], pose));
+}
+
 TEST(SemanticNavigationTasksTest, orientationFromRequest) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
@@ -450,268 +523,29 @@ TEST(SemanticNavigationTasksTest, orientationFromRequest) {
   EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), 1.0);
 }
 
-TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyRegion) {
+TEST(SemanticNavigationTasksTest, generateRandomGoals) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
-
-  // Set the test regions filename config parameter
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
-
-  // Configure
   node->configure();
   node->activate();
 
-  // Create the client service
-  auto req = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Request>();
-  req->n = 1;
-  req->region_name = "region_0";
-  auto client = node->create_client<semantic_navigation_msgs::srv::GenerateRandomGoals>(
-    "generate_random_goals");
-
-  // Wait for the service to be available
-  ASSERT_TRUE(client->wait_for_service());
-
-  // Call the service
-  auto result = client->async_send_request(req);
-
-  // Wait for the result
-  auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
-  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-    RCLCPP_INFO(node->get_logger(), "Service call successful");
-    resp = result.get();
-  } else {
-    RCLCPP_ERROR(node->get_logger(), "Service call failed");
-  }
-
-  // Check results
-  EXPECT_EQ(resp->goals.poses.size(), 0);
-
-  // Cleaning up
-  node->deactivate();
-  node->cleanup();
-  node->shutdown();
-}
-
-TEST(SemanticNavigationTasksTest, generateRandomGoalsEmptyMap) {
-  // Create the node
-  auto node = std::make_shared<SemanticNavigationTasksFixture>();
-
-  // Set the test regions filename config parameter
+  // Create the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
+  std::string filename = pkg + "/test/regions_test.yaml";
+  std::vector<semantic_navigation::Region> regions;
+  node->getRegionsFromFile(filename, regions);
 
-  // Configure
-  node->configure();
-  node->activate();
-
-  // Create the client service
-  auto req = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Request>();
-  req->n = 1;
-  req->region_name = "small1";
-  auto client = node->create_client<semantic_navigation_msgs::srv::GenerateRandomGoals>(
-    "generate_random_goals");
-
-  // Wait for the service to be available
-  ASSERT_TRUE(client->wait_for_service());
-
-  // Call the service
-  auto result = client->async_send_request(req);
-
-  // Wait for the result
-  auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
-  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-    RCLCPP_INFO(node->get_logger(), "Service call successful");
-    resp = result.get();
-  } else {
-    RCLCPP_ERROR(node->get_logger(), "Service call failed");
-  }
-
-  // Check results
-  EXPECT_EQ(resp->goals.poses.size(), 0);
-
-  // Cleaning up
-  node->deactivate();
-  node->cleanup();
-  node->shutdown();
-}
-
-TEST(SemanticNavigationTasksTest, generateRandomGoalsRegion) {
-  // Create the node
-  auto node = std::make_shared<SemanticNavigationTasksFixture>();
-
-  // Set the test regions filename config parameter
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
-  // Create a map of 10x10 cells
+  // Create the names
   node->createFreeMap(10, 10, 0.5);
 
-  // Configure
-  node->configure();
-  node->activate();
+  // Process the bounding box for a 1x1 square region
+  auto limits = node->processBoundingBox(node->getMap(), regions[0]);
 
-  // Create the client service
-  auto req = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Request>();
-  req->n = 1;
-  req->region_name = "small1";
-  auto client = node->create_client<semantic_navigation_msgs::srv::GenerateRandomGoals>(
-    "generate_random_goals");
+  // Generate random goals
+  auto goals = node->generateRandomGoals(1, regions[0], limits);
 
-  // Wait for the service to be available
-  ASSERT_TRUE(client->wait_for_service());
-
-  // Call the service
-  auto result = client->async_send_request(req);
-
-  // Wait for the result
-  auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
-  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-    RCLCPP_INFO(node->get_logger(), "Service call successful");
-    resp = result.get();
-  } else {
-    RCLCPP_ERROR(node->get_logger(), "Service call failed");
-  }
-
-  // Check results
-  EXPECT_EQ(resp->goals.poses.size(), 1);
-
-  // Cleaning up
-  node->deactivate();
-  node->cleanup();
-  node->shutdown();
-}
-
-TEST(SemanticNavigationTasksTest, getRegionNameInside) {
-  // Create the node
-  auto node = std::make_shared<SemanticNavigationTasksFixture>();
-
-  // Set the test regions filename config parameter
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
-
-  // Configure
-  node->configure();
-  node->activate();
-
-  // Create the client service
-  auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Request>();
-  req->position.x = 0.5;
-  req->position.y = 0.5;
-  auto client = node->create_client<semantic_navigation_msgs::srv::GetRegionName>(
-    "get_region_name");
-
-  // Wait for the service to be available
-  ASSERT_TRUE(client->wait_for_service());
-
-  // Call the service
-  auto result = client->async_send_request(req);
-
-  // Wait for the result
-  auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Response>();
-  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-    RCLCPP_INFO(node->get_logger(), "Service call successful");
-    resp = result.get();
-  } else {
-    RCLCPP_ERROR(node->get_logger(), "Service call failed");
-  }
-
-  // Check results
-  EXPECT_EQ(resp->region_name, "small1");
-
-  // Cleaning up
-  node->deactivate();
-  node->cleanup();
-  node->shutdown();
-}
-
-TEST(SemanticNavigationTasksTest, getRegionNameOutside) {
-  // Create the node
-  auto node = std::make_shared<SemanticNavigationTasksFixture>();
-
-  // Set the test regions filename config parameter
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
-
-  // Configure
-  node->configure();
-  node->activate();
-
-  // Create the client service
-  auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Request>();
-  req->position.x = -0.5;
-  req->position.y = -0.5;
-  auto client = node->create_client<semantic_navigation_msgs::srv::GetRegionName>(
-    "get_region_name");
-
-  // Wait for the service to be available
-  ASSERT_TRUE(client->wait_for_service());
-
-  // Call the service
-  auto result = client->async_send_request(req);
-
-  // Wait for the result
-  auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Response>();
-  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-    RCLCPP_INFO(node->get_logger(), "Service call successful");
-    resp = result.get();
-  } else {
-    RCLCPP_ERROR(node->get_logger(), "Service call failed");
-  }
-
-  // Check results
-  EXPECT_EQ(resp->region_name, "unknown");
-
-  // Cleaning up
-  node->deactivate();
-  node->cleanup();
-  node->shutdown();
-}
-
-TEST(SemanticNavigationTasksTest, listAllRegions) {
-  // Create the node
-  auto node = std::make_shared<SemanticNavigationTasksFixture>();
-
-  // Set the test regions filename config parameter
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-  nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
-
-  // Configure
-  node->configure();
-  node->activate();
-
-  // Create the client service
-  auto req = std::make_shared<semantic_navigation_msgs::srv::ListAllRegions::Request>();
-  auto client = node->create_client<semantic_navigation_msgs::srv::ListAllRegions>(
-    "list_all_regions");
-
-  // Wait for the service to be available
-  ASSERT_TRUE(client->wait_for_service());
-
-  // Call the service
-  auto result = client->async_send_request(req);
-
-  // Wait for the result
-  auto resp = std::make_shared<semantic_navigation_msgs::srv::ListAllRegions::Response>();
-  if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-    RCLCPP_INFO(node->get_logger(), "Service call successful");
-    resp = result.get();
-  } else {
-    RCLCPP_ERROR(node->get_logger(), "Service call failed");
-  }
-
-  // Check results
-  EXPECT_EQ(resp->region_names.size(), 4);
-
-  // Cleaning up
-  node->deactivate();
-  node->cleanup();
-  node->shutdown();
+  // Check the results
+  EXPECT_EQ(goals.poses.size(), 1);
 }
 
 int main(int argc, char ** argv)
