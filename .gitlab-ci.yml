@@ -46,6 +46,7 @@ test:
     - cd $COLCON_WS
     # Test the workspace
     - source $COLCON_WS/install/local_setup.bash
+    - rosdep install --from-paths src --ignore-src -r -y
     - colcon test --event-handlers console_cohesion+ --return-code-on-test-failure
     - colcon test-result --verbose
   artifacts:
