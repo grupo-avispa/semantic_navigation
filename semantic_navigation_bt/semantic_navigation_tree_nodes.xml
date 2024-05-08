@@ -1,0 +1,24 @@
+<root>
+    <TreeNodesModel>
+        <!-- ############################### ACTION NODES ################################# -->
+        <Action ID="GenerateRandomGoals">
+            <input_port name="service_name" default="generate_random_goals">Service name</input_port>
+            <input_port name="number_of_goals" default="1">Number of goals</input_port>
+            <input_port name="region_name">Region name</input_port>
+            <input_port name="yaw">Yaw of the goals (Optional)</input_port>
+            <input_port name="orientation">Random orientation of the goals</input_port>
+            <input_port name="border" default="0.0">Distance from the edge of the region</input_port>
+            <output_port name="goals">Generated goals</output_port>
+        </Action>
+        <Action ID="GetRegionName">
+            <input_port name="service_name" default="get_region_name">Service name</input_port>
+            <input_port name="position">Position of the point</input_port>
+            <output_port name="region_name">Region name</output_port>
+        </Action>
+        <Action ID="ListAllRegions">
+            <input_port name="service_name" default="list_all_regions">Service name</input_port>
+            <output_port name="region_names">Region names</output_port>
+        </Action>
+    </TreeNodesModel>
+</root>
+
