@@ -66,10 +66,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   nav2_util::declare_parameter_if_not_declared(
     this, "inflation_radius",
     rclcpp::ParameterValue(0.5), rcl_interfaces::msg::ParameterDescriptor()
-    .set__description("Inflation radius for the robot footprint")
-    .set__floating_point_range(
-      {rcl_interfaces::msg::FloatingPointRange()
-        .set__from_value(0.0).set__to_value(10.0).set__step(0.01)}));
+    .set__description("Inflation radius for the robot footprint"));
   this->get_parameter("inflation_radius", inflation_radius_);
   RCLCPP_INFO(
     get_logger(), "The parameter inflation_radius is set to: [%f]", inflation_radius_);
@@ -208,28 +205,35 @@ bool SemanticNavigationTasks::getRegionsFromFile(
   const std::string & filename, std::vector<semantic_navigation::Region> & regions)
 {
   RCLCPP_INFO(get_logger(), "Reading regions from file: %s", filename.c_str());
-  YAML::Node config = YAML::LoadFile(filename);
-
-  // Get the list of regions
-  if (config["regions"]) {
-    for (const auto & region : config["regions"]) {
-      Region new_region;
-      // Extract name
-      new_region.name = region["name"].as<std::string>();
-      // Extract points
-      for (const auto & point : region["points"]) {
-        polygon_msgs::msg::Point2D new_point;
-        new_point.x = point[0].as<float>();
-        new_point.y = point[1].as<float>();
-        new_region.polygon.points.push_back(new_point);
+  bool success = false;
+  try {
+    YAML::Node config = YAML::LoadFile(filename);
+    // Get the list of regions
+    if (config["regions"]) {
+      for (const auto & region : config["regions"]) {
+        // Extract name and points
+        if (region["name"] && region["points"]) {
+          Region new_region;
+          new_region.name = region["name"].as<std::string>();
+          for (const auto & point : region["points"]) {
+            polygon_msgs::msg::Point2D new_point;
+            new_point.x = point[0].as<float>();
+            new_point.y = point[1].as<float>();
+            new_region.polygon.points.push_back(new_point);
+          }
+          regions.push_back(new_region);
+          success = true;
+        } else {
+          RCLCPP_ERROR(get_logger(), "Region is not well defined");
+        }
       }
-      regions.push_back(new_region);
+    } else {
+      RCLCPP_ERROR(get_logger(), "No regions found in file [%s]", filename.c_str());
     }
-  } else {
-    RCLCPP_ERROR(get_logger(), "No regions found in file [%s]", filename.c_str());
-    return false;
+  } catch (const YAML::Exception & e) {
+    RCLCPP_ERROR(get_logger(), "Error reading file [%s]", filename.c_str());
   }
-  return true;
+  return success;
 }
 
 void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)

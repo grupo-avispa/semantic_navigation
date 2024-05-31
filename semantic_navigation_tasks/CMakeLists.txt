@@ -122,7 +122,6 @@ install(DIRECTORY launch params
   DESTINATION share/${PROJECT_NAME}/
 )
 
-
 install(FILES test/regions_test.yaml test/regions_test_empty.yaml
   DESTINATION share/${PROJECT_NAME}/test
 )

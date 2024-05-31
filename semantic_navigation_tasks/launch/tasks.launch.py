@@ -33,13 +33,14 @@ def generate_launch_description():
     # Read the YAML parameters file.
     default_params_file = os.path.join(
         semantic_navigation_tasks_dir, 'params', 'default_params.yaml')
-    default_rois_params_file = os.path.join(semantic_navigation_tasks_dir, 'params', 'rois.yaml')
+    default_regions_params_file = os.path.join(
+        semantic_navigation_tasks_dir, 'params', 'regions.yaml')
 
     # Create the launch configuration variables.
     namespace = LaunchConfiguration('namespace')
     autostart = LaunchConfiguration('autostart')
     params_file = LaunchConfiguration('params_file')
-    rois_params_file = LaunchConfiguration('rois_filename')
+    regions_params_file = LaunchConfiguration('regions_filename')
     use_composition = LaunchConfiguration('use_composition')
     container_name = LaunchConfiguration('container_name')
     container_name_full = (namespace, '/', container_name)
@@ -51,7 +52,7 @@ def generate_launch_description():
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
         'autostart': autostart,
-        'rois_filename': rois_params_file,
+        'regions_filename': regions_params_file,
     }
 
     configured_params = RewrittenYaml(
@@ -78,9 +79,9 @@ def generate_launch_description():
         description='Full path to the ROS2 parameters file with semantic configuration'
     )
 
-    declare_rois_filename_cmd = DeclareLaunchArgument(
-        'rois_filename',
-        default_value=default_rois_params_file,
+    declare_regions_filename_cmd = DeclareLaunchArgument(
+        'regions_filename',
+        default_value=default_regions_params_file,
         description='Full path to the ROS2 parameters file with the ROIs'
     )
 
@@ -172,7 +173,7 @@ def generate_launch_description():
     # Declare the launch options
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
-    ld.add_action(declare_rois_filename_cmd)
+    ld.add_action(declare_regions_filename_cmd)
     ld.add_action(declare_autostart_cmd)
     ld.add_action(declare_use_composition_cmd)
     ld.add_action(declare_container_name_cmd)

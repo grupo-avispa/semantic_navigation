@@ -43,6 +43,24 @@ TEST(SemanticRegionTest, settersAndGetters) {
   EXPECT_EQ(region.polygon.points[1].y, 4.0);
 }
 
+TEST(SemanticRegionTest, centroid) {
+  semantic_navigation::Region region;
+  polygon_msgs::msg::Point2D point;
+  point.x = 0.0; point.y = 0.0;
+  region.polygon.points.push_back(point);
+  point.x = 1.0; point.y = 0.0;
+  region.polygon.points.push_back(point);
+  point.x = 1.0; point.y = 1.0;
+  region.polygon.points.push_back(point);
+  point.x = 0.0; point.y = 1.0;
+  region.polygon.points.push_back(point);
+
+  // Check the centroid of the polygon
+  geometry_msgs::msg::Point centroid = region.centroid();
+  EXPECT_EQ(centroid.x, 0.5);
+  EXPECT_EQ(centroid.y, 0.5);
+}
+
 TEST(SemanticRegionTest, isPointInside) {
   semantic_navigation::Region region;
   polygon_msgs::msg::Point2D point;
@@ -74,10 +92,12 @@ TEST(SemanticRegionTest, isPointAtLeastDistanceFromBorders) {
   point.x = 0.0; point.y = 1.0;
   region.polygon.points.push_back(point);
 
-  // Check if the point (0.2, 0.2) is at a distance less than the border
+  // Check if the point (0.2, 0.2) is at a distance greater than the border
   EXPECT_FALSE(region.isPointAtLeastDistanceFromBorders(0.2, 0.2, 0.5));
   // Check if the point (2.0, 2.0) is at a distance greater than the border
   EXPECT_TRUE(region.isPointAtLeastDistanceFromBorders(2.0, 2.0, 0.1));
+  // Check if the point (0.2, 0.7) is at a distance greater than the border
+  EXPECT_FALSE(region.isPointAtLeastDistanceFromBorders(0.2, 0.7, 0.25));
 }
 
 int main(int argc, char ** argv)

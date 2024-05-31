@@ -15,6 +15,7 @@
 
 #include "gtest/gtest.h"
 #include "tf2/utils.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include "lifecycle_msgs/msg/state.hpp"
@@ -161,7 +162,7 @@ TEST(SemanticNavigationTasksTest, getRegionsFromFile) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  // Set the regions
+  // Load the regions from a file with right and wrong regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
   std::string filename = pkg + "/test/regions_test.yaml";
 
@@ -213,15 +214,8 @@ TEST(SemanticNavigationTasksTest, getRegionsFromFile) {
   EXPECT_EQ(regions[3].polygon.points[3].x, -20.0);
   EXPECT_EQ(regions[3].polygon.points[3].y, -12.0);
 
-
   // Now try to get the regions from a file with empty regions
-  filename = pkg + "/test/regions_test_empty.yaml";
-
-  // Get the regions
-  result = node->getRegionsFromFile(filename, regions);
-
-  // Check the results
-  EXPECT_FALSE(result);
+  EXPECT_FALSE(node->getRegionsFromFile(pkg + "/test/regions_test_empty.yaml", regions));
 }
 
 TEST(SemanticNavigationTasksTest, createPolygons) {
@@ -286,8 +280,12 @@ TEST(SemanticNavigationTasksTest, createNames) {
   EXPECT_EQ(names.markers.size(), 4);
   EXPECT_EQ(names.markers[0].type, visualization_msgs::msg::Marker::TEXT_VIEW_FACING);
   EXPECT_EQ(names.markers[0].text, "small1");
+  EXPECT_DOUBLE_EQ(names.markers[0].pose.position.x, regions[0].centroid().x);
+  EXPECT_DOUBLE_EQ(names.markers[0].pose.position.y, regions[0].centroid().y);
   EXPECT_EQ(names.markers[1].type, visualization_msgs::msg::Marker::TEXT_VIEW_FACING);
   EXPECT_EQ(names.markers[1].text, "small2");
+  EXPECT_DOUBLE_EQ(names.markers[1].pose.position.x, regions[1].centroid().x);
+  EXPECT_DOUBLE_EQ(names.markers[1].pose.position.y, regions[1].centroid().y);
 
   // Clean up
   node->deactivate();
@@ -509,13 +507,13 @@ TEST(SemanticNavigationTasksTest, orientationFromRequest) {
   node->orientationFromRequest(
     pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::OUTSIDE, 0.0);
   // Check the results
-  EXPECT_NEAR(tf2::getYaw(pose.orientation), -2.356194, 1e-3);
+  EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), 0.0);
 
   // Request the orientation inside the region
   node->orientationFromRequest(
     pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::INSIDE, 0.0);
   // Check the results
-  EXPECT_NEAR(tf2::getYaw(pose.orientation), 0.785398, 1e-3);
+  EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), M_PI);
 
   // Request the orientation to a specific yaw
   node->orientationFromRequest(

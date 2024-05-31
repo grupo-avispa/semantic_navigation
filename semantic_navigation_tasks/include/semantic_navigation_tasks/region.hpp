@@ -48,6 +48,8 @@ struct Region
       centroid.x += point.x;
       centroid.y += point.y;
     }
+    centroid.x /= polygon.points.size();
+    centroid.y /= polygon.points.size();
     return centroid;
   }
 
@@ -70,7 +72,7 @@ struct Region
    */
   bool isPointAtLeastDistanceFromBorders(float x, float y, float distance)
   {
-    for (unsigned int i = 0; i < polygon.points.size(); i = i + 2) {
+    for (unsigned int i = 0; i < polygon.points.size() - 1; i++) {
       if (distanceToLine(
           x, y,
           polygon.points[i].x, polygon.points[i].y,
