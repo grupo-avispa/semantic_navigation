@@ -2,7 +2,7 @@
 
 ## Overview
 
-ROS 2 Service to generate 2D navigation goals with orientation in a specifed region. These regionss are described by a polygon 
+ROS 2 Service to generate 2D navigation goals with orientation in a specifed region. These regions are described by a polygon 
 defined by its edges in the map frame and a name. The service takes the number of navigation goals (*n*) and a region name (*region_name*) and 
 returns a list of goal poses. 
 
