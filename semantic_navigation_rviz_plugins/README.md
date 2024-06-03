@@ -9,7 +9,7 @@ Panel for [RViz2] to send the robot to a region and tool to save regions in a YA
 For the Semantic Navigation Panel:
 
 * Open Rviz2 and add the new panel. Then, write the room in the textbox and click on "Send the robot to the room".
-* By default it will send one (1) goal with orientation inside the ROI and at 0.1m from the border.
+* By default it will send one (1) goal with orientation inside the Region and at 0.1m from the border.
 
 If you want to know where the robot is, click on "Where is the robot?".
 

@@ -39,12 +39,12 @@ void GenerateRandomGoalsService::on_tick()
 BT::NodeStatus GenerateRandomGoalsService::on_completion(
   std::shared_ptr<semantic_navigation_msgs::srv::GenerateRandomGoals::Response> response)
 {
+  BT::NodeStatus status = BT::NodeStatus::FAILURE;
   if (response->goals.poses.size() > 0) {
     setOutput("goals", response->goals);
-    return BT::NodeStatus::SUCCESS;
-  } else {
-    return BT::NodeStatus::FAILURE;
+    status = BT::NodeStatus::SUCCESS;
   }
+  return status;
 }
 
 }  // namespace semantic_navigation_bt

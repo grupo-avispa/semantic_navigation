@@ -46,7 +46,7 @@ namespace semantic_navigation_rviz_plugins
 
 /**
  * @class semantic_navigation_rviz_plugins::SemanticAnnotationTool
- * @brief Tool to annotate regions of interest (ROIs) in the map.
+ * @brief Tool to annotate regions in the map.
  */
 class SemanticAnnotationTool : public rviz_common::Tool
 {

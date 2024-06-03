@@ -30,12 +30,12 @@ ListAllRegionsService::ListAllRegionsService(
 BT::NodeStatus ListAllRegionsService::on_completion(
   std::shared_ptr<semantic_navigation_msgs::srv::ListAllRegions::Response> response)
 {
+  BT::NodeStatus status = BT::NodeStatus::FAILURE;
   if (response->region_names.size() > 0) {
     setOutput("regions", response->region_names);
-    return BT::NodeStatus::SUCCESS;
-  } else {
-    return BT::NodeStatus::FAILURE;
+    status = BT::NodeStatus::SUCCESS;
   }
+  return status;
 }
 
 }  // namespace semantic_navigation_bt

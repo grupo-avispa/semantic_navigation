@@ -114,9 +114,9 @@ install(DIRECTORY include/
   DESTINATION include/
 )
 
-# install(DIRECTORY test/utils/
-#   DESTINATION include/${PROJECT_NAME}/utils/
-# )
+install(DIRECTORY test/utils/
+  DESTINATION include/${PROJECT_NAME}/utils/
+)
 
 install(FILES semantic_navigation_tree_nodes.xml DESTINATION share/${PROJECT_NAME})
 install(FILES ${GENERATED_DIR}/plugins_list.hpp DESTINATION include/${PROJECT_NAME})
@@ -131,7 +131,7 @@ if(BUILD_TESTING)
   set(ament_cmake_copyright_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
   find_package(ament_cmake_gtest REQUIRED)
-  # add_subdirectory(test)
+  add_subdirectory(test)
 endif()
 
 # ##################################

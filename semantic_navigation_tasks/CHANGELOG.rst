@@ -2,7 +2,7 @@
 Changelog for package semantic_navigation_tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-3.0.0 (XX-XX-XXXX)
+3.0.0 (03-06-2024)
 ------------------
 * Update License to Apache 2.0.
 * Update CMakelists.txt and package.xml with new compilation flags.

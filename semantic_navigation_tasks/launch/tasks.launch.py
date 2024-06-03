@@ -82,7 +82,7 @@ def generate_launch_description():
     declare_regions_filename_cmd = DeclareLaunchArgument(
         'regions_filename',
         default_value=default_regions_params_file,
-        description='Full path to the ROS2 parameters file with the ROIs'
+        description='Full path to the ROS2 parameters file with the Regions'
     )
 
     declare_autostart_cmd = DeclareLaunchArgument(

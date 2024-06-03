@@ -6,10 +6,8 @@ This package provides several behavior tree plugins for the semantic navigation 
 
 The plugins included in this package are:
 
-* **EmergencyStop**: An action plugin that immediately halts the robot's movements. This is typically used in situations where the robot encounters an unexpected obstacle or error.
-
-* **ResetMotorStop**: An action plugin that resets the robot's motor stop. This is typically used after the robot has been halted due to an emergency stop or other interruption, and it is safe for the robot to resume movement.
-
-* **IsBumperActivated**: A condition plugin that checks whether the robot's bumper has been activated. This is typically used to detect collisions or close proximity to obstacles.
+* **GenerateRandomGoals**: This node generates random goals within a specified region. The region is defined by the name of the polygon, which is read from a configuration file. The node publishes the generated goals to a topic, which can be used by the robot's navigation system to navigate to the goal.
+* **GetRegionName**: This node retrieves the name of the region in which a given position is located. The position is provided as input to the node, and the node returns the name of the region in which the position is located.
+* **ListAllRegions**: This node lists all the regions defined in the configuration file. The node reads the configuration file and returns a list of all the regions defined in the file.
 
 [BehaviorTree.CPP]: https://github.com/BehaviorTree/BehaviorTree.CPP

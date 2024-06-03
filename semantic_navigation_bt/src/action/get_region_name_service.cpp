@@ -32,16 +32,15 @@ void GetRegionNameService::on_tick()
   getInput("position", request_->position);
 }
 
-
 BT::NodeStatus GetRegionNameService::on_completion(
   std::shared_ptr<semantic_navigation_msgs::srv::GetRegionName::Response> response)
 {
+  BT::NodeStatus status = BT::NodeStatus::FAILURE;
   if (response->region_name != "") {
     setOutput("region_name", response->region_name);
-    return BT::NodeStatus::SUCCESS;
-  } else {
-    return BT::NodeStatus::FAILURE;
+    status = BT::NodeStatus::SUCCESS;
   }
+  return status;
 }
 
 }  // namespace semantic_navigation_bt

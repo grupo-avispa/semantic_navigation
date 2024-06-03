@@ -7,4 +7,4 @@ semantic_navigation:
     is_costmap: false
     full_map: false
     inflation_radius: 0.5
-    rois_filename: ''
+    regions_filename: ''

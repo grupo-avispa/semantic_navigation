@@ -24,6 +24,7 @@
 
 #include "plugins_list.hpp"
 
+// LCOV_EXCL_START
 int main()
 {
   BT::BehaviorTreeFactory factory;
@@ -46,3 +47,4 @@ int main()
 
   return 0;
 }
+// LCOV_EXCL_STOP

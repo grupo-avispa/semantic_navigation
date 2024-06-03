@@ -2,7 +2,7 @@
 Changelog for package semantic_navigation_bt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-3.0.0 (XX-XX-XXXX)
+3.0.0 (03-06-2024)
 ------------------
 * Create README.md.
 * Create CHANGELOG.rst.

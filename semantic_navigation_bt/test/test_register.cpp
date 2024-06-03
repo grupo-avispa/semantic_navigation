@@ -18,14 +18,17 @@
 #include "behaviortree_cpp_v3/utils/shared_library.h"
 #include "rclcpp/rclcpp.hpp"
 
-TEST(Scitos2BehaviorTree, register_nodes)
+TEST(SemanticNavigationTasks, register_nodes)
 {
   BT::BehaviorTreeFactory factory;
   BT::SharedLibrary loader;
 
-  factory.registerFromPlugin(loader.getOSName("scitos2_is_bumper_activated_condition_bt_node"));
-  factory.registerFromPlugin(loader.getOSName("scitos2_emergency_stop_service_bt_node"));
-  factory.registerFromPlugin(loader.getOSName("scitos2_reset_motor_stop_service_bt_node"));
+  factory.registerFromPlugin(
+    loader.getOSName("semantic_navigation_generate_random_goals_service_bt_node"));
+  factory.registerFromPlugin(
+    loader.getOSName("semantic_navigation_get_region_name_service_bt_node"));
+  factory.registerFromPlugin(
+    loader.getOSName("semantic_navigation_list_all_regions_service_bt_node"));
 }
 
 int main(int argc, char ** argv)

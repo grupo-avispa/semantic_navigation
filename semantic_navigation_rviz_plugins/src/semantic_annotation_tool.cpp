@@ -157,7 +157,7 @@ void SemanticAnnotationTool::save_polygon(const std::string filename)
   std::ofstream regionfile(filepath, std::ofstream::app);
 
   regionfile << "inflation_radius: " << inflation_radius_ << std::endl;
-  regionfile << "rois:" << std::endl;
+  regionfile << "regions:" << std::endl;
   for (const auto & region : region_list_) {
     regionfile << "  - {name: '" << region.name << "', points: [";
     auto points = region.polygon.points;
@@ -179,7 +179,7 @@ void SemanticAnnotationTool::show_polygon_names()
     visualization_msgs::msg::Marker label_marker;
     label_marker.header.frame_id = "map";
     label_marker.header.stamp = ros_node_->now();
-    label_marker.ns = "labelroi";
+    label_marker.ns = "label";
     label_marker.id = p;
     label_marker.text = region.name;
     label_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;

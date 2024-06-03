@@ -41,12 +41,6 @@ public:
   ListAllRegionsService(const std::string & service_node_name, const BT::NodeConfiguration & conf);
 
   /**
-   * @brief The main override required by a BT service
-   * @return BT::NodeStatus Status of tick execution
-   */
-  void on_tick() override;
-
-  /**
    * @brief Override the on_completion method to set the output port with the region names after the
    * completion of the service.
    * @param response The response from the service

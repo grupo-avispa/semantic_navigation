@@ -7,6 +7,7 @@
 
 A ROS metapackage for semantic navigation. At the moment the included packages are:
 
+ * [semantic_navigation_bt]: behavior tree for semantic navigation.
  * [semantic_navigation_msgs]: messages used by the semantic navigation packages.
  * [semantic_navigation_rviz_plugins]: [Rviz2] panel plugin to easily create regions and to send the robot to them.
  * [semantic_navigation_tasks]: used to generate random navigation goals and semantic position services.
@@ -45,6 +46,7 @@ colcon build --symlink-install
 [Ubuntu]: https://ubuntu.com/
 [ROS2]: https://docs.ros.org/en/humble/
 [Rviz2]: https://github.com/ros2/rviz
-[semantic_navigation_msgs]: /semantic_navigation_msgs
-[semantic_navigation_rviz_plugins]: /semantic_navigation_rviz_plugins
-[semantic_navigation_tasks]: /semantic_navigation_tasks
+[semantic_navigation_bt]: ./semantic_navigation_bt
+[semantic_navigation_msgs]: ./semantic_navigation_msgs
+[semantic_navigation_rviz_plugins]: ./semantic_navigation_rviz_plugins
+[semantic_navigation_tasks]: ./semantic_navigation_tasks
