@@ -156,7 +156,6 @@ void SemanticAnnotationTool::save_polygon(const std::string filename)
     "/params/" + filename + ".yaml";
   std::ofstream regionfile(filepath, std::ofstream::app);
 
-  regionfile << "inflation_radius: " << inflation_radius_ << std::endl;
   regionfile << "regions:" << std::endl;
   for (const auto & region : region_list_) {
     regionfile << "  - {name: '" << region.name << "', points: [";
@@ -164,10 +163,12 @@ void SemanticAnnotationTool::save_polygon(const std::string filename)
     for (unsigned int p = 0; p < points.size() - 1; p++) {
       regionfile << "[" << points[p].x << ", " << points[p].y << "], ";
     }
-    regionfile << "[" << points.back().x << ", " << points.back().y << "]}" << std::endl;
+    regionfile << "[" << points.back().x << ", " << points.back().y << "]]}" << std::endl;
   }
   regionfile << "\n";
   regionfile.close();
+
+  RCLCPP_INFO(ros_node_->get_logger(), "Regions saved in %s", filepath.c_str());
 }
 
 void SemanticAnnotationTool::show_polygon_names()
