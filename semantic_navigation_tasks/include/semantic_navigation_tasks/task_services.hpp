@@ -27,6 +27,7 @@
 
 // ROS
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"

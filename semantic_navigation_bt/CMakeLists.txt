@@ -111,7 +111,7 @@ target_include_directories(generate_semantic_navigation_tree_nodes_xml PRIVATE $
 install(TARGETS generate_semantic_navigation_tree_nodes_xml DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY include/
-  DESTINATION include/
+  DESTINATION include/${PROJECT_NAME}
 )
 
 install(DIRECTORY test/utils/

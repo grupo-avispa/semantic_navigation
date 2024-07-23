@@ -52,8 +52,10 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(angles REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(polygon_msgs REQUIRED)
 find_package(polygon_utils REQUIRED)
@@ -71,12 +73,13 @@ find_package(yaml_cpp_vendor REQUIRED)
 include_directories(
   include
 )
-
 set(dependencies
   rclcpp
   rclcpp_components
+  rclcpp_lifecycle
   angles
   geometry_msgs
+  nav_msgs
   nav2_util
   polygon_msgs
   polygon_utils
@@ -115,7 +118,7 @@ install(TARGETS ${executable_name}
 )
 
 install(DIRECTORY include/
-  DESTINATION include/
+  DESTINATION include/${PROJECT_NAME}
 )
 
 install(DIRECTORY launch params
@@ -131,16 +134,18 @@ install(FILES test/regions_test.yaml test/regions_test_empty.yaml
 # ############
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+
   # the following line skips the linter which checks for copyrights
   set(ament_cmake_copyright_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
   add_subdirectory(test)
 endif()
 
 # ##################################
 # # ament specific configuration  ##
 # ##################################
-ament_export_include_directories(include)
+ament_export_include_directories(include/${PROJECT_NAME})
 ament_export_libraries(${library_name})
 ament_export_dependencies(${dependencies})
 ament_package()
