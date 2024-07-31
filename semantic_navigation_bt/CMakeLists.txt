@@ -52,6 +52,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(behaviortree_cpp_v3 REQUIRED)
 find_package(nav2_behavior_tree REQUIRED)
+find_package(nav2_util REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
@@ -60,20 +61,7 @@ find_package(semantic_navigation_msgs REQUIRED)
 # ##########
 # # Build ##
 # ##########
-# # Specify additional locations of header files
-# # Your package locations should be listed before other locations
-include_directories(
-  include
-)
-
-set(dependencies
-  rclcpp
-  rclcpp_action
-  rclcpp_lifecycle
-  semantic_navigation_msgs
-  behaviortree_cpp_v3
-  nav2_behavior_tree
-)
+include_directories(include) # TODO(ajtudela): Fix this in jazzy
 
 add_library(semantic_navigation_generate_random_goals_service_bt_node SHARED src/action/generate_random_goals_service.cpp)
 list(APPEND plugin_libs semantic_navigation_generate_random_goals_service_bt_node)
@@ -85,7 +73,17 @@ add_library(semantic_navigation_list_all_regions_service_bt_node SHARED src/acti
 list(APPEND plugin_libs semantic_navigation_list_all_regions_service_bt_node)
 
 foreach(bt_plugin ${plugin_libs})
-  ament_target_dependencies(${bt_plugin} ${dependencies})
+  target_include_directories(${bt_plugin} PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+  )
+  target_link_libraries(${bt_plugin} PUBLIC
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    rclcpp_lifecycle::rclcpp_lifecycle
+    ${semantic_navigation_msgs_TARGETS}
+  )
+  ament_target_dependencies(${bt_plugin} PUBLIC behaviortree_cpp_v3 nav2_behavior_tree) # TODO(ajtudela): Fix this in jazzy
   target_compile_definitions(${bt_plugin} PRIVATE BT_PLUGIN_EXPORT)
 endforeach()
 
@@ -103,7 +101,7 @@ set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
 configure_file(plugins_list.hpp.in ${GENERATED_DIR}/plugins_list.hpp)
 
 add_executable(generate_semantic_navigation_tree_nodes_xml src/generate_semantic_navigation_tree_nodes_xml.cpp)
-ament_target_dependencies(generate_semantic_navigation_tree_nodes_xml ${dependencies})
+ament_target_dependencies(generate_semantic_navigation_tree_nodes_xml PUBLIC behaviortree_cpp_v3 nav2_util) # TODO(ajtudela): Fix this in jazzy
 
 # allow generate_semantic_navigation_tree_nodes_xml to find plugins_list.hpp
 target_include_directories(generate_semantic_navigation_tree_nodes_xml PRIVATE ${GENERATED_DIR})
@@ -142,6 +140,7 @@ ament_export_libraries()
 ament_export_dependencies(
   behaviortree_cpp_v3
   nav2_behavior_tree
+  nav2_util
   rclcpp
   rclcpp_action
   rclcpp_lifecycle
