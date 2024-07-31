@@ -54,6 +54,7 @@ set(CMAKE_AUTOMOC ON)
 # ###############################################
 # # Find ament macros and libraries
 find_package(ament_cmake REQUIRED)
+find_package(nav2_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(polygon_msgs REQUIRED)
@@ -75,38 +76,40 @@ set(semantic_navigation_headers_to_moc
   include/${PROJECT_NAME}/semantic_navigation_panel.hpp
 )
 
+set(semantic_navigation_sources
+  src/semantic_annotation_tool.cpp
+  src/semantic_navigation_panel.cpp
+)
+
 # Specify additional locations of header files
 # Your package locations should be listed before other locations
 include_directories(
-  include
+  ${semantic_navigation_tasks_INCLUDE_DIRS}
 )
 
 # Declare a C++ library
 add_library(${PROJECT_NAME} SHARED
   ${semantic_navigation_headers_to_moc}
-  src/semantic_annotation_tool.cpp
-  src/semantic_navigation_panel.cpp
-)
-ament_target_dependencies(${PROJECT_NAME}
-  rclcpp
-  rclcpp_action
-  pluginlib
-  rviz_common
-  rviz_rendering
-  semantic_navigation_msgs
-  semantic_navigation_tasks
-  polygon_msgs
-  polygon_utils
-  visualization_msgs
-  nav2_util
-  Qt5
+  ${semantic_navigation_sources}
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
   ${Qt5Widgets_INCLUDE_DIRS}
 )
-target_link_libraries(${PROJECT_NAME}
+
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  ${nav2_msgs_TARGETS}
+  ${nav2_util_TARGETS} # TODO(ajtudela): Fix this in jazzy
+  ${polygon_msgs_TARGETS}
+  polygon_utils::polygon_utils
+  Qt5::Widgets
+  ${semantic_navigation_msgs_TARGETS}
+  rclcpp::rclcpp
+  rclcpp_action::rclcpp_action
   rviz_common::rviz_common
   rviz_rendering::rviz_rendering
+  ${visualization_msgs_TARGETS}
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
@@ -128,8 +131,7 @@ install(TARGETS ${PROJECT_NAME}
   RUNTIME DESTINATION bin
 )
 
-install(
-  DIRECTORY include/
+install(DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
 
@@ -144,18 +146,20 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_include_directories(include/${PROJECT_NAME})
+ament_export_libraries(${PROJECT_NAME})
 ament_export_dependencies(
+  nav2_msgs
+  nav2_util
+  pluginlib
+  polygon_msgs
+  polygon_utils
   rclcpp
   rclcpp_action
-  pluginlib
   rviz_common
   rviz_rendering
   semantic_navigation_msgs
-  slg_msgs
-  polygon_msgs
-  polygon_utils
+  semantic_navigation_tasks
   visualization_msgs
-  nav2_util
   Qt5
 )
 ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)

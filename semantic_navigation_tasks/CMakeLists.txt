@@ -68,39 +68,41 @@ find_package(yaml_cpp_vendor REQUIRED)
 # ##########
 # # Build ##
 # ##########
-# # Specify additional locations of header files
-# # Your package locations should be listed before other locations
-include_directories(
-  include
-)
-set(dependencies
-  angles
-  geometry_msgs
-  nav_msgs
-  nav2_util
-  polygon_msgs
-  polygon_utils
-  rclcpp
-  rclcpp_components
-  rclcpp_lifecycle
-  semantic_navigation_msgs
-  tf2
-  tf2_geometry_msgs
-  visualization_msgs
-  yaml_cpp_vendor
-)
-
 set(library_name ${PROJECT_NAME}_core)
 set(executable_name ${PROJECT_NAME})
 
 # Add library
 add_library(${library_name} SHARED src/task_services.cpp)
-ament_target_dependencies(${library_name} ${dependencies})
+target_include_directories(${library_name} PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+)
+target_link_libraries(${library_name}
+  PUBLIC
+  ${geometry_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
+  ${polygon_msgs_TARGETS}
+  rclcpp::rclcpp
+  rclcpp_lifecycle::rclcpp_lifecycle
+  ${semantic_navigation_msgs_TARGETS}
+  ${visualization_msgs_TARGETS}
+  PRIVATE
+  angles::angles
+  polygon_utils::polygon_utils
+  rclcpp_components::component
+  tf2::tf2
+  ${tf2_geometry_msgs_TARGETS}
+  ${yaml_cpp_vendor_TARGETS}
+)
+
+ament_target_dependencies(${library_name} PUBLIC nav2_util) # TODO(ajtudela): Fix this in jazzy
 
 # Add executable
 add_executable(${executable_name} src/main.cpp)
-ament_target_dependencies(${executable_name} ${dependencies})
-target_link_libraries(${executable_name} ${library_name})
+target_link_libraries(${executable_name} PRIVATE
+  rclcpp::rclcpp
+  ${library_name}
+)
 
 rclcpp_components_register_nodes(${library_name} "semantic_navigation::SemanticNavigationTasks")
 
@@ -148,6 +150,21 @@ endif()
 # ##################################
 ament_export_include_directories(include/${PROJECT_NAME})
 ament_export_libraries(${library_name})
-ament_export_dependencies(${dependencies})
+ament_export_dependencies(
+  angles
+  geometry_msgs
+  nav_msgs
+  nav2_util
+  polygon_msgs
+  polygon_utils
+  rclcpp
+  rclcpp_components
+  rclcpp_lifecycle
+  semantic_navigation_msgs
+  tf2
+  tf2_geometry_msgs
+  visualization_msgs
+  yaml_cpp_vendor
+)
 ament_export_targets(${library_name})
 ament_package()

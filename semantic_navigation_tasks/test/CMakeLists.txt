@@ -2,30 +2,28 @@ find_package(ament_index_cpp REQUIRED)
 
 # Test for regions
 ament_add_gtest(test_regions
-test_regions.cpp
+  test_regions.cpp
 )
-ament_target_dependencies(test_regions
-  ${dependencies} ament_index_cpp
+target_link_libraries(test_regions
+  ${library_name}
+  ${polygon_msgs_TARGETS}
+  ament_index_cpp::ament_index_cpp
 )
 
 # Test for tasks
 ament_add_gtest(test_tasks
   test_tasks.cpp
 )
-ament_target_dependencies(test_tasks
-  ${dependencies} ament_index_cpp
-)
 target_link_libraries(test_tasks
   ${library_name}
+  ament_index_cpp::ament_index_cpp
 )
 
 # Test for integration
 ament_add_gtest(test_integration
-test_integration.cpp
-)
-ament_target_dependencies(test_integration
-  ${dependencies} ament_index_cpp
+  test_integration.cpp
 )
 target_link_libraries(test_integration
   ${library_name}
+  ament_index_cpp::ament_index_cpp
 )
