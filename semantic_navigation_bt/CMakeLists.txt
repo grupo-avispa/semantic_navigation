@@ -50,12 +50,12 @@ endif()
 # ###############################################
 # # Find ament macros and libraries
 find_package(ament_cmake REQUIRED)
+find_package(behaviortree_cpp_v3 REQUIRED)
+find_package(nav2_behavior_tree REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(semantic_navigation_msgs REQUIRED)
-find_package(behaviortree_cpp_v3 REQUIRED)
-find_package(nav2_behavior_tree REQUIRED)
 
 # ##########
 # # Build ##
@@ -130,13 +130,22 @@ if(BUILD_TESTING)
   set(ament_cmake_copyright_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
   find_package(ament_cmake_gtest REQUIRED)
+
   add_subdirectory(test)
 endif()
 
 # ##################################
 # # ament specific configuration  ##
 # ##################################
-ament_export_include_directories(include)
-ament_export_libraries(${plugin_libs})
-ament_export_dependencies(${dependencies})
+ament_export_include_directories(include/${PROJECT_NAME})
+ament_export_libraries()
+ament_export_dependencies(
+  behaviortree_cpp_v3
+  nav2_behavior_tree
+  rclcpp
+  rclcpp_action
+  rclcpp_lifecycle
+  semantic_navigation_msgs
+)
+ament_export_targets()
 ament_package()

@@ -50,18 +50,18 @@ endif()
 # ###############################################
 # # Find ament macros and libraries
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
 find_package(angles REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(polygon_msgs REQUIRED)
 find_package(polygon_utils REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(semantic_navigation_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-find_package(semantic_navigation_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 
@@ -74,18 +74,18 @@ include_directories(
   include
 )
 set(dependencies
-  rclcpp
-  rclcpp_components
-  rclcpp_lifecycle
   angles
   geometry_msgs
   nav_msgs
   nav2_util
   polygon_msgs
   polygon_utils
+  rclcpp
+  rclcpp_components
+  rclcpp_lifecycle
+  semantic_navigation_msgs
   tf2
   tf2_geometry_msgs
-  semantic_navigation_msgs
   visualization_msgs
   yaml_cpp_vendor
 )
@@ -108,6 +108,7 @@ rclcpp_components_register_nodes(${library_name} "semantic_navigation::SemanticN
 # # Install ##
 # ############
 install(TARGETS ${library_name}
+  EXPORT ${library_name}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -148,4 +149,5 @@ endif()
 ament_export_include_directories(include/${PROJECT_NAME})
 ament_export_libraries(${library_name})
 ament_export_dependencies(${dependencies})
+ament_export_targets(${library_name})
 ament_package()

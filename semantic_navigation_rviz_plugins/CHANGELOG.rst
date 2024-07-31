@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_rviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.1 (31-07-2024)
+------------------
+* Update to use modern CMake idioms.
+
 3.0.0 (03-06-2024)
 ------------------
 * Update License to Apache 2.0.

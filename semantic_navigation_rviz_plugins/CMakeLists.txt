@@ -54,17 +54,17 @@ set(CMAKE_AUTOMOC ON)
 # ###############################################
 # # Find ament macros and libraries
 find_package(ament_cmake REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(polygon_msgs REQUIRED)
+find_package(polygon_utils REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
-find_package(pluginlib REQUIRED)
 find_package(rviz_common REQUIRED)
 find_package(rviz_rendering REQUIRED)
 find_package(semantic_navigation_msgs REQUIRED)
 find_package(semantic_navigation_tasks REQUIRED)
-find_package(polygon_msgs REQUIRED)
-find_package(polygon_utils REQUIRED)
 find_package(visualization_msgs REQUIRED)
-find_package(nav2_util REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets Test)
 
 # ##########
@@ -143,12 +143,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-# Export old-style CMake variables
-ament_export_include_directories("include/${PROJECT_NAME}")
-
-# Export modern CMake targets
-ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
-
+ament_export_include_directories(include/${PROJECT_NAME})
 ament_export_dependencies(
   rclcpp
   rclcpp_action
@@ -163,5 +158,5 @@ ament_export_dependencies(
   nav2_util
   Qt5
 )
-
+ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_package()
