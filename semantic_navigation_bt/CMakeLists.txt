@@ -91,6 +91,7 @@ endforeach()
 # # Install ##
 # ############
 install(TARGETS ${plugin_libs}
+  EXPORT ${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
