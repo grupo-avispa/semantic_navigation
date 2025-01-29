@@ -177,7 +177,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyRegion) {
   }
 
   // Check results
-  EXPECT_EQ(resp->goals.poses.size(), 0);
+  EXPECT_EQ(resp->goals.size(), 0);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
@@ -207,7 +207,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
   }
 
   // Check results
-  EXPECT_EQ(resp->goals.poses.size(), 0);
+  EXPECT_EQ(resp->goals.size(), 0);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
@@ -240,7 +240,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
   }
 
   // Check results
-  EXPECT_EQ(resp->goals.poses.size(), 1);
+  EXPECT_EQ(resp->goals.size(), 1);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {

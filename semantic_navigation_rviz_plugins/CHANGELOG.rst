@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_rviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.0 (29-01-2025)
+------------------
+* Replace the goals array with a vector of PoseStamped messages. TODO: Replace to PoseStampedArray in Kilted.
+
 3.0.1 (31-07-2024)
 ------------------
 * Update to use modern CMake idioms.

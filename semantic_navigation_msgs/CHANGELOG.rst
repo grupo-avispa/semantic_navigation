@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.0 (29-01-2025)
+------------------
+* Replace the goals array with a vector of PoseStamped messages. TODO: Replace to PoseStampedArray in Kilted.
+
 3.0.0 (03-06-2024)
 ------------------
 * Update License to Apache 2.0.

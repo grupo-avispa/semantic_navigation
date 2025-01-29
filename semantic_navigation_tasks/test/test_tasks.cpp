@@ -76,7 +76,7 @@ public:
       pose, region, orientation, requested_yaw);
   }
 
-  geometry_msgs::msg::PoseArray generateRandomGoals(
+  std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
     unsigned int n, semantic_navigation::Region region, semantic_navigation::CellLimits limits)
   {
     return SemanticNavigationTasks::generateRandomGoals(n, region, limits);
@@ -112,8 +112,7 @@ TEST(SemanticNavigationTasksTest, configure) {
 
   // Set an empty regions filename config parameter
   nav2_util::declare_parameter_if_not_declared(
-    node, "regions_filename",
-    rclcpp::ParameterValue(""));
+    node, "regions_filename", rclcpp::ParameterValue(""));
 
   // Configure the node
   node->configure();
@@ -525,8 +524,6 @@ TEST(SemanticNavigationTasksTest, orientationFromRequest) {
 TEST(SemanticNavigationTasksTest, generateRandomGoals) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
-  node->configure();
-  node->activate();
 
   // Create the regions
   auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
@@ -544,7 +541,7 @@ TEST(SemanticNavigationTasksTest, generateRandomGoals) {
   auto goals = node->generateRandomGoals(1, regions[0], limits);
 
   // Check the results
-  EXPECT_EQ(goals.poses.size(), 1);
+  EXPECT_EQ(goals.size(), 1);
 }
 
 int main(int argc, char ** argv)

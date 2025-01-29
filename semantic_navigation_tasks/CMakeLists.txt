@@ -82,13 +82,13 @@ target_link_libraries(${library_name}
   ${geometry_msgs_TARGETS}
   ${nav_msgs_TARGETS}
   ${polygon_msgs_TARGETS}
+  polygon_utils::polygon_utils
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
   ${semantic_navigation_msgs_TARGETS}
   ${visualization_msgs_TARGETS}
   PRIVATE
   angles::angles
-  polygon_utils::polygon_utils
   rclcpp_components::component
   tf2::tf2
   ${tf2_geometry_msgs_TARGETS}

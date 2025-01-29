@@ -348,7 +348,14 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
   // Generate response
   response->goals = generateRandomGoals(n, current_region, limits);
 
-  goals_pub_->publish(response->goals);
+  // Publish goals
+  geometry_msgs::msg::PoseArray goals_array;
+  goals_array.header.frame_id = map_topic_;
+  goals_array.header.stamp = this->now();
+  for (const auto & goal : response->goals) {
+    goals_array.poses.push_back(goal.pose);
+  }
+  goals_pub_->publish(goals_array);
   return true;
 }
 
@@ -387,11 +394,10 @@ bool SemanticNavigationTasks::listAllRegionsService(
   return true;
 }
 
-geometry_msgs::msg::PoseArray SemanticNavigationTasks::generateRandomGoals(
+std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRandomGoals(
   unsigned int n, Region region, CellLimits limits)
 {
-  geometry_msgs::msg::PoseArray goals;
-  goals.header.frame_id = map_topic_;
+  std::vector<geometry_msgs::msg::PoseStamped> goals;
 
   // Generate random goal pose
   auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
@@ -402,26 +408,29 @@ geometry_msgs::msg::PoseArray SemanticNavigationTasks::generateRandomGoals(
   std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
 
   unsigned int count = 0;
-  while (goals.poses.size() < n) {
+  while (goals.size() < n) {
     count += 1;
     int cell_x = dist_x(gen);
     int cell_y = dist_y(gen);
     double yaw = dist_pi(gen);
 
     // Set a random position and orientation for the goal
-    geometry_msgs::msg::Pose pose;
-    pose.position.x = map_.info.origin.position.x + cell_x * map_.info.resolution;
-    pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
-    pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header.frame_id = map_topic_;
+    pose.header.stamp = this->now();
+    pose.pose.position.x = map_.info.origin.position.x + cell_x * map_.info.resolution;
+    pose.pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
+    pose.pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
 
     // If the point lies within region and is not in collision
-    if (isPointValid(cell_x, cell_y, region, pose)) {
+    if (isPointValid(cell_x, cell_y, region, pose.pose)) {
       // Generate orientation depending on the request
-      orientationFromRequest(pose, region, GenerateRandomGoals::Request::INSIDE, 0.0);
+      orientationFromRequest(pose.pose, region, GenerateRandomGoals::Request::INSIDE, 0.0);
       RCLCPP_INFO(
         get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)",
-        goals.poses.size() + 1, pose.position.x, pose.position.y, tf2::getYaw(pose.orientation));
-      goals.poses.push_back(pose);
+        goals.size() + 1, pose.pose.position.x, pose.pose.position.y,
+        tf2::getYaw(pose.pose.orientation));
+      goals.push_back(pose);
     }
   }
 

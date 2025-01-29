@@ -128,7 +128,6 @@ void SemanticNavigationPanel::generate_goals()
   }
 
   // Send the request and wait for the response
-  geometry_msgs::msg::PoseArray goals;
   auto request = std::make_shared<GenerateRandomGoals::Request>();
   request->n = 1;
   request->region_name = room_name_.toStdString();
@@ -137,13 +136,9 @@ void SemanticNavigationPanel::generate_goals()
   auto result = goals_generator_client_->async_send_request(
     request,
     [this](rclcpp::Client<GenerateRandomGoals>::SharedFuture future) {
-      if (future.get()->goals.poses.size() > 0) {
+      if (future.get()->goals.size() > 0) {
         // Send goals to the navigation stack
-        geometry_msgs::msg::PoseStamped goal;
-        goal.header.frame_id = "map";
-        goal.header.stamp = ros_node_->now();
-        goal.pose = future.get()->goals.poses[0];
-        navigate_to_pose(goal);
+        navigate_to_pose(future.get()->goals.back());
         room_name_editor_->setText("");
       } else {
         room_name_editor_->setText("Couldn't send the goal.");
