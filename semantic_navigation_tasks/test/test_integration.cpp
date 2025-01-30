@@ -40,6 +40,23 @@ public:
     return map_;
   }
 
+  std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
+    unsigned int /*n*/, semantic_navigation::Region /*region*/,
+    semantic_navigation::CellLimits /*limits*/) override
+  {
+    if (region_list_.empty() || map_.data.empty()) {
+      return {};
+    } else {
+      std::vector<geometry_msgs::msg::PoseStamped> goals;
+      geometry_msgs::msg::PoseStamped goal;
+      goal.pose.position.x = 1.0;
+      goal.pose.position.y = 0.0;
+      goal.pose.position.z = 0.0;
+      goals.push_back(goal);
+      return {goal};
+    }
+  }
+
   void createFreeMap(int width, int height, double resolution)
   {
     map_.info.width = width;
@@ -241,6 +258,8 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
 
   // Check results
   EXPECT_EQ(resp->goals.size(), 1);
+  EXPECT_DOUBLE_EQ(resp->goals[0].pose.position.x, 1.0);
+  EXPECT_DOUBLE_EQ(resp->goals[0].pose.position.y, 0.0);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {

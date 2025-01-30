@@ -179,7 +179,7 @@ protected:
    * @param limits Limits of the cells.
    * @return std::vector<geometry_msgs::msg::PoseStamped> Goals.
    */
-  std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
+  virtual std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
     unsigned int n, Region region, CellLimits limits);
 
   /**
