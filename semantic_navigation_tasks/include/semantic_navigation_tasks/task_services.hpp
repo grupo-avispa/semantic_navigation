@@ -35,6 +35,7 @@
 #include "polygon_msgs/msg/polygon2_d_collection.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 #include "semantic_navigation_msgs/srv/generate_random_goals.hpp"
+#include "semantic_navigation_msgs/srv/get_random_region.hpp"
 #include "semantic_navigation_msgs/srv/get_region_name.hpp"
 #include "semantic_navigation_msgs/srv/list_all_regions.hpp"
 #include "semantic_navigation_tasks/region.hpp"
@@ -66,6 +67,7 @@ public:
 
 protected:
   using GenerateRandomGoals = semantic_navigation_msgs::srv::GenerateRandomGoals;
+  using GetRandomRegion = semantic_navigation_msgs::srv::GetRandomRegion;
   using GetRegionName = semantic_navigation_msgs::srv::GetRegionName;
   using ListAllRegions = semantic_navigation_msgs::srv::ListAllRegions;
 
@@ -135,6 +137,17 @@ protected:
   bool generateRandomGoalsService(
     const std::shared_ptr<GenerateRandomGoals::Request> request,
     std::shared_ptr<GenerateRandomGoals::Response> response);
+
+  /**
+   * @brief Get a random named region.
+   *
+   * @param request Request.
+   * @param response Response with the region.
+   * @return true if the position is generated.
+   */
+  bool getRandomRegionService(
+    const std::shared_ptr<GetRandomRegion::Request> request,
+    std::shared_ptr<GetRandomRegion::Response> response);
 
   /**
    * @brief Get the name of the region from a position.
@@ -251,6 +264,7 @@ protected:
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
 
   rclcpp::Service<GenerateRandomGoals>::SharedPtr goals_generator_service_;
+  rclcpp::Service<GetRandomRegion>::SharedPtr get_random_region_service_;
   rclcpp::Service<GetRegionName>::SharedPtr get_region_name_service_;
   rclcpp::Service<ListAllRegions>::SharedPtr list_all_regions_service_;
 

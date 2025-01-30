@@ -57,6 +57,7 @@ find_package(rosidl_default_generators REQUIRED)
 # ###############################################
 set(srv_files
   "srv/GenerateRandomGoals.srv"
+  "srv/GetRandomRegion.srv"
   "srv/GetRegionName.srv"
   "srv/ListAllRegions.srv"
 )

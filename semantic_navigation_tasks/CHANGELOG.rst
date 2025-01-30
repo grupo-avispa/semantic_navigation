@@ -5,6 +5,7 @@ Changelog for package semantic_navigation_tasks
 3.1.0 (29-01-2025)
 ------------------
 * Replace the goals array with a vector of PoseStamped messages. TODO: Replace to PoseStampedArray in Kilted.
+* Add a new service to get a random region.
 
 3.0.1 (31-07-2024)
 ------------------

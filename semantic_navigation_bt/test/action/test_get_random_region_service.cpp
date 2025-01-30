@@ -23,33 +23,33 @@
 #include "behaviortree_cpp_v3/bt_factory.h"
 
 #include "utils/test_service.hpp"
-#include "semantic_navigation_bt/action/list_all_regions_service.hpp"
-#include "semantic_navigation_msgs/srv/list_all_regions.hpp"
+#include "semantic_navigation_bt/action/get_random_region_service.hpp"
+#include "semantic_navigation_msgs/srv/get_random_region.hpp"
 
-class ListAllRegionsService : public TestService<semantic_navigation_msgs::srv::ListAllRegions>
+class GetRandomRegionService : public TestService<semantic_navigation_msgs::srv::GetRandomRegion>
 {
 public:
-  ListAllRegionsService()
-  : TestService("list_all_regions")
+  GetRandomRegionService()
+  : TestService("get_random_region")
   {}
 
   virtual void handle_service(
     const std::shared_ptr<rmw_request_id_t> request_header,
-    const std::shared_ptr<semantic_navigation_msgs::srv::ListAllRegions::Request> request,
-    const std::shared_ptr<semantic_navigation_msgs::srv::ListAllRegions::Response> response)
+    const std::shared_ptr<semantic_navigation_msgs::srv::GetRandomRegion::Request> request,
+    const std::shared_ptr<semantic_navigation_msgs::srv::GetRandomRegion::Response> response)
   {
     (void)request_header;
     (void)request;
-    response->region_names = {"region1", "region2", "region3"};
+    response->region_name = "region1";
   }
 };
 
-class ListAllRegionsServiceTestFixture : public ::testing::Test
+class GetRandomRegionServiceTestFixture : public ::testing::Test
 {
 public:
   static void SetUpTestCase()
   {
-    node_ = std::make_shared<rclcpp::Node>("list_all_regions_test_fixture");
+    node_ = std::make_shared<rclcpp::Node>("get_random_region_test_fixture");
     factory_ = std::make_shared<BT::BehaviorTreeFactory>();
 
     config_ = new BT::NodeConfiguration();
@@ -65,7 +65,7 @@ public:
     config_->blackboard->set<std::chrono::milliseconds>(
       "wait_for_service_timeout", std::chrono::milliseconds(1000));
 
-    factory_->registerNodeType<semantic_navigation_bt::ListAllRegionsService>("ListAllRegions");
+    factory_->registerNodeType<semantic_navigation_bt::GetRandomRegionService>("GetRandomRegion");
   }
 
   static void TearDownTestCase()
@@ -82,7 +82,7 @@ public:
     tree_.reset();
   }
 
-  static std::shared_ptr<ListAllRegionsService> server_;
+  static std::shared_ptr<GetRandomRegionService> server_;
 
 protected:
   static rclcpp::Node::SharedPtr node_;
@@ -91,29 +91,25 @@ protected:
   static std::shared_ptr<BT::Tree> tree_;
 };
 
-rclcpp::Node::SharedPtr ListAllRegionsServiceTestFixture::node_ = nullptr;
-std::shared_ptr<ListAllRegionsService> ListAllRegionsServiceTestFixture::server_ = nullptr;
-BT::NodeConfiguration * ListAllRegionsServiceTestFixture::config_ = nullptr;
-std::shared_ptr<BT::BehaviorTreeFactory> ListAllRegionsServiceTestFixture::factory_ = nullptr;
-std::shared_ptr<BT::Tree> ListAllRegionsServiceTestFixture::tree_ = nullptr;
+rclcpp::Node::SharedPtr GetRandomRegionServiceTestFixture::node_ = nullptr;
+std::shared_ptr<GetRandomRegionService> GetRandomRegionServiceTestFixture::server_ = nullptr;
+BT::NodeConfiguration * GetRandomRegionServiceTestFixture::config_ = nullptr;
+std::shared_ptr<BT::BehaviorTreeFactory> GetRandomRegionServiceTestFixture::factory_ = nullptr;
+std::shared_ptr<BT::Tree> GetRandomRegionServiceTestFixture::tree_ = nullptr;
 
-TEST_F(ListAllRegionsServiceTestFixture, test_tick)
+TEST_F(GetRandomRegionServiceTestFixture, test_tick)
 {
   std::string xml_txt =
     R"(
       <root>
         <BehaviorTree ID="MainTree">
-            <ListAllRegions service_name="list_all_regions" region_names="{region_names}" />
+            <GetRandomRegion service_name="get_random_region" region_name="{region_name}" />
         </BehaviorTree>
       </root>)";
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
   EXPECT_EQ(tree_->rootNode()->executeTick(), BT::NodeStatus::SUCCESS);
-  auto region_names = tree_->rootBlackboard()->get<std::vector<std::string>>("region_names");
-  EXPECT_EQ(region_names.size(), 3);
-  EXPECT_EQ(region_names[0], "region1");
-  EXPECT_EQ(region_names[1], "region2");
-  EXPECT_EQ(region_names[2], "region3");
+  EXPECT_EQ(tree_->rootBlackboard()->get<std::string>("region_name"), "region1");
 }
 
 int main(int argc, char ** argv)
@@ -124,9 +120,9 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
 
   // initialize service and spin on new thread
-  ListAllRegionsServiceTestFixture::server_ = std::make_shared<ListAllRegionsService>();
+  GetRandomRegionServiceTestFixture::server_ = std::make_shared<GetRandomRegionService>();
   std::thread server_thread([]() {
-      rclcpp::spin(ListAllRegionsServiceTestFixture::server_);
+      rclcpp::spin(GetRandomRegionServiceTestFixture::server_);
     });
 
   int all_successful = RUN_ALL_TESTS();

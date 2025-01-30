@@ -9,6 +9,17 @@ ament_target_dependencies(test_generate_random_goals_service
   ${dependencies}
 )
 
+# Test for the list all regions service
+ament_add_gtest(test_get_random_region_service
+test_get_random_region_service.cpp
+)
+target_link_libraries(test_get_random_region_service
+  semantic_navigation_get_random_region_service_bt_node
+)
+ament_target_dependencies(test_get_random_region_service
+  ${dependencies}
+)
+
 # Test for the get region name service
 ament_add_gtest(test_get_region_name
   test_get_region_name.cpp

@@ -66,6 +66,9 @@ include_directories(include) # TODO(ajtudela): Fix this in jazzy
 add_library(semantic_navigation_generate_random_goals_service_bt_node SHARED src/action/generate_random_goals_service.cpp)
 list(APPEND plugin_libs semantic_navigation_generate_random_goals_service_bt_node)
 
+add_library(semantic_navigation_get_random_region_service_bt_node SHARED src/action/get_random_region_service.cpp)
+list(APPEND plugin_libs semantic_navigation_get_random_region_service_bt_node)
+
 add_library(semantic_navigation_get_region_name_service_bt_node SHARED src/action/get_region_name_service.cpp)
 list(APPEND plugin_libs semantic_navigation_get_region_name_service_bt_node)
 

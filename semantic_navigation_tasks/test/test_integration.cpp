@@ -243,6 +243,34 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
   EXPECT_EQ(resp->goals.size(), 1);
 }
 
+TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {
+  // Activate the node
+  activate();
+
+  // Create the client service
+  auto req = std::make_shared<semantic_navigation_msgs::srv::GetRandomRegion::Request>();
+  auto client =
+    node_->create_client<semantic_navigation_msgs::srv::GetRandomRegion>("get_random_region");
+
+  // Wait for the service to be available
+  ASSERT_TRUE(client->wait_for_service());
+
+  // Call the service
+  auto result = client->async_send_request(req);
+
+  // Wait for the result
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRandomRegion::Response>();
+  if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS) {
+    std::cout << "Service call succeeded" << std::endl;
+    resp = result.get();
+  } else {
+    std::cout << "Service call failed" << std::endl;
+  }
+
+  // Check results
+  EXPECT_FALSE(resp->region_name.empty());
+}
+
 TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
   // Activate the node
   activate();

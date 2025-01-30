@@ -135,6 +135,9 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   goals_generator_service_ = this->create_service<GenerateRandomGoals>(
     "generate_random_goals",
     std::bind(&SemanticNavigationTasks::generateRandomGoalsService, this, _1, _2));
+  get_random_region_service_ = this->create_service<GetRandomRegion>(
+    "get_random_region",
+    std::bind(&SemanticNavigationTasks::getRandomRegionService, this, _1, _2));
   get_region_name_service_ = this->create_service<GetRegionName>(
     "get_region_name",
     std::bind(&SemanticNavigationTasks::getRegionNameService, this, _1, _2));
@@ -188,6 +191,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_cleanup(
   polygons_viz_pub_.reset();
   names_viz_pub_.reset();
   goals_generator_service_.reset();
+  get_random_region_service_.reset();
   get_region_name_service_.reset();
   list_all_regions_service_.reset();
 
@@ -356,6 +360,24 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
     goals_array.poses.push_back(goal.pose);
   }
   goals_pub_->publish(goals_array);
+  return true;
+}
+
+bool SemanticNavigationTasks::getRandomRegionService(
+  const std::shared_ptr<GetRandomRegion::Request>/*request*/,
+  std::shared_ptr<GetRandomRegion::Response> response)
+{
+  // Generate random region
+  std::random_device rd;       // obtain a random number from hardware
+  std::mt19937 gen(rd());       // seed the generator
+  std::uniform_int_distribution<int> dist_region(1, region_list_.size());       // define the range
+
+  int region_idx = dist_region(gen);
+  response->region_name = region_list_[region_idx].name;
+
+  RCLCPP_INFO(
+    get_logger(), "Incoming random region service request: [%s]", response->region_name.c_str());
+
   return true;
 }
 

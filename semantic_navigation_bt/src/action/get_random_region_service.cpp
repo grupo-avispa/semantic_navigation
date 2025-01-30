@@ -16,25 +16,23 @@
 #include <string>
 #include <memory>
 
-#include "semantic_navigation_bt/action/list_all_regions_service.hpp"
+#include "semantic_navigation_bt/action/get_random_region_service.hpp"
 
 namespace semantic_navigation_bt
 {
 
-ListAllRegionsService::ListAllRegionsService(
+GetRandomRegionService::GetRandomRegionService(
   const std::string & service_node_name, const BT::NodeConfiguration & conf)
-: BtServiceNode<semantic_navigation_msgs::srv::ListAllRegions>(service_node_name, conf)
+: BtServiceNode<semantic_navigation_msgs::srv::GetRandomRegion>(service_node_name, conf)
 {
 }
 
-BT::NodeStatus ListAllRegionsService::on_completion(
-  std::shared_ptr<semantic_navigation_msgs::srv::ListAllRegions::Response> response)
+BT::NodeStatus GetRandomRegionService::on_completion(
+  std::shared_ptr<semantic_navigation_msgs::srv::GetRandomRegion::Response> response)
 {
   BT::NodeStatus status = BT::NodeStatus::FAILURE;
-  std::vector<std::string> region_names;
-  if (response->region_names.size() > 0) {
-    region_names = response->region_names;
-    setOutput("region_names", region_names);
+  if (!response->region_name.empty()) {
+    setOutput("region_name", response->region_name);
     status = BT::NodeStatus::SUCCESS;
   }
   return status;
@@ -44,5 +42,5 @@ BT::NodeStatus ListAllRegionsService::on_completion(
 
 #include "behaviortree_cpp_v3/bt_factory.h"
 BT_REGISTER_NODES(factory) {
-  factory.registerNodeType<semantic_navigation_bt::ListAllRegionsService>("ListAllRegions");
+  factory.registerNodeType<semantic_navigation_bt::GetRandomRegionService>("GetRandomRegion");
 }

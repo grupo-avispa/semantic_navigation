@@ -13,15 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SEMANTIC_NAVIGATION_BT__ACTION__LIST_ALL_REGIONS_SERVICE_HPP_
-#define SEMANTIC_NAVIGATION_BT__ACTION__LIST_ALL_REGIONS_SERVICE_HPP_
+#ifndef SEMANTIC_NAVIGATION_BT__ACTION__GET_RANDOM_REGION_SERVICE_HPP_
+#define SEMANTIC_NAVIGATION_BT__ACTION__GET_RANDOM_REGION_SERVICE_HPP_
 
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "nav2_behavior_tree/bt_service_node.hpp"
-#include "semantic_navigation_msgs/srv/list_all_regions.hpp"
+#include "semantic_navigation_msgs/srv/get_random_region.hpp"
 
 namespace semantic_navigation_bt
 {
@@ -29,17 +28,17 @@ namespace semantic_navigation_bt
 using nav2_behavior_tree::BtServiceNode;
 
 /**
- * @brief A nav2_behavior_tree::BtServiceNode class that wraps semantic_navigation_msgs::srv::ListAllRegions
+ * @brief A nav2_behavior_tree::BtServiceNode class that wraps semantic_navigation_msgs::srv::GetRandomRegion
  */
-class ListAllRegionsService : public BtServiceNode<semantic_navigation_msgs::srv::ListAllRegions>
+class GetRandomRegionService : public BtServiceNode<semantic_navigation_msgs::srv::GetRandomRegion>
 {
 public:
   /**
-   * @brief A constructor for semantic_navigation_bt::ListAllRegionsService
+   * @brief A constructor for semantic_navigation_bt::GetRandomRegionService
    * @param service_node_name Service name this node creates a client for
    * @param conf BT node configuration
    */
-  ListAllRegionsService(const std::string & service_node_name, const BT::NodeConfiguration & conf);
+  GetRandomRegionService(const std::string & service_node_name, const BT::NodeConfiguration & conf);
 
   /**
    * @brief Override the on_completion method to set the output port with the region names after the
@@ -48,7 +47,7 @@ public:
    * @return BT::NodeStatus Returns SUCCESS if the region names are retrieved correctly
    */
   BT::NodeStatus on_completion(
-    std::shared_ptr<semantic_navigation_msgs::srv::ListAllRegions::Response> response) override;
+    std::shared_ptr<semantic_navigation_msgs::srv::GetRandomRegion::Response> response) override;
 
   /**
    * @brief Creates list of BT ports
@@ -58,11 +57,11 @@ public:
   {
     return providedBasicPorts(
       {
-        BT::OutputPort<std::vector<std::string>>("region_names", "Region names")
+        BT::OutputPort<std::string>("region_name", "Region name")
       });
   }
 };
 
 }  // namespace semantic_navigation_bt
 
-#endif  // SEMANTIC_NAVIGATION_BT__ACTION__LIST_ALL_REGIONS_SERVICE_HPP_
+#endif  // SEMANTIC_NAVIGATION_BT__ACTION__GET_RANDOM_REGION_SERVICE_HPP_

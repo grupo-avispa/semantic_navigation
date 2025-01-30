@@ -5,5 +5,6 @@ The `semantic_navigation_msgs` package provides a set of services that are utili
 
 ## Services (.srv)
 * [GenerateRandomGoals](srv/GenerateRandomGoals.srv): This service generates random goals within named regions. This is particularly useful for tasks that require random exploration within specific regions.
+* [GetRandomRegion](srv/GetRandomRegion.srv): This service returns a random named region. This can be used to select a random region for exploration or other tasks.
 * [GetRegionName](srv/GetRegionName.srv): Given a spatial position, this service returns the name of the region that enclose the provided position. This allows for semantic interpretation of spatial data.
 * [ListAllRegions](srv/ListAllRegions.srv): This service returns a list of all named regions. This can be used to get an overview of all the regions defined in the semantic context.

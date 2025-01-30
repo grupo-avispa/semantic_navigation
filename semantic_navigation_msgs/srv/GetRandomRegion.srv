@@ -1,0 +1,7 @@
+# Request / response service to get a random region
+
+---
+string region_name # Name of the region
+
+# Constants
+string UNKNOWN = unknown
