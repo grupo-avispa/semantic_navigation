@@ -73,6 +73,10 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 	Service to generate random navigation goals in a specified region.
 
+* **`get_random_region`** ([semantic_navigation_msgs/GetRandomRegion])
+
+	Service to request a random region name.
+
 * **`get_region_name`** ([semantic_navigation_msgs/GetRegionName])
 
 	Service to request the region name of a known position.
@@ -121,5 +125,6 @@ ROS2 Service to generate 2D navigation goals as described above.
 [polygon_msgs/Polygon2DCollection]: https://github.com/MetroRobots/polygon_ros/blob/main/polygon_msgs/msg/Polygon2DCollection.msg
 [visualization_msgs/MarkerArray]: https://docs.ros2.org/humble/api/visualization_msgs/msg/MarkerArray.html
 [semantic_navigation_msgs/GenerateRandomGoals]: ../semantic_navigation_msgs/srv/GenerateRandomGoals.srv
+[semantic_navigation_msgs/GetRandomRegion]: ../semantic_navigation_msgs/srv/GetRandomRegion.srv
 [semantic_navigation_msgs/GetRegionName]: ../semantic_navigation_msgs/srv/GetRegionName.srv
 [semantic_navigation_msgs/ListAllRegions]: ../semantic_navigation_msgs/srv/ListAllRegions.srv
