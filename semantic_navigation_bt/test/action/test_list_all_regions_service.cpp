@@ -20,7 +20,7 @@
 #include <set>
 #include <string>
 
-#include "behaviortree_cpp_v3/bt_factory.h"
+#include "behaviortree_cpp/bt_factory.h"
 
 #include "utils/test_service.hpp"
 #include "semantic_navigation_bt/action/list_all_regions_service.hpp"

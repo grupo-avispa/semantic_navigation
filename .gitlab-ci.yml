@@ -7,7 +7,7 @@ stages:
   - test
 
 variables:
-  ROS_DISTRO: humble
+  ROS_DISTRO: jazzy
   COLCON_WS: $CI_BUILDS_DIR/ros_ws
 
 image: ros:$ROS_DISTRO-ros-base

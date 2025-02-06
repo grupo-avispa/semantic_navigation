@@ -24,7 +24,7 @@
 #include <OgreViewport.h>
 
 // ROS
-#include <ament_index_cpp/get_package_share_directory.hpp>
+#include "ament_index_cpp/get_package_share_directory.hpp"
 #include "nav2_util/string_utils.hpp"
 #include "rviz_common/display_context.hpp"
 #include "rviz_common/properties/vector_property.hpp"

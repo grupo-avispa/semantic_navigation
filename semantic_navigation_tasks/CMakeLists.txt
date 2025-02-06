@@ -64,6 +64,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # ##########
 # # Build ##
@@ -92,10 +93,10 @@ target_link_libraries(${library_name}
   rclcpp_components::component
   tf2::tf2
   ${tf2_geometry_msgs_TARGETS}
-  ${yaml_cpp_vendor_TARGETS}
+  yaml-cpp::yaml-cpp
 )
 
-ament_target_dependencies(${library_name} PUBLIC nav2_util) # TODO(ajtudela): Fix this in jazzy
+ament_target_dependencies(${library_name} PUBLIC nav2_util) # TODO(ajtudela): Fix this in kilted
 
 # Add executable
 add_executable(${executable_name} src/main.cpp)
@@ -165,6 +166,7 @@ ament_export_dependencies(
   tf2_geometry_msgs
   visualization_msgs
   yaml_cpp_vendor
+  yaml-cpp
 )
 ament_export_targets(${PROJECT_NAME})
 ament_package()

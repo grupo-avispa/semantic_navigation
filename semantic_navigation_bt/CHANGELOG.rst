@@ -2,6 +2,11 @@
 Changelog for package semantic_navigation_bt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.1 (06-02-2025)
+------------------
+* First jazzy release.
+* Move to BehaviorTree 4.6.
+
 3.1.0 (29-01-2025)
 ------------------
 * Replace the goals array with a vector of PoseStamped messages. TODO: Replace to PoseStampedArray in Kilted.

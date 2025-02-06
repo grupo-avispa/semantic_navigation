@@ -120,10 +120,10 @@ ROS2 Service to generate 2D navigation goals as described above.
 	The filepath of the configuration file including the names of regions defined by its points and name.
 
 
-[nav_msgs/OccupancyGrid]: https://docs.ros2.org/humble/api/nav_msgs/msg/OccupancyGrid.html
-[geometry_msgs/PoseArray]: https://docs.ros2.org/humble/api/geometry_msgs/msg/PoseArray.html
+[nav_msgs/OccupancyGrid]: https://docs.ros2.org/jazzy/api/nav_msgs/msg/OccupancyGrid.html
+[geometry_msgs/PoseArray]: https://docs.ros2.org/jazzy/api/geometry_msgs/msg/PoseArray.html
 [polygon_msgs/Polygon2DCollection]: https://github.com/MetroRobots/polygon_ros/blob/main/polygon_msgs/msg/Polygon2DCollection.msg
-[visualization_msgs/MarkerArray]: https://docs.ros2.org/humble/api/visualization_msgs/msg/MarkerArray.html
+[visualization_msgs/MarkerArray]: https://docs.ros2.org/jazzy/api/visualization_msgs/msg/MarkerArray.html
 [semantic_navigation_msgs/GenerateRandomGoals]: ../semantic_navigation_msgs/srv/GenerateRandomGoals.srv
 [semantic_navigation_msgs/GetRandomRegion]: ../semantic_navigation_msgs/srv/GetRandomRegion.srv
 [semantic_navigation_msgs/GetRegionName]: ../semantic_navigation_msgs/srv/GetRegionName.srv

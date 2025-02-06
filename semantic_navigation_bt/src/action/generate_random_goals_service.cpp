@@ -23,7 +23,7 @@ namespace semantic_navigation_bt
 
 GenerateRandomGoalsService::GenerateRandomGoalsService(
   const std::string & service_node_name, const BT::NodeConfiguration & conf)
-: BtServiceNode<semantic_navigation_msgs::srv::GenerateRandomGoals>(service_node_name, conf)
+: BtServiceNode<GenerateRandomGoals>(service_node_name, conf)
 {
 }
 
@@ -37,7 +37,7 @@ void GenerateRandomGoalsService::on_tick()
 }
 
 BT::NodeStatus GenerateRandomGoalsService::on_completion(
-  std::shared_ptr<semantic_navigation_msgs::srv::GenerateRandomGoals::Response> response)
+  std::shared_ptr<GenerateRandomGoals::Response> response)
 {
   BT::NodeStatus status = BT::NodeStatus::FAILURE;
   if (response->goals.size() > 0) {
@@ -49,7 +49,7 @@ BT::NodeStatus GenerateRandomGoalsService::on_completion(
 
 }  // namespace semantic_navigation_bt
 
-#include "behaviortree_cpp_v3/bt_factory.h"
+#include "behaviortree_cpp/bt_factory.h"
 BT_REGISTER_NODES(factory) {
   factory.registerNodeType<semantic_navigation_bt::GenerateRandomGoalsService>(
     "GenerateRandomGoals");

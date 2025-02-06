@@ -100,7 +100,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${nav2_msgs_TARGETS}
-  ${nav2_util_TARGETS} # TODO(ajtudela): Fix this in jazzy
+  ${nav2_util_TARGETS} # TODO(ajtudela): Fix this in kilted
   ${polygon_msgs_TARGETS}
   polygon_utils::polygon_utils
   Qt5::Widgets

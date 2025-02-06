@@ -27,12 +27,13 @@ namespace semantic_navigation_bt
 {
 
 using nav2_behavior_tree::BtServiceNode;
+using semantic_navigation_msgs::srv::GenerateRandomGoals;
 
 /**
  * @brief A nav2_behavior_tree::BtServiceNode class that wraps scitos_msgs::srv::GenerateRandomGoals
  */
 class GenerateRandomGoalsService
-  : public BtServiceNode<semantic_navigation_msgs::srv::GenerateRandomGoals>
+  : public BtServiceNode<GenerateRandomGoals>
 {
 public:
   /**
@@ -55,8 +56,7 @@ public:
    * @param response The response from the service
    * @return BT::NodeStatus Returns SUCCESS if the goals are generated correctly
    */
-  BT::NodeStatus on_completion(
-    std::shared_ptr<semantic_navigation_msgs::srv::GenerateRandomGoals::Response> response) override; //NOLINT
+  BT::NodeStatus on_completion(std::shared_ptr<GenerateRandomGoals::Response> response) override;
 
   /**
    * @brief Creates list of BT ports

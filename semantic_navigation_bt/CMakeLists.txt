@@ -50,7 +50,7 @@ endif()
 # ###############################################
 # # Find ament macros and libraries
 find_package(ament_cmake REQUIRED)
-find_package(behaviortree_cpp_v3 REQUIRED)
+find_package(behaviortree_cpp REQUIRED)
 find_package(nav2_behavior_tree REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -61,8 +61,6 @@ find_package(semantic_navigation_msgs REQUIRED)
 # ##########
 # # Build ##
 # ##########
-include_directories(include) # TODO(ajtudela): Fix this in jazzy
-
 add_library(semantic_navigation_generate_random_goals_service_bt_node SHARED src/action/generate_random_goals_service.cpp)
 list(APPEND plugin_libs semantic_navigation_generate_random_goals_service_bt_node)
 
@@ -81,12 +79,13 @@ foreach(bt_plugin ${plugin_libs})
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
   )
   target_link_libraries(${bt_plugin} PUBLIC
+    behaviortree_cpp::behaviortree_cpp
     rclcpp::rclcpp
     rclcpp_action::rclcpp_action
     rclcpp_lifecycle::rclcpp_lifecycle
     ${semantic_navigation_msgs_TARGETS}
   )
-  ament_target_dependencies(${bt_plugin} PUBLIC behaviortree_cpp_v3 nav2_behavior_tree) # TODO(ajtudela): Fix this in jazzy
+  ament_target_dependencies(${bt_plugin} PUBLIC nav2_behavior_tree) # TODO(ajtudela): Fix this in kilted
   target_compile_definitions(${bt_plugin} PRIVATE BT_PLUGIN_EXPORT)
 endforeach()
 
@@ -105,10 +104,12 @@ set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
 configure_file(plugins_list.hpp.in ${GENERATED_DIR}/plugins_list.hpp)
 
 add_executable(generate_semantic_navigation_tree_nodes_xml src/generate_semantic_navigation_tree_nodes_xml.cpp)
+target_link_libraries(generate_semantic_navigation_tree_nodes_xml PRIVATE
+  behaviortree_cpp::behaviortree_cpp
+)
 ament_target_dependencies(generate_semantic_navigation_tree_nodes_xml PUBLIC
-  behaviortree_cpp_v3
   nav2_util
-) # TODO(ajtudela): Fix this in jazzy
+) # TODO(ajtudela): Fix this in kilted
 
 # allow generate_semantic_navigation_tree_nodes_xml to find plugins_list.hpp
 target_include_directories(generate_semantic_navigation_tree_nodes_xml PRIVATE ${GENERATED_DIR})
@@ -145,7 +146,7 @@ endif()
 ament_export_include_directories(include/${PROJECT_NAME})
 ament_export_libraries()
 ament_export_dependencies(
-  behaviortree_cpp_v3
+  behaviortree_cpp
   nav2_behavior_tree
   nav2_util
   rclcpp
