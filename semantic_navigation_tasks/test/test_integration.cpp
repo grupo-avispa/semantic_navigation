@@ -155,6 +155,9 @@ TEST_F(SemanticNavigationIntegrationTest, mapCallback) {
   // Spin the semantic node
   spin_some();
 
+    // Wait before checking the results
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
   // Check the results
   EXPECT_EQ(getMap().info.width, 10);
   EXPECT_EQ(getMap().info.height, 10);
@@ -193,6 +196,9 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyRegion) {
     std::cout << "Service call failed" << std::endl;
   }
 
+  // Wait before checking the results
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
   // Check results
   EXPECT_EQ(resp->goals.size(), 0);
 }
@@ -222,6 +228,9 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
   } else {
     std::cout << "Service call failed" << std::endl;
   }
+
+  // Wait before checking the results
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Check results
   EXPECT_EQ(resp->goals.size(), 0);
@@ -256,6 +265,9 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
     std::cout << "Service call failed" << std::endl;
   }
 
+  // Wait before checking the results
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
   // Check results
   EXPECT_EQ(resp->goals.size(), 1);
   EXPECT_DOUBLE_EQ(resp->goals[0].pose.position.x, 1.0);
@@ -285,6 +297,9 @@ TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {
   } else {
     std::cout << "Service call failed" << std::endl;
   }
+
+  // Wait before checking the results
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Check results
   EXPECT_FALSE(resp->region_name.empty());
@@ -316,6 +331,9 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
     std::cout << "Service call failed" << std::endl;
   }
 
+  // Wait before checking the results
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
   // Check results
   EXPECT_EQ(resp->region_name, "small1");
 }
@@ -346,6 +364,9 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
     std::cout << "Service call failed" << std::endl;
   }
 
+  // Wait before checking the results
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
   // Check results
   EXPECT_EQ(resp->region_name, "unknown");
 }
@@ -373,6 +394,9 @@ TEST_F(SemanticNavigationIntegrationTest, listAllRegions) {
   } else {
     std::cout << "Service call failed" << std::endl;
   }
+
+  // Wait before checking the results
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Check results
   EXPECT_EQ(resp->region_names.size(), 4);
