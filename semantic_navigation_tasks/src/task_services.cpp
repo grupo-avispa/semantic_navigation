@@ -504,7 +504,7 @@ void SemanticNavigationTasks::orientationFromRequest(
   geometry_msgs::msg::Pose & pose, const Region & region, std::string orientation,
   double requested_yaw)
 {
-  double yaw;
+  double yaw = 0.0;
   if (orientation == GenerateRandomGoals::Request::OUTSIDE) {
     yaw = atan2(
       (pose.position.y - region.centroid().y), (pose.position.x - region.centroid().x));
