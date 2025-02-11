@@ -155,8 +155,8 @@ TEST_F(SemanticNavigationIntegrationTest, mapCallback) {
   // Spin the semantic node
   spin_some();
 
-    // Wait before checking the results
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  // Wait before checking the results
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Check the results
   EXPECT_EQ(getMap().info.width, 10);
