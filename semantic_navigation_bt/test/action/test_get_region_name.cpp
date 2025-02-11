@@ -23,7 +23,7 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "behaviortree_cpp/bt_factory.h"
 
-#include "utils/test_service.hpp"
+#include "nav2_behavior_tree/utils/test_service.hpp"
 #include "semantic_navigation_bt/action/get_region_name_service.hpp"
 #include "semantic_navigation_msgs/srv/get_region_name.hpp"
 

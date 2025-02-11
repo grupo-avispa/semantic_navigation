@@ -22,7 +22,7 @@
 
 #include "behaviortree_cpp/bt_factory.h"
 
-#include "utils/test_service.hpp"
+#include "nav2_behavior_tree/utils/test_service.hpp"
 #include "semantic_navigation_bt/action/get_random_region_service.hpp"
 #include "semantic_navigation_msgs/srv/get_random_region.hpp"
 
