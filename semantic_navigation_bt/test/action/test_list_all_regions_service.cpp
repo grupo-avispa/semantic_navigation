@@ -101,7 +101,7 @@ TEST_F(ListAllRegionsServiceTestFixture, test_tick)
 {
   std::string xml_txt =
     R"(
-      <root>
+      <root BTCPP_format="4">
         <BehaviorTree ID="MainTree">
             <ListAllRegions service_name="list_all_regions" region_names="{region_names}" />
         </BehaviorTree>

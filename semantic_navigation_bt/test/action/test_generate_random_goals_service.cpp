@@ -110,7 +110,7 @@ TEST_F(GenerateRandomGoalsServiceTestFixture, test_tick)
 {
   std::string xml_txt =
     R"(
-      <root>
+      <root BTCPP_format="4">
         <BehaviorTree ID="MainTree">
             <GenerateRandomGoals service_name="generate_random_goals" number_of_goals="1" region_name="region_1" yaw="0.0" orientation="outside" border="0.0" goals="{goals}"/>
         </BehaviorTree>

@@ -101,7 +101,7 @@ TEST_F(GetRandomRegionServiceTestFixture, test_tick)
 {
   std::string xml_txt =
     R"(
-      <root>
+      <root BTCPP_format="4">
         <BehaviorTree ID="MainTree">
             <GetRandomRegion service_name="get_random_region" region_name="{region_name}" />
         </BehaviorTree>

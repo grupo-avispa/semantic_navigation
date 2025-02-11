@@ -109,7 +109,7 @@ TEST_F(GetRegionNameServiceTestFixture, test_tick)
 {
   std::string xml_txt =
     R"(
-      <root>
+      <root BTCPP_format="4">
         <BehaviorTree ID="MainTree">
             <GetRegionName service_name="get_region_name" position="1.0;2.0;3.0" region_name="{region_name}"/>
         </BehaviorTree>
