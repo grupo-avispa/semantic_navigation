@@ -126,8 +126,8 @@ TEST_F(GenerateRandomGoalsServiceTestFixture, test_tick)
   EXPECT_EQ(tree_->rootNode()->executeTick(), BT::NodeStatus::SUCCESS);
 
   // Check if the output is correct
-  auto goals = config_->blackboard->get<std::vector<geometry_msgs::msg::PoseStamped>>("goals");
-  EXPECT_EQ(goals.size(), 1);
+  auto goals = config_->blackboard->get<nav_msgs::msg::Goals>("goals");
+  EXPECT_EQ(goals.goals.size(), 1);
 }
 
 int main(int argc, char ** argv)
