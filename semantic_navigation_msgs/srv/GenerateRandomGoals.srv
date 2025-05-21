@@ -12,4 +12,4 @@ string INSIDE = inside
 string RANDOM = random
 string REQUESTED = requested
 ---
-geometry_msgs/PoseStamped[] goals # Goals
+nav_msgs/Goals goals # Goals

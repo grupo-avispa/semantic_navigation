@@ -76,7 +76,7 @@ public:
       pose, region, orientation, requested_yaw);
   }
 
-  std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
+  nav_msgs::msg::Goals generateRandomGoals(
     unsigned int n, semantic_navigation::Region region, semantic_navigation::CellLimits limits)
   {
     return SemanticNavigationTasks::generateRandomGoals(n, region, limits);
@@ -541,7 +541,7 @@ TEST(SemanticNavigationTasksTest, generateRandomGoals) {
   auto goals = node->generateRandomGoals(1, regions[0], limits);
 
   // Check the results
-  EXPECT_EQ(goals.size(), 1);
+  EXPECT_EQ(goals.goals.size(), 1);
 }
 
 int main(int argc, char ** argv)

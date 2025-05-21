@@ -40,20 +40,20 @@ public:
     return map_;
   }
 
-  std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
+  nav_msgs::msg::Goals generateRandomGoals(
     unsigned int /*n*/, semantic_navigation::Region /*region*/,
     semantic_navigation::CellLimits /*limits*/) override
   {
     if (region_list_.empty() || map_.data.empty()) {
-      return {};
+      return nav_msgs::msg::Goals();
     } else {
-      std::vector<geometry_msgs::msg::PoseStamped> goals;
+      nav_msgs::msg::Goals goals;
       geometry_msgs::msg::PoseStamped goal;
       goal.pose.position.x = 1.0;
       goal.pose.position.y = 0.0;
       goal.pose.position.z = 0.0;
-      goals.push_back(goal);
-      return {goal};
+      goals.goals.push_back(goal);
+      return goals;
     }
   }
 
@@ -200,7 +200,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyRegion) {
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Check results
-  EXPECT_EQ(resp->goals.size(), 0);
+  EXPECT_EQ(resp->goals.goals.size(), 0);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
@@ -233,7 +233,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Check results
-  EXPECT_EQ(resp->goals.size(), 0);
+  EXPECT_EQ(resp->goals.goals.size(), 0);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
@@ -269,9 +269,9 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Check results
-  EXPECT_EQ(resp->goals.size(), 1);
-  EXPECT_DOUBLE_EQ(resp->goals[0].pose.position.x, 1.0);
-  EXPECT_DOUBLE_EQ(resp->goals[0].pose.position.y, 0.0);
+  EXPECT_EQ(resp->goals.goals.size(), 1);
+  EXPECT_DOUBLE_EQ(resp->goals.goals[0].pose.position.x, 1.0);
+  EXPECT_DOUBLE_EQ(resp->goals.goals[0].pose.position.y, 0.0);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {

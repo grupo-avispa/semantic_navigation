@@ -356,7 +356,7 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
   geometry_msgs::msg::PoseArray goals_array;
   goals_array.header.frame_id = map_topic_;
   goals_array.header.stamp = this->now();
-  for (const auto & goal : response->goals) {
+  for (const auto & goal : response->goals.goals) {
     goals_array.poses.push_back(goal.pose);
   }
   goals_pub_->publish(goals_array);
@@ -416,10 +416,12 @@ bool SemanticNavigationTasks::listAllRegionsService(
   return true;
 }
 
-std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRandomGoals(
+nav_msgs::msg::Goals SemanticNavigationTasks::generateRandomGoals(
   unsigned int n, Region region, CellLimits limits)
 {
-  std::vector<geometry_msgs::msg::PoseStamped> goals;
+  nav_msgs::msg::Goals goals;
+  goals.header.frame_id = map_topic_;
+  goals.header.stamp = this->now();
 
   // Generate random goal pose
   auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
@@ -430,7 +432,7 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
   std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
 
   unsigned int count = 0;
-  while (goals.size() < n) {
+  while (goals.goals.size() < n) {
     count += 1;
     int cell_x = dist_x(gen);
     int cell_y = dist_y(gen);
@@ -450,9 +452,9 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
       orientationFromRequest(pose.pose, region, GenerateRandomGoals::Request::INSIDE, 0.0);
       RCLCPP_INFO(
         get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)",
-        goals.size() + 1, pose.pose.position.x, pose.pose.position.y,
+        goals.goals.size() + 1, pose.pose.position.x, pose.pose.position.y,
         tf2::getYaw(pose.pose.orientation));
-      goals.push_back(pose);
+      goals.goals.push_back(pose);
     }
   }
 

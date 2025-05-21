@@ -40,7 +40,7 @@ BT::NodeStatus GenerateRandomGoalsService::on_completion(
   std::shared_ptr<GenerateRandomGoals::Response> response)
 {
   BT::NodeStatus status = BT::NodeStatus::FAILURE;
-  if (response->goals.size() > 0) {
+  if (response->goals.goals.size() > 0) {
     setOutput("goals", response->goals);
     status = BT::NodeStatus::SUCCESS;
   }

@@ -43,7 +43,7 @@ public:
   {
     (void)request_header;
     (void)request;
-    response->goals.push_back(geometry_msgs::msg::PoseStamped());
+    response->goals.goals.push_back(geometry_msgs::msg::PoseStamped());
   }
 };
 
