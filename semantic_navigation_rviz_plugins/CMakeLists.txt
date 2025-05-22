@@ -98,11 +98,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   ${Qt5Widgets_INCLUDE_DIRS}
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
   ${nav2_msgs_TARGETS}
-  ${nav2_util_TARGETS} # TODO(ajtudela): Fix this in kilted
   ${polygon_msgs_TARGETS}
-  polygon_utils::polygon_utils
   Qt5::Widgets
   ${semantic_navigation_msgs_TARGETS}
   rclcpp::rclcpp
@@ -110,6 +109,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rviz_common::rviz_common
   rviz_rendering::rviz_rendering
   ${visualization_msgs_TARGETS}
+  PRIVATE
+  nav2_util::nav2_util_core
+  polygon_utils::polygon_utils
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,

@@ -15,7 +15,7 @@
 
 #include "gtest/gtest.h"
 #include "ament_index_cpp/get_package_share_directory.hpp"
-#include "tf2/utils.h"
+#include "tf2/utils.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "lifecycle_msgs/msg/state.hpp"

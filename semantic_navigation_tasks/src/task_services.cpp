@@ -18,8 +18,8 @@
 
 // ROS
 #include "angles/angles.h"
-#include "tf2/utils.h"
-#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/utils.hpp"
+#include "tf2/LinearMath/Quaternion.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "nav2_util/occ_grid_values.hpp"

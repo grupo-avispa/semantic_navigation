@@ -136,9 +136,9 @@ void SemanticNavigationPanel::generate_goals()
   auto result = goals_generator_client_->async_send_request(
     request,
     [this](rclcpp::Client<GenerateRandomGoals>::SharedFuture future) {
-      if (future.get()->goals.size() > 0) {
+      if (future.get()->goals.goals.size() > 0) {
         // Send goals to the navigation stack
-        navigate_to_pose(future.get()->goals.back());
+        navigate_to_pose(future.get()->goals.goals.back());
         room_name_editor_->setText("");
       } else {
         room_name_editor_->setText("Couldn't send the goal.");

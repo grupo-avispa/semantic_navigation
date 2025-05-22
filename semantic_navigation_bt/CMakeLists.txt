@@ -80,12 +80,12 @@ foreach(bt_plugin ${plugin_libs})
   )
   target_link_libraries(${bt_plugin} PUBLIC
     behaviortree_cpp::behaviortree_cpp
+    nav2_behavior_tree::nav2_behavior_tree
     rclcpp::rclcpp
     rclcpp_action::rclcpp_action
     rclcpp_lifecycle::rclcpp_lifecycle
     ${semantic_navigation_msgs_TARGETS}
   )
-  ament_target_dependencies(${bt_plugin} PUBLIC nav2_behavior_tree) # TODO(ajtudela): Fix this in kilted
   target_compile_definitions(${bt_plugin} PRIVATE BT_PLUGIN_EXPORT)
 endforeach()
 
@@ -106,10 +106,8 @@ configure_file(plugins_list.hpp.in ${GENERATED_DIR}/plugins_list.hpp)
 add_executable(generate_semantic_navigation_tree_nodes_xml src/generate_semantic_navigation_tree_nodes_xml.cpp)
 target_link_libraries(generate_semantic_navigation_tree_nodes_xml PRIVATE
   behaviortree_cpp::behaviortree_cpp
+  nav2_util::nav2_util_core
 )
-ament_target_dependencies(generate_semantic_navigation_tree_nodes_xml PUBLIC
-  nav2_util
-) # TODO(ajtudela): Fix this in kilted
 
 # allow generate_semantic_navigation_tree_nodes_xml to find plugins_list.hpp
 target_include_directories(generate_semantic_navigation_tree_nodes_xml PRIVATE ${GENERATED_DIR})

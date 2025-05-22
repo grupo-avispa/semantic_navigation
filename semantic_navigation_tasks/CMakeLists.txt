@@ -82,6 +82,7 @@ target_link_libraries(${library_name}
   PUBLIC
   ${geometry_msgs_TARGETS}
   ${nav_msgs_TARGETS}
+  nav2_util::nav2_util_core
   ${polygon_msgs_TARGETS}
   polygon_utils::polygon_utils
   rclcpp::rclcpp
@@ -95,8 +96,6 @@ target_link_libraries(${library_name}
   ${tf2_geometry_msgs_TARGETS}
   yaml-cpp::yaml-cpp
 )
-
-ament_target_dependencies(${library_name} PUBLIC nav2_util) # TODO(ajtudela): Fix this in kilted
 
 # Add executable
 add_executable(${executable_name} src/main.cpp)
