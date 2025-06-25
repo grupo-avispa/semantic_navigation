@@ -11,6 +11,7 @@
   <depend>angles</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
+  <depend>nav2_ros_common</depend>
   <depend>nav2_util</depend>
   <depend>polygon_msgs</depend>
   <depend>polygon_utils</depend>

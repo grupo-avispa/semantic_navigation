@@ -19,8 +19,8 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
-#include "nav2_util/lifecycle_node.hpp"
-#include "nav2_util/node_utils.hpp"
+#include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/node_utils.hpp"
 #include "nav2_util/occ_grid_values.hpp"
 #include "semantic_navigation_tasks/task_services.hpp"
 
@@ -111,7 +111,7 @@ TEST(SemanticNavigationTasksTest, configure) {
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
   // Set an empty regions filename config parameter
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     node, "regions_filename", rclcpp::ParameterValue(""));
 
   // Configure the node

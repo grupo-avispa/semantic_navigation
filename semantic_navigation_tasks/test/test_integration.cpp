@@ -17,9 +17,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
-#include "nav2_util/lifecycle_node.hpp"
-#include "nav2_util/node_utils.hpp"
-#include "nav2_util/node_thread.hpp"
+#include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/node_utils.hpp"
+#include "nav2_ros_common/node_thread.hpp"
 #include "nav2_util/occ_grid_values.hpp"
 #include "semantic_navigation_tasks/task_services.hpp"
 
@@ -80,7 +80,7 @@ public:
     // Create and configure the semantic node
     node_ = std::make_shared<SemanticNavigationTasksFixture>();
     auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
-    nav2_util::declare_parameter_if_not_declared(
+    nav2::declare_parameter_if_not_declared(
       node_, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
   }
 
@@ -106,7 +106,7 @@ public:
 
   void spin_publisher(rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base)
   {
-    publisher_node_ = std::make_unique<nav2_util::NodeThread>(node_base);
+    publisher_node_ = std::make_unique<nav2::NodeThread>(node_base);
   }
 
   nav_msgs::msg::OccupancyGrid getMap()
@@ -121,7 +121,7 @@ public:
 
 protected:
   std::shared_ptr<SemanticNavigationTasksFixture> node_;
-  std::unique_ptr<nav2_util::NodeThread> publisher_node_;
+  std::unique_ptr<nav2::NodeThread> publisher_node_;
 };
 
 TEST_F(SemanticNavigationIntegrationTest, mapCallback) {
@@ -185,7 +185,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyRegion) {
   ASSERT_TRUE(client->wait_for_service());
 
   // Call the service
-  auto result = client->async_send_request(req);
+  auto result = client->async_call(req);
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
@@ -218,7 +218,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
   ASSERT_TRUE(client->wait_for_service());
 
   // Call the service
-  auto result = client->async_send_request(req);
+  auto result = client->async_call(req);
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
@@ -254,7 +254,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
   ASSERT_TRUE(client->wait_for_service());
 
   // Call the service
-  auto result = client->async_send_request(req);
+  auto result = client->async_call(req);
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
@@ -287,7 +287,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {
   ASSERT_TRUE(client->wait_for_service());
 
   // Call the service
-  auto result = client->async_send_request(req);
+  auto result = client->async_call(req);
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRandomRegion::Response>();
@@ -320,7 +320,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
   ASSERT_TRUE(client->wait_for_service());
 
   // Call the service
-  auto result = client->async_send_request(req);
+  auto result = client->async_call(req);
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Response>();
@@ -353,7 +353,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
   ASSERT_TRUE(client->wait_for_service());
 
   // Call the service
-  auto result = client->async_send_request(req);
+  auto result = client->async_call(req);
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Response>();
@@ -384,7 +384,7 @@ TEST_F(SemanticNavigationIntegrationTest, listAllRegions) {
   ASSERT_TRUE(client->wait_for_service());
 
   // Call the service
-  auto result = client->async_send_request(req);
+  auto result = client->async_call(req);
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::ListAllRegions::Response>();

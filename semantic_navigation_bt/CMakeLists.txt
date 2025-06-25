@@ -53,6 +53,7 @@ find_package(ament_cmake REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(nav2_behavior_tree REQUIRED)
 find_package(nav2_util REQUIRED)
+find_package(nav2_ros_common REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
@@ -77,6 +78,7 @@ foreach(bt_plugin ${plugin_libs})
   target_include_directories(${bt_plugin} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+    "$<BUILD_INTERFACE:${nav2_ros_common_INCLUDE_DIRS}>"
   )
   target_link_libraries(${bt_plugin} PUBLIC
     behaviortree_cpp::behaviortree_cpp
@@ -143,6 +145,7 @@ ament_export_dependencies(
   behaviortree_cpp
   nav2_behavior_tree
   nav2_util
+  nav2_ros_common
   rclcpp
   rclcpp_action
   rclcpp_lifecycle

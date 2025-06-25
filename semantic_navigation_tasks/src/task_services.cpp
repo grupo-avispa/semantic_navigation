@@ -23,7 +23,7 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "nav2_util/occ_grid_values.hpp"
-#include "nav2_util/node_utils.hpp"
+#include "nav2_ros_common/node_utils.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/polygon_stamped.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
@@ -34,19 +34,19 @@
 namespace semantic_navigation
 {
 
-using std::placeholders::_1, std::placeholders::_2;
+using std::placeholders::_1, std::placeholders::_2, std::placeholders::_3;
 
 SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & options)
-: nav2_util::LifecycleNode("semantic_navigation_tasks", "", options),
+: nav2::LifecycleNode("semantic_navigation_tasks", "", options),
   border_(0.0)
 {
   RCLCPP_INFO(get_logger(), "Creating Semantic Navigation Tasks");
 }
 
-nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycle::State &)
+nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycle::State &)
 {
   // BOOLEAN PARAMS ..........................................................................
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     this, "is_costmap",
     rclcpp::ParameterValue(false), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Is the map a costmap?"));
@@ -54,7 +54,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter is_costmap is set to: [%s]", is_costmap_ ? "true" : "false");
 
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     this, "full_map",
     rclcpp::ParameterValue(false), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Use the full map as Region?"));
@@ -63,7 +63,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
     get_logger(), "The parameter full_map is set to: [%s]", full_map_ ? "true" : "false");
 
   // FLOAT PARAMS ..........................................................................
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     this, "inflation_radius",
     rclcpp::ParameterValue(0.5), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Inflation radius for the robot footprint"));
@@ -72,7 +72,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
     get_logger(), "The parameter inflation_radius is set to: [%f]", inflation_radius_);
 
   // STRING PARAMS ..........................................................................
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     this, "goals_topic",
     rclcpp::ParameterValue("semantic_goals"), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Name of the publisher for the goals"));
@@ -80,7 +80,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter goals_topic is set to: [%s]", goals_topic_.c_str());
 
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     this, "polygons_topic",
     rclcpp::ParameterValue("polygons"), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Name of the publisher for the regions"));
@@ -88,7 +88,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter polygons_topic is set to: [%s]", polygons_topic_.c_str());
 
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     this, "names_topic",
     rclcpp::ParameterValue("names"), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Name of the publisher for the names for the visualization of the regions"));
@@ -96,7 +96,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter names_topic is set to: [%s]", names_topic_.c_str());
 
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     this, "map_topic",
     rclcpp::ParameterValue("map"), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Name of the map topic"));
@@ -105,7 +105,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
     get_logger(), "The parameter map_topic is set to: [%s]", map_topic_.c_str());
 
   std::string regions_filename;
-  nav2_util::declare_parameter_if_not_declared(
+  nav2::declare_parameter_if_not_declared(
     this, "regions_filename",
     rclcpp::ParameterValue("regions.yaml"), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("File where the regions are stored"));
@@ -115,7 +115,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
 
   if (!getRegionsFromFile(regions_filename, region_list_)) {
     RCLCPP_ERROR(get_logger(), "The list of regions could not be found");
-    return nav2_util::CallbackReturn::FAILURE;
+    return nav2::CallbackReturn::FAILURE;
   }
 
   // Publishers
@@ -129,26 +129,26 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
 
   // Subscribers
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
-    map_topic_, latched_profile, std::bind(&SemanticNavigationTasks::mapCallback, this, _1));
+    map_topic_, std::bind(&SemanticNavigationTasks::mapCallback, this, _1), latched_profile);
 
   // Services
   goals_generator_service_ = this->create_service<GenerateRandomGoals>(
     "generate_random_goals",
-    std::bind(&SemanticNavigationTasks::generateRandomGoalsService, this, _1, _2));
+    std::bind(&SemanticNavigationTasks::generateRandomGoalsService, this, _1, _2, _3));
   get_random_region_service_ = this->create_service<GetRandomRegion>(
     "get_random_region",
-    std::bind(&SemanticNavigationTasks::getRandomRegionService, this, _1, _2));
+    std::bind(&SemanticNavigationTasks::getRandomRegionService, this, _1, _2, _3));
   get_region_name_service_ = this->create_service<GetRegionName>(
     "get_region_name",
-    std::bind(&SemanticNavigationTasks::getRegionNameService, this, _1, _2));
+    std::bind(&SemanticNavigationTasks::getRegionNameService, this, _1, _2, _3));
   list_all_regions_service_ = this->create_service<ListAllRegions>(
     "list_all_regions",
-    std::bind(&SemanticNavigationTasks::listAllRegionsService, this, _1, _2));
+    std::bind(&SemanticNavigationTasks::listAllRegionsService, this, _1, _2, _3));
 
-  return nav2_util::CallbackReturn::SUCCESS;
+  return nav2::CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn SemanticNavigationTasks::on_activate(
+nav2::CallbackReturn SemanticNavigationTasks::on_activate(
   const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Activating");
@@ -164,10 +164,10 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_activate(
   // Create bond connection
   createBond();
 
-  return nav2_util::CallbackReturn::SUCCESS;
+  return nav2::CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn SemanticNavigationTasks::on_deactivate(
+nav2::CallbackReturn SemanticNavigationTasks::on_deactivate(
   const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Deactivating");
@@ -179,10 +179,10 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_deactivate(
   // Destroy bond connection
   destroyBond();
 
-  return nav2_util::CallbackReturn::SUCCESS;
+  return nav2::CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn SemanticNavigationTasks::on_cleanup(
+nav2::CallbackReturn SemanticNavigationTasks::on_cleanup(
   const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
@@ -195,14 +195,14 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_cleanup(
   get_region_name_service_.reset();
   list_all_regions_service_.reset();
 
-  return nav2_util::CallbackReturn::SUCCESS;
+  return nav2::CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn SemanticNavigationTasks::on_shutdown(const rclcpp_lifecycle::State &)
+nav2::CallbackReturn SemanticNavigationTasks::on_shutdown(const rclcpp_lifecycle::State &)
 {
   RCLCPP_INFO(get_logger(), "Shutting down");
 
-  return nav2_util::CallbackReturn::SUCCESS;
+  return nav2::CallbackReturn::SUCCESS;
 }
 
 bool SemanticNavigationTasks::getRegionsFromFile(
@@ -313,6 +313,7 @@ semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
 }
 
 bool SemanticNavigationTasks::generateRandomGoalsService(
+  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GenerateRandomGoals::Request> request,
   std::shared_ptr<GenerateRandomGoals::Response> response)
 {
@@ -364,6 +365,7 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
 }
 
 bool SemanticNavigationTasks::getRandomRegionService(
+  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GetRandomRegion::Request>/*request*/,
   std::shared_ptr<GetRandomRegion::Response> response)
 {
@@ -382,6 +384,7 @@ bool SemanticNavigationTasks::getRandomRegionService(
 }
 
 bool SemanticNavigationTasks::getRegionNameService(
+  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GetRegionName::Request> request,
   std::shared_ptr<GetRegionName::Response> response)
 {
@@ -403,7 +406,8 @@ bool SemanticNavigationTasks::getRegionNameService(
 }
 
 bool SemanticNavigationTasks::listAllRegionsService(
-  const std::shared_ptr<ListAllRegions::Request>/* request */,
+  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
+  const std::shared_ptr<ListAllRegions::Request>/*request*/,
   std::shared_ptr<ListAllRegions::Response> response)
 {
   RCLCPP_INFO(get_logger(), "Incoming regions service request");

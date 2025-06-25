@@ -17,6 +17,7 @@ ament_add_gtest(test_tasks
 target_link_libraries(test_tasks
   ${library_name}
   ament_index_cpp::ament_index_cpp
+  nav2_util::nav2_util_core
 )
 
 # Test for integration
@@ -26,4 +27,5 @@ ament_add_gtest(test_integration
 target_link_libraries(test_integration
   ${library_name}
   ament_index_cpp::ament_index_cpp
+  nav2_util::nav2_util_core
 )

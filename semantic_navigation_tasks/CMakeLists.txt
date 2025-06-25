@@ -53,6 +53,7 @@ find_package(ament_cmake REQUIRED)
 find_package(angles REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(nav2_ros_common REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(polygon_msgs REQUIRED)
 find_package(polygon_utils REQUIRED)
@@ -82,7 +83,7 @@ target_link_libraries(${library_name}
   PUBLIC
   ${geometry_msgs_TARGETS}
   ${nav_msgs_TARGETS}
-  nav2_util::nav2_util_core
+  nav2_ros_common::nav2_ros_common
   ${polygon_msgs_TARGETS}
   polygon_utils::polygon_utils
   rclcpp::rclcpp
@@ -91,6 +92,7 @@ target_link_libraries(${library_name}
   ${visualization_msgs_TARGETS}
   PRIVATE
   angles::angles
+  nav2_util::nav2_util_core
   rclcpp_components::component
   tf2::tf2
   ${tf2_geometry_msgs_TARGETS}
@@ -154,6 +156,7 @@ ament_export_dependencies(
   angles
   geometry_msgs
   nav_msgs
+  nav2_ros_common
   nav2_util
   polygon_msgs
   polygon_utils

@@ -28,7 +28,9 @@
 // ROS
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
-#include "nav2_util/lifecycle_node.hpp"
+#include "nav2_ros_common/lifecycle_node.hpp"
+#include "nav2_ros_common/subscription.hpp"
+#include "nav2_ros_common/service_server.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav_msgs/msg/goals.hpp"
@@ -51,7 +53,7 @@ using CellLimits = std::tuple<int, int, int, int>;
  * @class semantic_navigation::SemanticNavigationTasks
  * @brief Class to generate goals inside regions.
  */
-class SemanticNavigationTasks : public nav2_util::LifecycleNode
+class SemanticNavigationTasks : public nav2::LifecycleNode
 {
 public:
   /**
@@ -81,7 +83,7 @@ protected:
    * @throw pluginlib::PluginlibException When failed to initialize module
    * plugin
    */
-  nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
+  nav2::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
 
   /**
    * @brief Activates member variables
@@ -90,7 +92,7 @@ protected:
    * @param state LifeCycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
+  nav2::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
 
   /**
    * @brief Deactivates member variables
@@ -99,7 +101,7 @@ protected:
    * @param state LifeCycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
+  nav2::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
 
   /**
    * @brief Calls clean up states and resets member variables.
@@ -109,14 +111,14 @@ protected:
    * @param state LifeCycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
+  nav2::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
 
   /**
    * @brief Called when in Shutdown state
    * @param state LifeCycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
+  nav2::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
   /**
    * @brief Get the region parameters from a file.
@@ -131,44 +133,52 @@ protected:
   /**
    * @brief Generate goals inside the regions.
    *
+   * @param request_header Request header.
    * @param request Request with the name of the region.
    * @param response Response with the goals.
    * @return true if the goals are generated.
    */
   bool generateRandomGoalsService(
+    const std::shared_ptr<rmw_request_id_t> request_header,
     const std::shared_ptr<GenerateRandomGoals::Request> request,
     std::shared_ptr<GenerateRandomGoals::Response> response);
 
   /**
    * @brief Get a random named region.
    *
+   * @param request_header Request header.
    * @param request Request.
    * @param response Response with the region.
    * @return true if the position is generated.
    */
   bool getRandomRegionService(
+    const std::shared_ptr<rmw_request_id_t> request_header,
     const std::shared_ptr<GetRandomRegion::Request> request,
     std::shared_ptr<GetRandomRegion::Response> response);
 
   /**
    * @brief Get the name of the region from a position.
    *
+   * @param request_header Request header.
    * @param request Request with the name of the region.
    * @param response Response with the position.
    * @return true if the position is generated.
    */
   bool getRegionNameService(
+    const std::shared_ptr<rmw_request_id_t> request_header,
     const std::shared_ptr<GetRegionName::Request> request,
     std::shared_ptr<GetRegionName::Response> response);
 
   /**
    * @brief Get the names of all the regions.
    *
-   * @param request Request with the name of the region.
+   * @param request_header Request header.
+   * @param request Request with the name of the regions.
    * @param response Response with the regions.
    * @return true if the regions are generated.
    */
   bool listAllRegionsService(
+    const std::shared_ptr<rmw_request_id_t> request_header,
     const std::shared_ptr<ListAllRegions::Request> request,
     std::shared_ptr<ListAllRegions::Response> response);
 
@@ -262,12 +272,12 @@ protected:
     polygons_viz_pub_;
   rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr
     names_viz_pub_;
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+  nav2::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
 
-  rclcpp::Service<GenerateRandomGoals>::SharedPtr goals_generator_service_;
-  rclcpp::Service<GetRandomRegion>::SharedPtr get_random_region_service_;
-  rclcpp::Service<GetRegionName>::SharedPtr get_region_name_service_;
-  rclcpp::Service<ListAllRegions>::SharedPtr list_all_regions_service_;
+  nav2::ServiceServer<GenerateRandomGoals>::SharedPtr goals_generator_service_;
+  nav2::ServiceServer<GetRandomRegion>::SharedPtr get_random_region_service_;
+  nav2::ServiceServer<GetRegionName>::SharedPtr get_region_name_service_;
+  nav2::ServiceServer<ListAllRegions>::SharedPtr list_all_regions_service_;
 
   std::recursive_mutex mutex_;
   nav_msgs::msg::OccupancyGrid map_;
