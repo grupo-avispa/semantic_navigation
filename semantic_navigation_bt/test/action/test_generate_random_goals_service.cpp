@@ -23,7 +23,7 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "behaviortree_cpp/bt_factory.h"
 
-#include "nav2_behavior_tree/test/utils/test_service.hpp"
+#include "nav2_behavior_tree/utils/test_service.hpp"
 #include "semantic_navigation_bt/action/generate_random_goals_service.hpp"
 #include "semantic_navigation_msgs/srv/generate_random_goals.hpp"
 

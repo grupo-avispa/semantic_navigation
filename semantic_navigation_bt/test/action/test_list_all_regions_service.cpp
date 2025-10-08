@@ -22,7 +22,7 @@
 
 #include "behaviortree_cpp/bt_factory.h"
 
-#include "nav2_behavior_tree/test/utils/test_service.hpp"
+#include "nav2_behavior_tree/utils/test_service.hpp"
 #include "semantic_navigation_bt/action/list_all_regions_service.hpp"
 #include "semantic_navigation_msgs/srv/list_all_regions.hpp"
 
