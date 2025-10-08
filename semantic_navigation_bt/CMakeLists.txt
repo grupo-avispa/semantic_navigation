@@ -80,12 +80,21 @@ foreach(bt_plugin ${plugin_libs})
   )
   target_link_libraries(${bt_plugin} PUBLIC
     behaviortree_cpp::behaviortree_cpp
-    nav2_behavior_tree::nav2_behavior_tree
     rclcpp::rclcpp
     rclcpp_action::rclcpp_action
     rclcpp_lifecycle::rclcpp_lifecycle
     ${semantic_navigation_msgs_TARGETS}
   )
+
+  if("$ENV{ROS_DISTRO}" STREQUAL "humble" OR "$ENV{ROS_DISTRO}" STREQUAL "jazzy")
+    ament_target_dependencies(${bt_plugin} PUBLIC nav2_behavior_tree)
+  elseif("$ENV{ROS_DISTRO}" STREQUAL "rolling")
+    target_link_libraries(${bt_plugin}
+      PUBLIC
+      nav2_behavior_tree::nav2_behavior_tree
+    )
+  endif()
+
   target_compile_definitions(${bt_plugin} PRIVATE BT_PLUGIN_EXPORT)
 endforeach()
 
