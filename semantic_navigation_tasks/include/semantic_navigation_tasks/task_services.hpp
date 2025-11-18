@@ -31,7 +31,6 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "nav_msgs/msg/goals.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "polygon_msgs/msg/polygon2_d_collection.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
@@ -178,9 +177,9 @@ protected:
    * @param n Number of goals.
    * @param region Region of interest.
    * @param limits Limits of the cells.
-   * @return nav_msgs::msg::Goals Goals.
+   * @return std::vector<geometry_msgs::msg::PoseStamped> Goals.
    */
-  virtual nav_msgs::msg::Goals generateRandomGoals(
+  virtual std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
     unsigned int n, Region region, CellLimits limits);
 
   /**

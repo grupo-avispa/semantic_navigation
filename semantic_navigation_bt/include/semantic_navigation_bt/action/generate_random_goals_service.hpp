@@ -71,7 +71,7 @@ public:
         BT::InputPort<float>("yaw", "Yaw of the goals (Optional)"),
         BT::InputPort<std::string>("orientation", "Random orientation of the goals"),
         BT::InputPort<float>("border", 0.0, "Distance from the edge of the region"),
-        BT::OutputPort<nav_msgs::msg::Goals>("goals", "Generated goals")
+        BT::OutputPort<std::vector<geometry_msgs::msg::PoseStamped>>("goals", "Generated goals")
       });
   }
 };
