@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.2 (08-01-2026)
+------------------
+* Fix ament_cpp API.
+
 3.1.1 (06-02-2025)
 ------------------
 * First jazzy release.

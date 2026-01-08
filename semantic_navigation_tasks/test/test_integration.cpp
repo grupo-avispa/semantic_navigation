@@ -79,9 +79,11 @@ public:
     rclcpp::init(0, nullptr);
     // Create and configure the semantic node
     node_ = std::make_shared<SemanticNavigationTasksFixture>();
-    auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+    std::filesystem::path pkg_path;
+    ament_index_cpp::get_package_share_directory("semantic_navigation_tasks", pkg_path);
     nav2::declare_parameter_if_not_declared(
-      node_, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
+      node_, "regions_filename",
+      rclcpp::ParameterValue(std::string(pkg_path) + "/test/regions_test.yaml"));
     executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
     executor_->add_node(node_->get_node_base_interface());
   }

@@ -2,13 +2,13 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>semantic_navigation_rviz_plugins</name>
-  <version>3.1.1</version>
+  <version>3.1.2</version>
   <description>Panel for Rviz2 to send the robot to a region and tool to save regions in a YAML file.</description>
   <maintainer email="ajtudela@gmail.com">Alberto Tudela</maintainer>
   <license>Apache-2.0</license>
   <author email="ajtudela@gmail.com">Alberto Tudela</author>
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>qtbase6-dev</build_depend>
   <depend>nav2_msgs</depend>
   <depend>nav2_util</depend>
   <depend>pluginlib</depend>
@@ -21,10 +21,10 @@
   <depend>semantic_navigation_msgs</depend>
   <depend>semantic_navigation_tasks</depend>
   <depend>visualization_msgs</depend>
-  <exec_depend>libqt5-core</exec_depend>
-  <exec_depend>libqt5-gui</exec_depend>
-  <exec_depend>libqt5-opengl</exec_depend>
-  <exec_depend>libqt5-widgets</exec_depend>
+  <exec_depend>libqt6-core</exec_depend>
+  <exec_depend>libqt6-gui</exec_depend>
+  <exec_depend>libqt6-opengl</exec_depend>
+  <exec_depend>libqt6-widgets</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
