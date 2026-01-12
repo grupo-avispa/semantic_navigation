@@ -138,8 +138,6 @@ TEST_F(SemanticNavigationIntegrationTest, mapCallback) {
   pub_node->activate();
   EXPECT_TRUE(map_pub->is_activated());
   map_pub->on_activate();
-  // Run the publisher node in a separate thread
-  // spin_publisher(pub_node->get_node_base_interface());
 
   // Activate the semantic node
   activate();
@@ -152,11 +150,11 @@ TEST_F(SemanticNavigationIntegrationTest, mapCallback) {
   map.data = std::vector<int8_t>(100, nav2_util::OCC_GRID_FREE);
   map_pub->publish(map);
 
-  // Spin the semantic node
-  spin_some();
-
-  // Wait before checking the results
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  // Spin both nodes multiple times to ensure message delivery
+  for (int i = 0; i < 10; ++i) {
+    executor_->spin_some();
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
 
   // Check the results
   EXPECT_EQ(getMap().info.width, 10);
@@ -189,7 +187,12 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyRegion) {
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
-  if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS) {
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
     std::cout << "Service call succeeded" << std::endl;
     resp = result.get();
   } else {
@@ -222,7 +225,12 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
-  if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS) {
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
     std::cout << "Service call succeeded" << std::endl;
     resp = result.get();
   } else {
@@ -258,7 +266,12 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GenerateRandomGoals::Response>();
-  if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS) {
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
     std::cout << "Service call succeeded" << std::endl;
     resp = result.get();
   } else {
@@ -291,7 +304,12 @@ TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRandomRegion::Response>();
-  if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS) {
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
     std::cout << "Service call succeeded" << std::endl;
     resp = result.get();
   } else {
@@ -311,6 +329,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
 
   // Create the client service
   auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Request>();
+  req->position.header.frame_id = "map";
   req->position.point.x = 0.5;
   req->position.point.y = 0.5;
   auto client = node_->create_client<semantic_navigation_msgs::srv::GetRegionName>(
@@ -324,7 +343,12 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Response>();
-  if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS) {
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
     std::cout << "Service call succeeded" << std::endl;
     resp = result.get();
   } else {
@@ -344,6 +368,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
 
   // Create the client service
   auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Request>();
+  req->position.header.frame_id = "map";
   req->position.point.x = -0.5;
   req->position.point.y = -0.5;
   auto client = node_->create_client<semantic_navigation_msgs::srv::GetRegionName>(
@@ -357,7 +382,12 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Response>();
-  if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS) {
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
     std::cout << "Service call succeeded" << std::endl;
     resp = result.get();
   } else {
@@ -388,7 +418,12 @@ TEST_F(SemanticNavigationIntegrationTest, listAllRegions) {
 
   // Wait for the result
   auto resp = std::make_shared<semantic_navigation_msgs::srv::ListAllRegions::Response>();
-  if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS) {
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
     std::cout << "Service call succeeded" << std::endl;
     resp = result.get();
   } else {
