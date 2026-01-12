@@ -63,7 +63,7 @@ public:
   {
     return providedBasicPorts(
       {
-        BT::InputPort<geometry_msgs::msg::Point>("position", "Position of the point"),
+        BT::InputPort<geometry_msgs::msg::PointStamped>("position", "Position of the point"),
         BT::OutputPort<std::string>("region_name", "Region name")
       });
   }

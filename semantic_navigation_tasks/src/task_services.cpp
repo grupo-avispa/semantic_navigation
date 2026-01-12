@@ -145,6 +145,10 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
     "list_all_regions",
     std::bind(&SemanticNavigationTasks::listAllRegionsService, this, _1, _2, _3));
 
+  // TF Buffer and Listener
+  tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  tf2_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf2_buffer_, this, true);
+
   return nav2::CallbackReturn::SUCCESS;
 }
 
@@ -389,12 +393,29 @@ bool SemanticNavigationTasks::getRegionNameService(
   std::shared_ptr<GetRegionName::Response> response)
 {
   RCLCPP_INFO(
-    get_logger(), "Incoming semantic position service request: [%f, %f]",
-    request->position.x, request->position.y);
+    get_logger(), "Incoming semantic position service request: [%f, %f] in frame [%s]",
+    request->position.point.x, request->position.point.y,
+    request->position.header.frame_id.c_str());
+
+  // If the request frame is different than the map frame, transform the point
+  geometry_msgs::msg::PointStamped point_in_map_frame;
+  if (request->position.header.frame_id != map_topic_) {
+    try {
+      point_in_map_frame = tf2_buffer_->transform(
+        request->position, map_topic_, tf2::durationFromSec(1.0));
+    } catch (tf2::TransformException & ex) {
+      RCLCPP_FATAL(
+        get_logger(), "Failed to transform point from frame [%s] to frame [%s]: %s",
+        request->position.header.frame_id.c_str(), map_topic_.c_str(), ex.what());
+      return false;
+    }
+  } else {
+    point_in_map_frame = request->position;
+  }
 
   // Get arguments and check if the point lies within the region
   for (const auto & region : region_list_) {
-    if (region.isPointInside(request->position.x, request->position.y)) {
+    if (region.isPointInside(point_in_map_frame.point.x, point_in_map_frame.point.y)) {
       response->region_name = region.name;
       return true;
     }

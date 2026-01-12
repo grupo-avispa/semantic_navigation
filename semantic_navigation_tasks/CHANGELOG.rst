@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.2.0 (12-02-2026)
+------------------
+* Add TF2 listener to transform request points to map frame.
+
 3.1.2 (08-01-2026)
 ------------------
 * Fix ament_cpp API.
