@@ -39,6 +39,8 @@
 #include "semantic_navigation_msgs/srv/get_region_name.hpp"
 #include "semantic_navigation_msgs/srv/list_all_regions.hpp"
 #include "semantic_navigation_tasks/region.hpp"
+#include "tf2_ros/buffer.hpp"
+#include "tf2_ros/transform_listener.hpp"
 
 
 namespace semantic_navigation
@@ -275,6 +277,9 @@ protected:
   float inflation_radius_, border_;
   std::string goals_topic_, polygons_topic_, names_topic_, map_topic_;
   std::vector<semantic_navigation::Region> region_list_;
+
+  std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;
+  std::unique_ptr<tf2_ros::TransformListener> tf2_listener_;
 };
 
 }  // namespace semantic_navigation

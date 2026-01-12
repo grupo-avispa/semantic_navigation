@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.2.0 (12-02-2026)
+------------------
+* Add TF2 listener to transform request points to map frame.
+
 3.1.1 (06-02-2025)
 ------------------
 * First jazzy release.

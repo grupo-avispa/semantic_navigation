@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.2.0 (12-01-2026)
+------------------
+* Change GetRegionName.srv to use PointStamped instead of Point.
+
 3.1.1 (06-02-2025)
 ------------------
 * First jazzy release.

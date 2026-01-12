@@ -311,8 +311,8 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
 
   // Create the client service
   auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Request>();
-  req->position.x = 0.5;
-  req->position.y = 0.5;
+  req->position.point.x = 0.5;
+  req->position.point.y = 0.5;
   auto client = node_->create_client<semantic_navigation_msgs::srv::GetRegionName>(
     "get_region_name");
 
@@ -344,8 +344,8 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
 
   // Create the client service
   auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionName::Request>();
-  req->position.x = -0.5;
-  req->position.y = -0.5;
+  req->position.point.x = -0.5;
+  req->position.point.y = -0.5;
   auto client = node_->create_client<semantic_navigation_msgs::srv::GetRegionName>(
     "get_region_name");
 

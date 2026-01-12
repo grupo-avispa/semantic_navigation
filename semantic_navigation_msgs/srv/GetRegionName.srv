@@ -1,6 +1,6 @@
 # Request / response service to get the name of a region
 
-geometry_msgs/Point position # Position
+geometry_msgs/PointStamped position # Position
 ---
 string region_name # Name of the region
 
