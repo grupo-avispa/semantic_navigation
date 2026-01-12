@@ -291,6 +291,8 @@ protected:
 
   std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;
   std::unique_ptr<tf2_ros::TransformListener> tf2_listener_;
+  // Transform tolerance for getting the robot pose
+  double transform_tolerance_;
 };
 
 }  // namespace semantic_navigation
