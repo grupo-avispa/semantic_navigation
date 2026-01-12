@@ -71,6 +71,14 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter inflation_radius is set to: [%f]", inflation_radius_);
 
+  nav2::declare_parameter_if_not_declared(
+    this, "transform_tolerance",
+    rclcpp::ParameterValue(0.2), rcl_interfaces::msg::ParameterDescriptor()
+    .set__description("Transform tolerance for TF2"));
+  this->get_parameter("transform_tolerance", transform_tolerance_);
+  RCLCPP_INFO(
+    get_logger(), "The parameter transform_tolerance is set to: [%f]", transform_tolerance_);
+
   // STRING PARAMS ..........................................................................
   nav2_util::declare_parameter_if_not_declared(
     this, "goals_topic",
@@ -194,6 +202,8 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_cleanup(
   goals_pub_.reset();
   polygons_viz_pub_.reset();
   names_viz_pub_.reset();
+  tf2_listener_.reset();
+  tf2_buffer_.reset();
   goals_generator_service_.reset();
   get_random_region_service_.reset();
   get_region_name_service_.reset();
@@ -399,7 +409,7 @@ bool SemanticNavigationTasks::getRegionNameService(
   if (request->position.header.frame_id != map_topic_) {
     try {
       point_in_map_frame = tf2_buffer_->transform(
-        request->position, map_topic_, tf2::durationFromSec(1.0));
+        request->position, map_topic_, tf2::durationFromSec(transform_tolerance_));
     } catch (tf2::TransformException & ex) {
       RCLCPP_FATAL(
         get_logger(), "Failed to transform point from frame [%s] to frame [%s]: %s",

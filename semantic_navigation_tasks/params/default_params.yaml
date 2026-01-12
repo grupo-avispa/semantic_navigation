@@ -4,7 +4,8 @@ semantic_navigation:
     polygons_topic: "semantic_goal/polygons"
     names_topic: "semantic_goal/names"
     map_topic: "map"
+    transform_tolerance: 0.2
     is_costmap: false
     full_map: false
     inflation_radius: 0.5
-    regions_filename: ''
+    regions_filename: ""
