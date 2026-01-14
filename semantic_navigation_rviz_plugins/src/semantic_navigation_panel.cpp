@@ -170,8 +170,8 @@ void SemanticNavigationPanel::request_room()
 
   // Send the request and wait for the response
   auto request = std::make_shared<GetRegionName::Request>();
-  request->position.x = robot_pose.pose.position.x;
-  request->position.y = robot_pose.pose.position.y;
+  request->position.point.x = robot_pose.pose.position.x;
+  request->position.point.y = robot_pose.pose.position.y;
   auto result = region_name_client_->async_send_request(
     request,
     [this](rclcpp::Client<GetRegionName>::SharedFuture future) {
