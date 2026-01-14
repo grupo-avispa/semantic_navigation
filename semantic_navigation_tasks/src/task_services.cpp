@@ -71,7 +71,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter inflation_radius is set to: [%f]", inflation_radius_);
 
-  nav2::declare_parameter_if_not_declared(
+  nav2_util::declare_parameter_if_not_declared(
     this, "transform_tolerance",
     rclcpp::ParameterValue(0.2), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Transform tolerance for TF2"));

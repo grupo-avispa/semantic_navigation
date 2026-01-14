@@ -82,6 +82,8 @@ public:
     auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
     nav2_util::declare_parameter_if_not_declared(
       node_, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
+    executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+    executor_->add_node(node_->get_node_base_interface());
   }
 
   void TearDown()
@@ -91,6 +93,7 @@ public:
     node_->shutdown();
     rclcpp::shutdown();
     publisher_node_.reset();
+    executor_.reset();
   }
 
   void activate()
@@ -101,7 +104,7 @@ public:
 
   void spin_some()
   {
-    rclcpp::spin_some(node_->get_node_base_interface());
+    executor_->spin_some();
   }
 
   void spin_publisher(rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base)
@@ -122,6 +125,7 @@ public:
 protected:
   std::shared_ptr<SemanticNavigationTasksFixture> node_;
   std::unique_ptr<nav2_util::NodeThread> publisher_node_;
+  rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
 };
 
 TEST_F(SemanticNavigationIntegrationTest, mapCallback) {
