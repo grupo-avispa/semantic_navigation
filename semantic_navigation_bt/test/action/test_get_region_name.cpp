@@ -52,7 +52,7 @@ class GetRegionNameServiceTestFixture : public ::testing::Test
 public:
   static void SetUpTestCase()
   {
-    node_ = std::make_shared<rclcpp::Node>("get_region_name_test_fixture");
+    node_ = std::make_shared<nav2::LifecycleNode>("get_region_name_test_fixture");
     factory_ = std::make_shared<BT::BehaviorTreeFactory>();
 
     config_ = new BT::NodeConfiguration();
@@ -92,13 +92,13 @@ public:
   static std::shared_ptr<GetRegionNameService> server_;
 
 protected:
-  static rclcpp::Node::SharedPtr node_;
+  static nav2::LifecycleNode::SharedPtr node_;
   static BT::NodeConfiguration * config_;
   static std::shared_ptr<BT::BehaviorTreeFactory> factory_;
   static std::shared_ptr<BT::Tree> tree_;
 };
 
-rclcpp::Node::SharedPtr GetRegionNameServiceTestFixture::node_ = nullptr;
+nav2::LifecycleNode::SharedPtr GetRegionNameServiceTestFixture::node_ = nullptr;
 std::shared_ptr<GetRegionNameService> GetRegionNameServiceTestFixture::server_ =
   nullptr;
 BT::NodeConfiguration * GetRegionNameServiceTestFixture::config_ = nullptr;

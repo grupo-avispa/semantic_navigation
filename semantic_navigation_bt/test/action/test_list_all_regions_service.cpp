@@ -49,7 +49,7 @@ class ListAllRegionsServiceTestFixture : public ::testing::Test
 public:
   static void SetUpTestCase()
   {
-    node_ = std::make_shared<rclcpp::Node>("list_all_regions_test_fixture");
+    node_ = std::make_shared<nav2::LifecycleNode>("list_all_regions_test_fixture");
     factory_ = std::make_shared<BT::BehaviorTreeFactory>();
 
     config_ = new BT::NodeConfiguration();
@@ -85,13 +85,13 @@ public:
   static std::shared_ptr<ListAllRegionsService> server_;
 
 protected:
-  static rclcpp::Node::SharedPtr node_;
+  static nav2::LifecycleNode::SharedPtr node_;
   static BT::NodeConfiguration * config_;
   static std::shared_ptr<BT::BehaviorTreeFactory> factory_;
   static std::shared_ptr<BT::Tree> tree_;
 };
 
-rclcpp::Node::SharedPtr ListAllRegionsServiceTestFixture::node_ = nullptr;
+nav2::LifecycleNode::SharedPtr ListAllRegionsServiceTestFixture::node_ = nullptr;
 std::shared_ptr<ListAllRegionsService> ListAllRegionsServiceTestFixture::server_ = nullptr;
 BT::NodeConfiguration * ListAllRegionsServiceTestFixture::config_ = nullptr;
 std::shared_ptr<BT::BehaviorTreeFactory> ListAllRegionsServiceTestFixture::factory_ = nullptr;
