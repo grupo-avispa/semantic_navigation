@@ -111,16 +111,22 @@ TEST_F(GetRegionNameServiceTestFixture, test_tick)
     R"(
       <root BTCPP_format="4">
         <BehaviorTree ID="MainTree">
-            <GetRegionName service_name="get_region_name" position="1.0;2.0;3.0" region_name="{region_name}"/>
+            <GetRegionName service_name="get_region_name" position="{position}" region_name="{region_name}"/>
         </BehaviorTree>
       </root>)";
 
   tree_ = std::make_shared<BT::Tree>(factory_->createTreeFromText(xml_txt, config_->blackboard));
+
+  // create new position and set it on blackboard
+  geometry_msgs::msg::PointStamped position;
+  position.header.stamp = node_->now();
+  position.header.frame_id = "map";
+  position.point.x = 1.0;
+  position.point.y = 2.0;
+  position.point.z = 3.0;
+  config_->blackboard->set("position", position);
+
   EXPECT_EQ(tree_->rootNode()->getInput<std::string>("service_name"), "get_region_name");
-  auto position = tree_->rootNode()->getInput<geometry_msgs::msg::Point>("position").value();
-  EXPECT_EQ(position.x, 1.0);
-  EXPECT_EQ(position.y, 2.0);
-  EXPECT_EQ(position.z, 3.0);
   EXPECT_EQ(tree_->rootNode()->executeTick(), BT::NodeStatus::SUCCESS);
 
   // Check if the output is correct
