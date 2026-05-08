@@ -79,8 +79,8 @@ public:
     rclcpp::init(0, nullptr);
     // Create and configure the semantic node
     node_ = std::make_shared<SemanticNavigationTasksFixture>();
-    std::filesystem::path pkg_path;
-    ament_index_cpp::get_package_share_directory("semantic_navigation_tasks", pkg_path);
+    std::filesystem::path pkg_path =
+      ament_index_cpp::get_package_share_path("semantic_navigation_tasks");
     nav2::declare_parameter_if_not_declared(
       node_, "regions_filename",
       rclcpp::ParameterValue(std::string(pkg_path) + "/test/regions_test.yaml"));

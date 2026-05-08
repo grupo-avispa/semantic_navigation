@@ -152,8 +152,8 @@ int SemanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & 
 
 void SemanticAnnotationTool::save_polygon(const std::string filename)
 {
-  std::filesystem::path pkg_path;
-  ament_index_cpp::get_package_share_directory("semantic_navigation_tasks", pkg_path);
+  std::filesystem::path pkg_path =
+    ament_index_cpp::get_package_share_path("semantic_navigation_tasks");
   std::string filepath = std::string(pkg_path) + "/params/" + filename + ".yaml";
   std::ofstream regionfile(filepath, std::ofstream::app);
 
