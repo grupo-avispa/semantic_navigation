@@ -61,12 +61,48 @@ find_package(polygon_msgs REQUIRED)
 find_package(polygon_utils REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+set(QT_NO_CREATE_VERSIONLESS_TARGETS TRUE)
+find_package(Qt5 COMPONENTS Core Gui Widgets QUIET)
 find_package(rviz_common REQUIRED)
 find_package(rviz_rendering REQUIRED)
 find_package(semantic_navigation_msgs REQUIRED)
 find_package(semantic_navigation_tasks REQUIRED)
 find_package(visualization_msgs REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Widgets Test)
+
+# In Kilted and older distros, rviz with Qt6 is not supported
+if(TARGET Qt5::Core)
+  set(QT_VERSION_MAJOR 5)
+  set(QT_VERSION ${Qt5Core_VERSION})
+
+  # In Qt5, state machine is part of core
+  find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Test Concurrent)
+elseif(TARGET Qt6::Core)
+  set(QT_VERSION_MAJOR 6)
+  set(QT_VERSION ${Qt6Core_VERSION})
+  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets StateMachine Test Concurrent)
+endif()
+
+if(${QT_VERSION} VERSION_LESS 5.15.0)
+  function(qt_wrap_cpp out)
+    qt5_wrap_cpp(_sources ${ARGN})
+    set("${out}" ${_sources} PARENT_SCOPE)
+  endfunction()
+
+  function(qt_wrap_ui out)
+    qt5_wrap_ui(_uis_hdrs ${ARGN})
+    set("${out}" ${_uis_hdrs} PARENT_SCOPE)
+  endfunction()
+endif()
+
+set(QT_LIBRARIES
+  Qt${QT_VERSION_MAJOR}::Core
+  Qt${QT_VERSION_MAJOR}::Gui
+  Qt${QT_VERSION_MAJOR}::Widgets
+)
+
+if(QT_VERSION_MAJOR EQUAL 6)
+  list(APPEND QT_LIBRARIES Qt6::StateMachine)
+endif()
 
 # ##########
 # # Build ##
@@ -95,14 +131,14 @@ add_library(${PROJECT_NAME} SHARED
 target_include_directories(${PROJECT_NAME} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
-  ${Qt6Widgets_INCLUDE_DIRS}
+  ${Qt${QT_VERSION_MAJOR}Widgets_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   ${nav2_msgs_TARGETS}
   ${polygon_msgs_TARGETS}
-  Qt6::Widgets
+  Qt${QT_VERSION_MAJOR}::Widgets
   ${semantic_navigation_msgs_TARGETS}
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
@@ -162,7 +198,7 @@ ament_export_dependencies(
   semantic_navigation_msgs
   semantic_navigation_tasks
   visualization_msgs
-  Qt6
+  Qt${QT_VERSION_MAJOR}
 )
 ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_package()
