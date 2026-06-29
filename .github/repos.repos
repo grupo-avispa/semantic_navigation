@@ -1,0 +1,6 @@
+- git:
+    {
+      local-name: behaviortree_cpp,
+      uri: "https://github.com/BehaviorTree/BehaviorTree.CPP.git",
+      version: master,
+    }
