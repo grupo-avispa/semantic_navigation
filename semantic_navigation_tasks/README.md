@@ -67,6 +67,10 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 	Topic array with the names of the regions.
 
+* **`edges`** ([visualization_msgs/MarkerArray])
+
+	Topic with a line list connecting the centroids of the regions that are connected in the connectivity graph.
+
 #### Services
 
 * **`generate_random_goals`** ([semantic_navigation_msgs/GenerateRandomGoals])
@@ -85,6 +89,18 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 	Service to list all the regions defined in the configuration file.
 
+* **`get_adjacent_regions`** ([semantic_navigation_msgs/GetAdjacentRegions])
+
+	Service to request the regions directly connected to a given region.
+
+* **`are_regions_connected`** ([semantic_navigation_msgs/AreRegionsConnected])
+
+	Service to check whether two regions are connected, directly or transitively.
+
+* **`get_region_route`** ([semantic_navigation_msgs/GetRegionRoute])
+
+	Service to request the topological route (ordered sequence of regions) between two regions.
+
 #### Parameters
 
 * **`goals_topic`** (string, default: "semantic_goals")
@@ -98,6 +114,10 @@ ROS2 Service to generate 2D navigation goals as described above.
 * **`names_topic`** (string, default: "names")
 
 	Topic array with the names of the regions.
+
+* **`edges_topic`** (string, default: "edges")
+
+	Topic with the connectivity edges between regions for visualization.
 
 * **`map_topic`** (string, default: "map")
 
@@ -115,9 +135,17 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 	The inflation radius of the robot's footprint.
 
+* **`auto_connect`** (bool, default: true)
+
+	Whether to detect the connectivity between regions automatically from their geometry. Two regions are connected when their borders are closer than `connectivity_threshold`.
+
+* **`connectivity_threshold`** (double, default: 0.5)
+
+	Maximum distance (in metres) between two region borders to consider them connected when `auto_connect` is enabled.
+
 * **`regions`** (string, default: "regions.yaml")
 
-	The filepath of the configuration file including the names of regions defined by its points and name.
+	The filepath of the configuration file including the names of regions defined by its points and name. It may also include an optional `connections` section with `add` and `remove` lists of region-name pairs to force or forbid edges in the connectivity graph.
 
 
 [nav_msgs/OccupancyGrid]: https://docs.ros2.org/jazzy/api/nav_msgs/msg/OccupancyGrid.html
@@ -128,3 +156,6 @@ ROS2 Service to generate 2D navigation goals as described above.
 [semantic_navigation_msgs/GetRandomRegion]: ../semantic_navigation_msgs/srv/GetRandomRegion.srv
 [semantic_navigation_msgs/GetRegionName]: ../semantic_navigation_msgs/srv/GetRegionName.srv
 [semantic_navigation_msgs/ListAllRegions]: ../semantic_navigation_msgs/srv/ListAllRegions.srv
+[semantic_navigation_msgs/GetAdjacentRegions]: ../semantic_navigation_msgs/srv/GetAdjacentRegions.srv
+[semantic_navigation_msgs/AreRegionsConnected]: ../semantic_navigation_msgs/srv/AreRegionsConnected.srv
+[semantic_navigation_msgs/GetRegionRoute]: ../semantic_navigation_msgs/srv/GetRegionRoute.srv

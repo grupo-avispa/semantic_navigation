@@ -56,9 +56,12 @@ find_package(rosidl_default_generators REQUIRED)
 # # Declare ROS messages, services and actions ##
 # ###############################################
 set(srv_files
+  "srv/AreRegionsConnected.srv"
   "srv/GenerateRandomGoals.srv"
+  "srv/GetAdjacentRegions.srv"
   "srv/GetRandomRegion.srv"
   "srv/GetRegionName.srv"
+  "srv/GetRegionRoute.srv"
   "srv/ListAllRegions.srv"
 )
 

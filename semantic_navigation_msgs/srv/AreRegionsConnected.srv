@@ -1,0 +1,6 @@
+# Request / response service to check if two regions are connected (directly or transitively)
+
+string region_a # Name of the first region
+string region_b # Name of the second region
+---
+bool connected # True if both regions are connected through the connectivity graph

@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.0 (29-06-2026)
+------------------
+* Add GetAdjacentRegions.srv, AreRegionsConnected.srv and GetRegionRoute.srv to query the connectivity between regions.
+
 3.2.0 (12-01-2026)
 ------------------
 * Change GetRegionName.srv to use PointStamped instead of Point.

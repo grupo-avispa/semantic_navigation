@@ -37,3 +37,30 @@ target_link_libraries(test_list_all_regions_service
   behaviortree_cpp::behaviortree_cpp
   semantic_navigation_list_all_regions_service_bt_node
 )
+
+# Test for the get adjacent regions service
+ament_add_gtest(test_get_adjacent_regions_service
+  test_get_adjacent_regions_service.cpp
+)
+target_link_libraries(test_get_adjacent_regions_service
+  behaviortree_cpp::behaviortree_cpp
+  semantic_navigation_get_adjacent_regions_service_bt_node
+)
+
+# Test for the are regions connected service
+ament_add_gtest(test_are_regions_connected_service
+  test_are_regions_connected_service.cpp
+)
+target_link_libraries(test_are_regions_connected_service
+  behaviortree_cpp::behaviortree_cpp
+  semantic_navigation_are_regions_connected_service_bt_node
+)
+
+# Test for the get region route service
+ament_add_gtest(test_get_region_route_service
+  test_get_region_route_service.cpp
+)
+target_link_libraries(test_get_region_route_service
+  behaviortree_cpp::behaviortree_cpp
+  semantic_navigation_get_region_route_service_bt_node
+)

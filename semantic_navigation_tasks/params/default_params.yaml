@@ -3,9 +3,12 @@ semantic_navigation:
     goals_topic: "semantic_goal/goals"
     polygons_topic: "semantic_goal/polygons"
     names_topic: "semantic_goal/names"
+    edges_topic: "semantic_goal/edges"
     map_topic: "map"
     transform_tolerance: 0.2
     is_costmap: false
     full_map: false
     inflation_radius: 0.5
+    auto_connect: true
+    connectivity_threshold: 0.5
     regions_filename: ""

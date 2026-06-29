@@ -1,3 +1,15 @@
 # - The regions are defined by a name and its points written in consecutive order. The point units are meters (m).
 regions:
   - {name: 'small1', points: [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]]}
+  - {name: 'small2', points: [[1.0, 0.0], [1.0, 1.0], [2.0, 1.0], [2.0, 0.0]]}
+  - {name: 'hall', points: [[2.0, 0.0], [2.0, 1.0], [4.0, 1.0], [4.0, 0.0]]}
+
+# - Optional manual overrides for the connectivity graph between regions.
+#   When 'auto_connect' is enabled, regions whose borders are closer than
+#   'connectivity_threshold' metres are connected automatically. The lists below
+#   force ('add') or forbid ('remove') edges regardless of the geometry.
+connections:
+  add:
+    - ['small1', 'hall']  # e.g. a door connecting two non contiguous regions
+  remove:
+    - ['small1', 'small2']  # e.g. a wall between two contiguous regions

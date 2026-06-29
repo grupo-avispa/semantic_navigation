@@ -1,0 +1,5 @@
+# Request / response service to get the regions directly connected to a given region
+
+string region_name # Name of the region
+---
+string[] adjacent_regions # Names of the regions directly connected to the requested region

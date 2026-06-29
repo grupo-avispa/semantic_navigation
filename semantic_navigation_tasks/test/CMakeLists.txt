@@ -10,6 +10,16 @@ target_link_libraries(test_regions
   ament_index_cpp::ament_index_cpp
 )
 
+# Test for the region graph
+ament_add_gtest(test_region_graph
+  test_region_graph.cpp
+)
+target_link_libraries(test_region_graph
+  ${library_name}
+  ${polygon_msgs_TARGETS}
+  ament_index_cpp::ament_index_cpp
+)
+
 # Test for tasks
 ament_add_gtest(test_tasks
   test_tasks.cpp

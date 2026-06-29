@@ -34,11 +34,15 @@
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "polygon_msgs/msg/polygon2_d_collection.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include "semantic_navigation_msgs/srv/are_regions_connected.hpp"
 #include "semantic_navigation_msgs/srv/generate_random_goals.hpp"
+#include "semantic_navigation_msgs/srv/get_adjacent_regions.hpp"
 #include "semantic_navigation_msgs/srv/get_random_region.hpp"
 #include "semantic_navigation_msgs/srv/get_region_name.hpp"
+#include "semantic_navigation_msgs/srv/get_region_route.hpp"
 #include "semantic_navigation_msgs/srv/list_all_regions.hpp"
 #include "semantic_navigation_tasks/region.hpp"
+#include "semantic_navigation_tasks/region_graph.hpp"
 #include "tf2_ros/buffer.hpp"
 #include "tf2_ros/transform_listener.hpp"
 
@@ -68,9 +72,12 @@ public:
   ~SemanticNavigationTasks() = default;
 
 protected:
+  using AreRegionsConnected = semantic_navigation_msgs::srv::AreRegionsConnected;
   using GenerateRandomGoals = semantic_navigation_msgs::srv::GenerateRandomGoals;
+  using GetAdjacentRegions = semantic_navigation_msgs::srv::GetAdjacentRegions;
   using GetRandomRegion = semantic_navigation_msgs::srv::GetRandomRegion;
   using GetRegionName = semantic_navigation_msgs::srv::GetRegionName;
+  using GetRegionRoute = semantic_navigation_msgs::srv::GetRegionRoute;
   using ListAllRegions = semantic_navigation_msgs::srv::ListAllRegions;
 
   /**
@@ -130,6 +137,20 @@ protected:
     const std::string & filename, std::vector<semantic_navigation::Region> & regions);
 
   /**
+   * @brief Get the manual connections (add / remove edges) from a file.
+   *
+   * Reads the optional `connections` section of the regions file. Missing sections are not an
+   * error: the returned lists are simply left empty.
+   *
+   * @param filename Name of the file.
+   * @param add Edges to force regardless of the geometry.
+   * @param remove Edges to forbid regardless of the geometry.
+   */
+  void getConnectionsFromFile(
+    const std::string & filename, std::vector<Connection> & add,
+    std::vector<Connection> & remove);
+
+  /**
    * @brief Generate goals inside the regions.
    *
    * @param request Request with the name of the region.
@@ -174,6 +195,45 @@ protected:
     std::shared_ptr<ListAllRegions::Response> response);
 
   /**
+   * @brief Get the regions directly connected to a given region.
+   *
+   * @param request_header Request header.
+   * @param request Request with the name of the region.
+   * @param response Response with the names of the adjacent regions.
+   * @return true if the service is processed.
+   */
+  bool getAdjacentRegionsService(
+    const std::shared_ptr<rmw_request_id_t> request_header,
+    const std::shared_ptr<GetAdjacentRegions::Request> request,
+    std::shared_ptr<GetAdjacentRegions::Response> response);
+
+  /**
+   * @brief Check if two regions are connected, directly or transitively.
+   *
+   * @param request_header Request header.
+   * @param request Request with the names of the two regions.
+   * @param response Response with the connectivity result.
+   * @return true if the service is processed.
+   */
+  bool areRegionsConnectedService(
+    const std::shared_ptr<rmw_request_id_t> request_header,
+    const std::shared_ptr<AreRegionsConnected::Request> request,
+    std::shared_ptr<AreRegionsConnected::Response> response);
+
+  /**
+   * @brief Get the topological route (sequence of regions) between two regions.
+   *
+   * @param request_header Request header.
+   * @param request Request with the start and goal regions.
+   * @param response Response with the ordered route.
+   * @return true if the service is processed.
+   */
+  bool getRegionRouteService(
+    const std::shared_ptr<rmw_request_id_t> request_header,
+    const std::shared_ptr<GetRegionRoute::Request> request,
+    std::shared_ptr<GetRegionRoute::Response> response);
+
+  /**
    * @brief Generate random goals inside a region.
    *
    * @param n Number of goals.
@@ -206,6 +266,18 @@ protected:
    * @return visualization_msgs::msg::MarkerArray Collection of markers.
    */
   visualization_msgs::msg::MarkerArray createNames(std::vector<Region> list);
+
+  /**
+   * @brief Create a collection of markers with the edges of the connectivity graph.
+   *
+   * Each edge is drawn as a line between the centroids of the two connected regions.
+   *
+   * @param list List of regions of interest.
+   * @param graph Connectivity graph between the regions.
+   * @return visualization_msgs::msg::MarkerArray Collection of markers.
+   */
+  visualization_msgs::msg::MarkerArray createEdges(
+    std::vector<Region> list, const RegionGraph & graph);
 
   /**
    * @brief Process the bounding box of the regions inside the map.
@@ -263,20 +335,27 @@ protected:
     polygons_viz_pub_;
   rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr
     names_viz_pub_;
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+  rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr
+    edges_viz_pub_;
+  nav2::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
 
-  rclcpp::Service<GenerateRandomGoals>::SharedPtr goals_generator_service_;
-  rclcpp::Service<GetRandomRegion>::SharedPtr get_random_region_service_;
-  rclcpp::Service<GetRegionName>::SharedPtr get_region_name_service_;
-  rclcpp::Service<ListAllRegions>::SharedPtr list_all_regions_service_;
+  nav2::ServiceServer<GenerateRandomGoals>::SharedPtr goals_generator_service_;
+  nav2::ServiceServer<GetRandomRegion>::SharedPtr get_random_region_service_;
+  nav2::ServiceServer<GetRegionName>::SharedPtr get_region_name_service_;
+  nav2::ServiceServer<ListAllRegions>::SharedPtr list_all_regions_service_;
+  nav2::ServiceServer<GetAdjacentRegions>::SharedPtr get_adjacent_regions_service_;
+  nav2::ServiceServer<AreRegionsConnected>::SharedPtr are_regions_connected_service_;
+  nav2::ServiceServer<GetRegionRoute>::SharedPtr get_region_route_service_;
 
   std::recursive_mutex mutex_;
   nav_msgs::msg::OccupancyGrid map_;
-  bool is_costmap_, full_map_;
+  bool is_costmap_, full_map_, auto_connect_;
   int inflated_footprint_size_;
   float inflation_radius_, border_;
-  std::string goals_topic_, polygons_topic_, names_topic_, map_topic_;
+  double connectivity_threshold_;
+  std::string goals_topic_, polygons_topic_, names_topic_, edges_topic_, map_topic_;
   std::vector<semantic_navigation::Region> region_list_;
+  RegionGraph region_graph_;
 
   std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;
   std::unique_ptr<tf2_ros::TransformListener> tf2_listener_;
