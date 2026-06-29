@@ -34,7 +34,7 @@
 namespace semantic_navigation
 {
 
-using std::placeholders::_1, std::placeholders::_2;
+using std::placeholders::_1, std::placeholders::_2, std::placeholders::_3;
 
 SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & options)
 : nav2_util::LifecycleNode("semantic_navigation_tasks", "", options),
@@ -62,7 +62,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter full_map is set to: [%s]", full_map_ ? "true" : "false");
 
-  nav2::declare_parameter_if_not_declared(
+  nav2_util::declare_parameter_if_not_declared(
     this, "auto_connect",
     rclcpp::ParameterValue(true), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Detect connectivity between regions automatically from their geometry?"));
@@ -87,7 +87,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter transform_tolerance is set to: [%f]", transform_tolerance_);
 
-  nav2::declare_parameter_if_not_declared(
+  nav2_util::declare_parameter_if_not_declared(
     this, "connectivity_threshold",
     rclcpp::ParameterValue(0.5), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Maximum distance between two region borders to consider them connected"));
@@ -186,7 +186,7 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
     std::bind(&SemanticNavigationTasks::getRegionNameService, this, _1, _2));
   list_all_regions_service_ = this->create_service<ListAllRegions>(
     "list_all_regions",
-    std::bind(&SemanticNavigationTasks::listAllRegionsService, this, _1, _2, _3));
+    std::bind(&SemanticNavigationTasks::listAllRegionsService, this, _1, _2));
   get_adjacent_regions_service_ = this->create_service<GetAdjacentRegions>(
     "get_adjacent_regions",
     std::bind(&SemanticNavigationTasks::getAdjacentRegionsService, this, _1, _2, _3));
@@ -574,7 +574,7 @@ bool SemanticNavigationTasks::getRegionRouteService(
   return true;
 }
 
-nav_msgs::msg::Goals SemanticNavigationTasks::generateRandomGoals(
+std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRandomGoals(
   unsigned int n, Region region, CellLimits limits)
 {
   std::vector<geometry_msgs::msg::PoseStamped> goals;

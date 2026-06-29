@@ -337,15 +337,15 @@ protected:
     names_viz_pub_;
   rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr
     edges_viz_pub_;
-  nav2::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
 
-  nav2::ServiceServer<GenerateRandomGoals>::SharedPtr goals_generator_service_;
-  nav2::ServiceServer<GetRandomRegion>::SharedPtr get_random_region_service_;
-  nav2::ServiceServer<GetRegionName>::SharedPtr get_region_name_service_;
-  nav2::ServiceServer<ListAllRegions>::SharedPtr list_all_regions_service_;
-  nav2::ServiceServer<GetAdjacentRegions>::SharedPtr get_adjacent_regions_service_;
-  nav2::ServiceServer<AreRegionsConnected>::SharedPtr are_regions_connected_service_;
-  nav2::ServiceServer<GetRegionRoute>::SharedPtr get_region_route_service_;
+  rclcpp::Service<GenerateRandomGoals>::SharedPtr goals_generator_service_;
+  rclcpp::Service<GetRandomRegion>::SharedPtr get_random_region_service_;
+  rclcpp::Service<GetRegionName>::SharedPtr get_region_name_service_;
+  rclcpp::Service<ListAllRegions>::SharedPtr list_all_regions_service_;
+  rclcpp::Service<GetAdjacentRegions>::SharedPtr get_adjacent_regions_service_;
+  rclcpp::Service<AreRegionsConnected>::SharedPtr are_regions_connected_service_;
+  rclcpp::Service<GetRegionRoute>::SharedPtr get_region_route_service_;
 
   std::recursive_mutex mutex_;
   nav_msgs::msg::OccupancyGrid map_;

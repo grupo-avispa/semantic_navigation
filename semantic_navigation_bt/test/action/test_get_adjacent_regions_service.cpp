@@ -22,7 +22,7 @@
 
 #include "behaviortree_cpp/bt_factory.h"
 
-#include "nav2_behavior_tree/test/utils/test_service.hpp"
+#include "nav2_behavior_tree/utils/test_service.hpp"
 #include "semantic_navigation_bt/action/get_adjacent_regions_service.hpp"
 #include "semantic_navigation_msgs/srv/get_adjacent_regions.hpp"
 
@@ -50,7 +50,7 @@ class GetAdjacentRegionsServiceTestFixture : public ::testing::Test
 public:
   static void SetUpTestCase()
   {
-    node_ = std::make_shared<nav2::LifecycleNode>("get_adjacent_regions_test_fixture");
+    node_ = std::make_shared<rclcpp::Node>("get_adjacent_regions_test_fixture");
     factory_ = std::make_shared<BT::BehaviorTreeFactory>();
 
     config_ = new BT::NodeConfiguration();
@@ -87,13 +87,13 @@ public:
   static std::shared_ptr<GetAdjacentRegionsService> server_;
 
 protected:
-  static nav2::LifecycleNode::SharedPtr node_;
+  static rclcpp::Node::SharedPtr node_;
   static BT::NodeConfiguration * config_;
   static std::shared_ptr<BT::BehaviorTreeFactory> factory_;
   static std::shared_ptr<BT::Tree> tree_;
 };
 
-nav2::LifecycleNode::SharedPtr GetAdjacentRegionsServiceTestFixture::node_ = nullptr;
+rclcpp::Node::SharedPtr GetAdjacentRegionsServiceTestFixture::node_ = nullptr;
 std::shared_ptr<GetAdjacentRegionsService> GetAdjacentRegionsServiceTestFixture::server_ = nullptr;
 BT::NodeConfiguration * GetAdjacentRegionsServiceTestFixture::config_ = nullptr;
 std::shared_ptr<BT::BehaviorTreeFactory> GetAdjacentRegionsServiceTestFixture::factory_ = nullptr;

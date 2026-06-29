@@ -309,9 +309,9 @@ TEST(SemanticNavigationTasksTest, getConnectionsFromFile) {
   // Create the node
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
-  std::filesystem::path pkg_path =
-    ament_index_cpp::get_package_share_path("semantic_navigation_tasks");
-  std::string filename = std::string(pkg_path) + "/test/regions_test.yaml";
+  std::string pkg_path =
+    ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  std::string filename = pkg_path + "/test/regions_test.yaml";
 
   // Read the connections section
   std::vector<semantic_navigation::Connection> add, remove;
@@ -328,7 +328,7 @@ TEST(SemanticNavigationTasksTest, getConnectionsFromFile) {
   // A file without a connections section leaves the lists empty
   std::vector<semantic_navigation::Connection> add_empty, remove_empty;
   node->getConnectionsFromFile(
-    std::string(pkg_path) + "/test/regions_test_empty.yaml", add_empty, remove_empty);
+    pkg_path + "/test/regions_test_empty.yaml", add_empty, remove_empty);
   EXPECT_TRUE(add_empty.empty());
   EXPECT_TRUE(remove_empty.empty());
 }
@@ -341,9 +341,9 @@ TEST(SemanticNavigationTasksTest, createEdges) {
 
   // Build two adjacent regions and an isolated one
   std::vector<semantic_navigation::Region> regions;
-  std::filesystem::path pkg_path =
-    ament_index_cpp::get_package_share_path("semantic_navigation_tasks");
-  node->getRegionsFromFile(std::string(pkg_path) + "/test/regions_test.yaml", regions);
+  std::string pkg_path =
+    ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  node->getRegionsFromFile(pkg_path + "/test/regions_test.yaml", regions);
 
   // Connect small1 -- small2 in the graph
   semantic_navigation::RegionGraph graph;
