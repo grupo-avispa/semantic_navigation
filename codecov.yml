@@ -1,0 +1,14 @@
+fixes:
+  - "src/semantic_navigation::"
+  - "install/::"
+
+ignore:
+  - "*/**/test/*"
+  - "*/test/**/*"
+  - "**/test_*.*"
+  - "**/main*.*"
+  - "**/*_tests.*"
+  - "*/**/benchmark/*"
+  - "*/benchmark/**/*"
+  - "**/benchmark_*.*"
+  - "**/*_benchmark.*"
