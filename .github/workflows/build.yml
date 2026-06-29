@@ -20,6 +20,8 @@ jobs:
         uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: jazzy
+      - name: Install RMW implementation
+        run: sudo apt-get install -y ros-jazzy-rmw-fastrtps-cpp
       - name: Install dependencies
         uses: ros-tooling/action-ros-ci@v0.4
         with:
