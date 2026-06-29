@@ -74,6 +74,15 @@ list(APPEND plugin_libs semantic_navigation_get_region_name_service_bt_node)
 add_library(semantic_navigation_list_all_regions_service_bt_node SHARED src/action/list_all_regions_service.cpp)
 list(APPEND plugin_libs semantic_navigation_list_all_regions_service_bt_node)
 
+add_library(semantic_navigation_get_adjacent_regions_service_bt_node SHARED src/action/get_adjacent_regions_service.cpp)
+list(APPEND plugin_libs semantic_navigation_get_adjacent_regions_service_bt_node)
+
+add_library(semantic_navigation_are_regions_connected_service_bt_node SHARED src/action/are_regions_connected_service.cpp)
+list(APPEND plugin_libs semantic_navigation_are_regions_connected_service_bt_node)
+
+add_library(semantic_navigation_get_region_route_service_bt_node SHARED src/action/get_region_route_service.cpp)
+list(APPEND plugin_libs semantic_navigation_get_region_route_service_bt_node)
+
 foreach(bt_plugin ${plugin_libs})
   target_include_directories(${bt_plugin} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"

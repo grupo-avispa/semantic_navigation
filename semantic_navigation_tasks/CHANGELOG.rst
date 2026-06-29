@@ -2,6 +2,13 @@
 Changelog for package semantic_navigation_tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.0 (29-06-2026)
+------------------
+* Add a connectivity graph between regions with automatic detection from the geometry and manual ``add``/``remove`` overrides from the regions file.
+* Add the ``get_adjacent_regions``, ``are_regions_connected`` and ``get_region_route`` services to query the connectivity graph.
+* Publish the connectivity edges as markers for visualization.
+* Add the ``auto_connect``, ``connectivity_threshold`` and ``edges_topic`` parameters.
+
 3.2.0 (12-02-2026)
 ------------------
 * Add TF2 listener to transform request points to map frame.

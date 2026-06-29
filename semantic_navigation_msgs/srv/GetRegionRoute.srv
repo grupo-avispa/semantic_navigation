@@ -1,0 +1,6 @@
+# Request / response service to get the topological route (sequence of regions) between two regions
+
+string start_region # Name of the start region
+string goal_region # Name of the goal region
+---
+string[] route # Ordered sequence of regions from start to goal, empty if there is no route

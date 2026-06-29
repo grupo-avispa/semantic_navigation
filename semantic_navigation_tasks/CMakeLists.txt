@@ -74,7 +74,10 @@ set(library_name ${PROJECT_NAME}_core)
 set(executable_name ${PROJECT_NAME})
 
 # Add library
-add_library(${library_name} SHARED src/task_services.cpp)
+add_library(${library_name} SHARED
+  src/task_services.cpp
+  src/region_graph.cpp
+)
 target_include_directories(${library_name} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"

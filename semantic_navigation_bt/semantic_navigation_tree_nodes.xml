@@ -23,6 +23,23 @@
             <input_port name="service_name" default="list_all_regions">Service name</input_port>
             <output_port name="region_names">Region names</output_port>
         </Action>
+        <Action ID="GetAdjacentRegions">
+            <input_port name="service_name" default="get_adjacent_regions">Service name</input_port>
+            <input_port name="region_name">Region name</input_port>
+            <output_port name="adjacent_regions">Adjacent regions</output_port>
+        </Action>
+        <Action ID="AreRegionsConnected">
+            <input_port name="service_name" default="are_regions_connected">Service name</input_port>
+            <input_port name="region_a">First region</input_port>
+            <input_port name="region_b">Second region</input_port>
+            <output_port name="connected">Whether both regions are connected</output_port>
+        </Action>
+        <Action ID="GetRegionRoute">
+            <input_port name="service_name" default="get_region_route">Service name</input_port>
+            <input_port name="start_region">Start region</input_port>
+            <input_port name="goal_region">Goal region</input_port>
+            <output_port name="route">Sequence of regions to traverse</output_port>
+        </Action>
     </TreeNodesModel>
 </root>
 

@@ -29,6 +29,12 @@ TEST(SemanticNavigationTasks, register_nodes)
     loader.getOSName("semantic_navigation_get_region_name_service_bt_node"));
   factory.registerFromPlugin(
     loader.getOSName("semantic_navigation_list_all_regions_service_bt_node"));
+  factory.registerFromPlugin(
+    loader.getOSName("semantic_navigation_get_adjacent_regions_service_bt_node"));
+  factory.registerFromPlugin(
+    loader.getOSName("semantic_navigation_are_regions_connected_service_bt_node"));
+  factory.registerFromPlugin(
+    loader.getOSName("semantic_navigation_get_region_route_service_bt_node"));
 }
 
 int main(int argc, char ** argv)

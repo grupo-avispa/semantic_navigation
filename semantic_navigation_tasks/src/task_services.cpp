@@ -62,6 +62,14 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
   RCLCPP_INFO(
     get_logger(), "The parameter full_map is set to: [%s]", full_map_ ? "true" : "false");
 
+  nav2::declare_parameter_if_not_declared(
+    this, "auto_connect",
+    rclcpp::ParameterValue(true), rcl_interfaces::msg::ParameterDescriptor()
+    .set__description("Detect connectivity between regions automatically from their geometry?"));
+  this->get_parameter("auto_connect", auto_connect_);
+  RCLCPP_INFO(
+    get_logger(), "The parameter auto_connect is set to: [%s]", auto_connect_ ? "true" : "false");
+
   // FLOAT PARAMS ..........................................................................
   nav2::declare_parameter_if_not_declared(
     this, "inflation_radius",
@@ -78,6 +86,15 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
   this->get_parameter("transform_tolerance", transform_tolerance_);
   RCLCPP_INFO(
     get_logger(), "The parameter transform_tolerance is set to: [%f]", transform_tolerance_);
+
+  nav2::declare_parameter_if_not_declared(
+    this, "connectivity_threshold",
+    rclcpp::ParameterValue(0.5), rcl_interfaces::msg::ParameterDescriptor()
+    .set__description("Maximum distance between two region borders to consider them connected"));
+  this->get_parameter("connectivity_threshold", connectivity_threshold_);
+  RCLCPP_INFO(
+    get_logger(), "The parameter connectivity_threshold is set to: [%f]",
+    connectivity_threshold_);
 
   // STRING PARAMS ..........................................................................
   nav2::declare_parameter_if_not_declared(
@@ -105,6 +122,14 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
     get_logger(), "The parameter names_topic is set to: [%s]", names_topic_.c_str());
 
   nav2::declare_parameter_if_not_declared(
+    this, "edges_topic",
+    rclcpp::ParameterValue("edges"), rcl_interfaces::msg::ParameterDescriptor()
+    .set__description("Name of the publisher for the connectivity edges between regions"));
+  this->get_parameter("edges_topic", edges_topic_);
+  RCLCPP_INFO(
+    get_logger(), "The parameter edges_topic is set to: [%s]", edges_topic_.c_str());
+
+  nav2::declare_parameter_if_not_declared(
     this, "map_topic",
     rclcpp::ParameterValue("map"), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Name of the map topic"));
@@ -126,6 +151,14 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
     return nav2::CallbackReturn::FAILURE;
   }
 
+  // Build the connectivity graph between the regions
+  std::vector<Connection> add_edges, remove_edges;
+  getConnectionsFromFile(regions_filename, add_edges, remove_edges);
+  region_graph_.build(
+    region_list_, connectivity_threshold_, auto_connect_, add_edges, remove_edges);
+  RCLCPP_INFO(
+    get_logger(), "The connectivity graph has %zu edges", region_graph_.edgeCount());
+
   // Publishers
   rclcpp::QoS latched_profile = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
   goals_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>(
@@ -134,6 +167,8 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
     polygons_topic_, latched_profile);
   names_viz_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
     names_topic_, latched_profile);
+  edges_viz_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+    edges_topic_, latched_profile);
 
   // Subscribers
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
@@ -152,6 +187,15 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
   list_all_regions_service_ = this->create_service<ListAllRegions>(
     "list_all_regions",
     std::bind(&SemanticNavigationTasks::listAllRegionsService, this, _1, _2, _3));
+  get_adjacent_regions_service_ = this->create_service<GetAdjacentRegions>(
+    "get_adjacent_regions",
+    std::bind(&SemanticNavigationTasks::getAdjacentRegionsService, this, _1, _2, _3));
+  are_regions_connected_service_ = this->create_service<AreRegionsConnected>(
+    "are_regions_connected",
+    std::bind(&SemanticNavigationTasks::areRegionsConnectedService, this, _1, _2, _3));
+  get_region_route_service_ = this->create_service<GetRegionRoute>(
+    "get_region_route",
+    std::bind(&SemanticNavigationTasks::getRegionRouteService, this, _1, _2, _3));
 
   // TF Buffer and Listener
   tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
@@ -168,10 +212,12 @@ nav2::CallbackReturn SemanticNavigationTasks::on_activate(
   goals_pub_->on_activate();
   polygons_viz_pub_->on_activate();
   names_viz_pub_->on_activate();
+  edges_viz_pub_->on_activate();
 
-  // Publish polygons and names
+  // Publish polygons, names and connectivity edges
   polygons_viz_pub_->publish(createPolygons(region_list_));
   names_viz_pub_->publish(createNames(region_list_));
+  edges_viz_pub_->publish(createEdges(region_list_, region_graph_));
 
   // Create bond connection
   createBond();
@@ -187,6 +233,7 @@ nav2::CallbackReturn SemanticNavigationTasks::on_deactivate(
   goals_pub_->on_deactivate();
   polygons_viz_pub_->on_deactivate();
   names_viz_pub_->on_deactivate();
+  edges_viz_pub_->on_deactivate();
 
   // Destroy bond connection
   destroyBond();
@@ -202,12 +249,16 @@ nav2::CallbackReturn SemanticNavigationTasks::on_cleanup(
   goals_pub_.reset();
   polygons_viz_pub_.reset();
   names_viz_pub_.reset();
+  edges_viz_pub_.reset();
   tf2_listener_.reset();
   tf2_buffer_.reset();
   goals_generator_service_.reset();
   get_random_region_service_.reset();
   get_region_name_service_.reset();
   list_all_regions_service_.reset();
+  get_adjacent_regions_service_.reset();
+  are_regions_connected_service_.reset();
+  get_region_route_service_.reset();
 
   return nav2::CallbackReturn::SUCCESS;
 }
@@ -252,6 +303,40 @@ bool SemanticNavigationTasks::getRegionsFromFile(
     RCLCPP_ERROR(get_logger(), "Error reading file [%s]", filename.c_str());
   }
   return success;
+}
+
+void SemanticNavigationTasks::getConnectionsFromFile(
+  const std::string & filename, std::vector<Connection> & add,
+  std::vector<Connection> & remove)
+{
+  try {
+    YAML::Node config = YAML::LoadFile(filename);
+    // The connections section is optional
+    if (!config["connections"]) {
+      return;
+    }
+
+    // Lambda to parse a list of pairs of region names into a list of connections
+    auto parse_edges = [this](const YAML::Node & node, std::vector<Connection> & edges) {
+        for (const auto & edge : node) {
+          if (edge.size() == 2) {
+            edges.emplace_back(edge[0].as<std::string>(), edge[1].as<std::string>());
+          } else {
+            RCLCPP_ERROR(get_logger(), "A connection must be a pair of region names");
+          }
+        }
+      };
+
+    const auto & connections = config["connections"];
+    if (connections["add"]) {
+      parse_edges(connections["add"], add);
+    }
+    if (connections["remove"]) {
+      parse_edges(connections["remove"], remove);
+    }
+  } catch (const YAML::Exception &) {
+    RCLCPP_ERROR(get_logger(), "Error reading connections from file [%s]", filename.c_str());
+  }
 }
 
 void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
@@ -451,6 +536,48 @@ bool SemanticNavigationTasks::listAllRegionsService(
   return true;
 }
 
+bool SemanticNavigationTasks::getAdjacentRegionsService(
+  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
+  const std::shared_ptr<GetAdjacentRegions::Request> request,
+  std::shared_ptr<GetAdjacentRegions::Response> response)
+{
+  RCLCPP_INFO(
+    get_logger(), "Incoming adjacent regions service request for region [%s]",
+    request->region_name.c_str());
+
+  response->adjacent_regions = region_graph_.getNeighbors(request->region_name);
+
+  return true;
+}
+
+bool SemanticNavigationTasks::areRegionsConnectedService(
+  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
+  const std::shared_ptr<AreRegionsConnected::Request> request,
+  std::shared_ptr<AreRegionsConnected::Response> response)
+{
+  RCLCPP_INFO(
+    get_logger(), "Incoming connectivity service request between [%s] and [%s]",
+    request->region_a.c_str(), request->region_b.c_str());
+
+  response->connected = region_graph_.areConnected(request->region_a, request->region_b);
+
+  return true;
+}
+
+bool SemanticNavigationTasks::getRegionRouteService(
+  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
+  const std::shared_ptr<GetRegionRoute::Request> request,
+  std::shared_ptr<GetRegionRoute::Response> response)
+{
+  RCLCPP_INFO(
+    get_logger(), "Incoming route service request from [%s] to [%s]",
+    request->start_region.c_str(), request->goal_region.c_str());
+
+  response->route = region_graph_.findRoute(request->start_region, request->goal_region);
+
+  return true;
+}
+
 nav_msgs::msg::Goals SemanticNavigationTasks::generateRandomGoals(
   unsigned int n, Region region, CellLimits limits)
 {
@@ -596,6 +723,57 @@ visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(std::v
     names_array.markers.push_back(label_marker);
   }
   return names_array;
+}
+
+visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createEdges(
+  std::vector<Region> list, const RegionGraph & graph)
+{
+  visualization_msgs::msg::MarkerArray edges_array;
+
+  // Index the centroids by region name for a quick lookup
+  std::unordered_map<std::string, geometry_msgs::msg::Point> centroids;
+  for (const auto & region : list) {
+    if (!region.polygon.points.empty()) {
+      centroids[region.name] = region.centroid();
+    }
+  }
+
+  // Draw a single line list with one segment per undirected edge, avoiding duplicates
+  visualization_msgs::msg::Marker edge_marker;
+  edge_marker.header.frame_id = map_topic_;
+  edge_marker.header.stamp = this->now();
+  edge_marker.ns = "edges_region";
+  edge_marker.id = 0;
+  edge_marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+  edge_marker.action = visualization_msgs::msg::Marker::ADD;
+  edge_marker.pose.orientation.w = 1.0;
+  edge_marker.scale.x = 0.05;
+  edge_marker.color.r = 0.0;
+  edge_marker.color.g = 1.0;
+  edge_marker.color.b = 0.0;
+  edge_marker.color.a = 1.0f;
+
+  for (const auto & region : list) {
+    auto centroid_it = centroids.find(region.name);
+    if (centroid_it == centroids.end()) {
+      continue;
+    }
+    for (const auto & neighbor : graph.getNeighbors(region.name)) {
+      // Each undirected edge is drawn only once
+      if (region.name >= neighbor) {
+        continue;
+      }
+      auto neighbor_it = centroids.find(neighbor);
+      if (neighbor_it == centroids.end()) {
+        continue;
+      }
+      edge_marker.points.push_back(centroid_it->second);
+      edge_marker.points.push_back(neighbor_it->second);
+    }
+  }
+
+  edges_array.markers.push_back(edge_marker);
+  return edges_array;
 }
 
 }  // namespace semantic_navigation

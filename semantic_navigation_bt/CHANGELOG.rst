@@ -2,6 +2,12 @@
 Changelog for package semantic_navigation_bt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.0 (29-06-2026)
+------------------
+* Added "get_adjacent_regions" action BT node.
+* Added "are_regions_connected" action BT node.
+* Added "get_region_route" action BT node.
+
 3.2.0 (12-01-2026)
 ------------------
 * Change GetRegionName.srv to use PointStamped instead of Point.
