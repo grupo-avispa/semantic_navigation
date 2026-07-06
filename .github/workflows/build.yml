@@ -13,17 +13,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    container:
+      image: ros:jazzy
     steps:
+      - name: Install global dependencies
+        run: |
+          apt update && apt install --no-install-recommends -y \
+            python3-pip python3-colcon-coveragepy-result
       - name: Checkout Repository
-        uses: actions/checkout@v6
-      - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@v0.7
-        with:
-          required-ros-distributions: jazzy
-      - name: Install RMW implementation
-        run: sudo apt-get install -y ros-jazzy-rmw-fastrtps-cpp
+        uses: actions/checkout@v7
       - name: Install dependencies
-        uses: ros-tooling/action-ros-ci@v0.4
+        uses: ros-tooling/action-ros-ci@0.4.8
         with:
           package-name: |
             semantic_navigation
@@ -43,7 +43,7 @@ jobs:
             }
           skip-tests: false
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ros_ws/lcov/total_coverage.info,ros_ws/coveragepy/.coverage
@@ -52,7 +52,8 @@ jobs:
           slug: semantic_navigation
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests
+          report_type: test_results
