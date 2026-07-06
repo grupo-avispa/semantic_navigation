@@ -3,7 +3,7 @@
 ![ROS2](https://img.shields.io/badge/ros2-jazzy-blue?logo=ros&logoColor=white)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build](https://github.com/grupo-avispa/semantic_navigation/actions/workflows/build.yml/badge.svg?branch=jazzy)](https://github.com/grupo-avispa/semantic_navigation/actions/workflows/build.yml)
-[![codecov](https://codecov.io/gh/grupo-avispa/semantic_navigation/graph/badge.svg?token=R48HZO62SQ)](https://codecov.io/gh/grupo-avispa/semantic_navigation)
+[![codecov](https://codecov.io/gh/grupo-avispa/semantic_navigation/graph/badge.svg?token=XmcX3ryMph)](https://codecov.io/gh/grupo-avispa/semantic_navigation)
 
 ## Overview
 
