@@ -471,7 +471,7 @@ bool SemanticNavigationTasks::getRandomRegionService(
   // Generate random region
   std::random_device rd;       // obtain a random number from hardware
   std::mt19937 gen(rd());       // seed the generator
-  std::uniform_int_distribution<int> dist_region(1, region_list_.size());       // define the range
+  std::uniform_int_distribution<int> dist_region(0, region_list_.size());       // define the range
 
   int region_idx = dist_region(gen);
   response->region_name = region_list_[region_idx].name;
