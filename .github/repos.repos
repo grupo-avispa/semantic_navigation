@@ -8,3 +8,4 @@
 - git: {local-name: polygon_ros, uri: 'https://github.com/MetroRobots/polygon_ros.git', version: main}
 - git: {local-name: rcl_interfaces, uri: 'https://github.com/ros2/rcl_interfaces.git', version: rolling}
 - git: {local-name: test_interface_files, uri: 'https://github.com/ros2/test_interface_files.git', version: rolling}
+- git: {local-name: rviz, uri: 'https://github.com/ros2/rviz.git', version: rolling}
