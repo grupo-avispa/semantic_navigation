@@ -42,7 +42,8 @@ public:
 
   std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
     unsigned int /*n*/, semantic_navigation::Region /*region*/,
-    semantic_navigation::CellLimits /*limits*/) override
+    semantic_navigation::CellLimits /*limits*/, std::string /*orientation*/,
+    double /*requested_yaw*/) override
   {
     if (region_list_.empty() || map_.data.empty()) {
       return {};

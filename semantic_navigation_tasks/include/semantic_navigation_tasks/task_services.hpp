@@ -243,10 +243,13 @@ protected:
    * @param n Number of goals.
    * @param region Region of interest.
    * @param limits Limits of the cells.
+   * @param orientation Requested orientation of the goals (see orientationFromRequest).
+   * @param requested_yaw Requested yaw, used only when @p orientation is REQUESTED.
    * @return std::vector<geometry_msgs::msg::PoseStamped> Goals (may contain fewer than @p n).
    */
   virtual std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
-    unsigned int n, Region region, CellLimits limits);
+    unsigned int n, Region region, CellLimits limits, std::string orientation,
+    double requested_yaw);
 
   /**
    * @brief Callback to update the map.
@@ -323,12 +326,12 @@ protected:
    * - Outside: arrow pointing outside the region.
    * - Inside: arrow pointing inside the region.
    * - Requested: arrow pointing to the requested position.
-   * - Random: random orientation.
+   * - Random (or empty/unknown): keeps the orientation already set in @p pose by the caller.
    *
-   * @param pose Pose of the goal.
+   * @param pose Pose of the goal. Its orientation is left untouched for RANDOM.
    * @param region Region of interest.
    * @param orientation Requested orientation in string format.
-   * @param requested_yaw Requested yaw (Optional).
+   * @param requested_yaw Requested yaw, used only when @p orientation is REQUESTED.
    */
   void orientationFromRequest(
     geometry_msgs::msg::Pose & pose, const Region & region, std::string orientation,

@@ -90,9 +90,11 @@ public:
   }
 
   std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
-    unsigned int n, semantic_navigation::Region region, semantic_navigation::CellLimits limits)
+    unsigned int n, semantic_navigation::Region region, semantic_navigation::CellLimits limits,
+    std::string orientation, double requested_yaw)
   {
-    return SemanticNavigationTasks::generateRandomGoals(n, region, limits);
+    return SemanticNavigationTasks::generateRandomGoals(
+      n, region, limits, orientation, requested_yaw);
   }
 
   nav_msgs::msg::OccupancyGrid getMap()
@@ -591,6 +593,16 @@ TEST(SemanticNavigationTasksTest, orientationFromRequest) {
     pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::REQUESTED, 1.0);
   // Check the results
   EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), 1.0);
+
+  // Request a random orientation: the yaw already sampled by the caller must be kept
+  pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, 0.75));
+  node->orientationFromRequest(
+    pose, regions[0], semantic_navigation_msgs::srv::GenerateRandomGoals::Request::RANDOM, 0.0);
+  EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), 0.75);
+
+  // An empty orientation behaves the same as random
+  node->orientationFromRequest(pose, regions[0], "", 0.0);
+  EXPECT_DOUBLE_EQ(tf2::getYaw(pose.orientation), 0.75);
 }
 
 TEST(SemanticNavigationTasksTest, generateRandomGoals) {
@@ -609,11 +621,14 @@ TEST(SemanticNavigationTasksTest, generateRandomGoals) {
   // Process the bounding box for a 1x1 square region
   auto limits = node->processBoundingBox(node->getMap(), regions[0]);
 
-  // Generate random goals
-  auto goals = node->generateRandomGoals(1, regions[0], limits);
+  // Generate random goals with a requested orientation: it must be propagated to the goal
+  auto goals = node->generateRandomGoals(
+    1, regions[0], limits, semantic_navigation_msgs::srv::GenerateRandomGoals::Request::REQUESTED,
+    1.0);
 
   // Check the results
   EXPECT_EQ(goals.size(), 1);
+  EXPECT_DOUBLE_EQ(tf2::getYaw(goals[0].pose.orientation), 1.0);
 }
 
 int main(int argc, char ** argv)

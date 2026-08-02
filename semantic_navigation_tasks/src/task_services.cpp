@@ -466,7 +466,8 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
   }
 
   // Generate response
-  response->goals = generateRandomGoals(n, current_region, limits);
+  response->goals = generateRandomGoals(
+    n, current_region, limits, request->orientation, static_cast<double>(request->yaw));
 
   // Publish goals
   geometry_msgs::msg::PoseArray goals_array;
@@ -598,7 +599,8 @@ bool SemanticNavigationTasks::getRegionRouteService(
 }
 
 std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRandomGoals(
-  unsigned int n, Region region, CellLimits limits)
+  unsigned int n, Region region, CellLimits limits, std::string orientation,
+  double requested_yaw)
 {
   std::vector<geometry_msgs::msg::PoseStamped> goals;
 
@@ -629,8 +631,8 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
 
     // If the point lies within region and is not in collision
     if (isPointValid(cell_x, cell_y, region, pose.pose)) {
-      // Generate orientation depending on the request
-      orientationFromRequest(pose.pose, region, GenerateRandomGoals::Request::INSIDE, 0.0);
+      // Generate orientation depending on the request (keeps the sampled yaw for RANDOM)
+      orientationFromRequest(pose.pose, region, orientation, requested_yaw);
       RCLCPP_INFO(
         get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)",
         goals.size() + 1, pose.pose.position.x, pose.pose.position.y,
@@ -693,6 +695,11 @@ void SemanticNavigationTasks::orientationFromRequest(
   geometry_msgs::msg::Pose & pose, const Region & region, std::string orientation,
   double requested_yaw)
 {
+  // Random (default) or unset orientation: keep the yaw already sampled by the caller
+  if (orientation.empty() || orientation == GenerateRandomGoals::Request::RANDOM) {
+    return;
+  }
+
   double yaw = 0.0;
   if (orientation == GenerateRandomGoals::Request::OUTSIDE) {
     yaw = atan2(
@@ -702,6 +709,10 @@ void SemanticNavigationTasks::orientationFromRequest(
       (pose.position.y - region.centroid().y), (pose.position.x - region.centroid().x)) + M_PI;
   } else if (orientation == GenerateRandomGoals::Request::REQUESTED) {
     yaw = angles::normalize_angle(requested_yaw);
+  } else {
+    RCLCPP_WARN(
+      get_logger(), "Unknown orientation [%s], keeping the random yaw", orientation.c_str());
+    return;
   }
   pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
 }
