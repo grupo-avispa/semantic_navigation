@@ -111,6 +111,14 @@ public:
     inflated_footprint_size_ = static_cast<int>(inflation_radius / resolution) + 1;
   }
   void setBorder(float border) {border_ = border;}
+  void setRegionList(std::vector<semantic_navigation::Region> list) {region_list_ = list;}
+
+  void getRandomRegionService(
+    std::shared_ptr<semantic_navigation_msgs::srv::GetRandomRegion::Request> request,
+    std::shared_ptr<semantic_navigation_msgs::srv::GetRandomRegion::Response> response)
+  {
+    SemanticNavigationTasks::getRandomRegionService(request, response);
+  }
 
   void createFreeMap(int width, int height, double resolution)
   {
@@ -629,6 +637,75 @@ TEST(SemanticNavigationTasksTest, generateRandomGoals) {
   // Check the results
   EXPECT_EQ(goals.size(), 1);
   EXPECT_DOUBLE_EQ(tf2::getYaw(goals[0].pose.orientation), 1.0);
+}
+
+TEST(SemanticNavigationTasksTest, generateRandomGoalsUnreachableRegionTerminates) {
+  // Create the node
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+
+  // Create the regions
+  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  std::string filename = pkg + "/test/regions_test.yaml";
+  std::vector<semantic_navigation::Region> regions;
+  node->getRegionsFromFile(filename, regions);
+
+  // Create a fully occupied map: no cell can ever be a valid goal
+  node->createFreeMap(10, 10, 0.5);
+  auto map = node->getMap();
+  map.data = std::vector<int8_t>(map.data.size(), nav2_util::OCC_GRID_OCCUPIED);
+  node->setMap(map);
+  node->setIsCostmap(false);
+  node->setInflationRadius(0.0);
+  node->setInflatedFootprintSize(0.0, 0.5);
+  node->setBorder(0.0);
+
+  auto limits = node->processBoundingBox(node->getMap(), regions[0]);
+
+  // Before the attempts cap, this call would loop forever. It must now return promptly with
+  // fewer goals than requested instead of hanging.
+  auto goals = node->generateRandomGoals(
+    5, regions[0], limits, semantic_navigation_msgs::srv::GenerateRandomGoals::Request::INSIDE,
+    0.0);
+
+  EXPECT_LT(goals.size(), 5u);
+}
+
+TEST(SemanticNavigationTasksTest, getRandomRegionServiceEmptyList) {
+  // Create the node with an empty region list
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+  node->setRegionList({});
+
+  auto request = std::make_shared<semantic_navigation_msgs::srv::GetRandomRegion::Request>();
+  auto response = std::make_shared<semantic_navigation_msgs::srv::GetRandomRegion::Response>();
+  node->getRandomRegionService(request, response);
+
+  // Check the results: an empty region list is a rejected request, not an out-of-bounds read
+  EXPECT_FALSE(response->success);
+  EXPECT_EQ(
+    response->region_name, semantic_navigation_msgs::srv::GetRandomRegion::Response::UNKNOWN);
+}
+
+TEST(SemanticNavigationTasksTest, getRandomRegionServiceSingleRegion) {
+  // Create the node with a single region
+  auto node = std::make_shared<SemanticNavigationTasksFixture>();
+  semantic_navigation::Region region;
+  region.name = "only_region";
+  polygon_msgs::msg::Point2D point;
+  point.x = 0.0; point.y = 0.0;
+  region.polygon.points.push_back(point);
+  point.x = 1.0; point.y = 0.0;
+  region.polygon.points.push_back(point);
+  point.x = 1.0; point.y = 1.0;
+  region.polygon.points.push_back(point);
+  node->setRegionList({region});
+
+  auto request = std::make_shared<semantic_navigation_msgs::srv::GetRandomRegion::Request>();
+  auto response = std::make_shared<semantic_navigation_msgs::srv::GetRandomRegion::Response>();
+  node->getRandomRegionService(request, response);
+
+  // Check the results: the only region must be selected deterministically
+  EXPECT_TRUE(response->success);
+  EXPECT_EQ(response->region_name, "only_region");
 }
 
 int main(int argc, char ** argv)
