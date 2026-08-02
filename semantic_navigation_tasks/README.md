@@ -6,10 +6,10 @@ ROS 2 Service to generate 2D navigation goals with orientation in a specifed reg
 defined by its edges in the map frame and a name. The service takes the number of navigation goals (*n*) and a region name (*region_name*) and 
 returns a list of goal poses. 
 
-The regions are stored in a YAML configuration file. Look for the examples in the `config` folder. The configuration file includes the names of the regions defined by its edges and its name.
+The regions are stored in a YAML configuration file. Look for the examples in the `params` folder. The configuration file includes the names of the regions defined by its edges and its name.
 
 There are optional parameters like:
-- Direction of the goal. The goal can be oriented `outside` the region, `inside` the region, `requested` (see below) or `random` by default.
+- Orientation of the goal. The goal can be oriented `outside` the region, `inside` the region, `requested` (see below) or `random` by default.
 - Distance from the border of the region. The goal can be at a distance (in meters) from the border of the region. Default is 0.0.
 
 In addition to the random navigation goals service, it's also included:
@@ -20,25 +20,25 @@ In addition to the random navigation goals service, it's also included:
 
 For the goals generator service, launch the node as follows:
 
-	ros2 launch semantic_navigation_tasks semantic_navigation_tasks.launch
+	ros2 launch semantic_navigation_tasks tasks.launch.py
 
 You can send a service to request goals as follows:
 
-	ros2 service call /generate_random_goals '{n: 1, region_name: "region_0", direction: "inside", border: 0.1}'
+	ros2 service call /generate_random_goals '{n: 1, region_name: "region_0", orientation: "inside", border: 0.1}'
 
 whereby the first argument is the number of goal locations to be generated (here 1), the second argument is the name of a region specified that match the list in the configuration file (here region_0), the orientation of the goals (here inside) and the distance from the border of the region (here 0.1). 
 The result of the pose generation is additionally published on the topic `/semantic_goals` in order to visualize the result in [RViz].
 
 If the service is called with an empty region or the region is not in the configuration file, the full map is considered as region by default. 
 
-	ros2 service call /generate_random_goals '{n: 100, region_name: {}, direction: "random", border: 0.0}'
+	ros2 service call /generate_random_goals '{n: 100, region_name: {}, orientation: "random", border: 0.0}'
 
 
 If a specified region includes a point that is outside the map, its *conflicting* coordinates are automatically adjusted to the map's bounding box.
 
 For the position service, to know the name of the region where the robot is, send the service request as follows:
 
-	ros2 service call /get_region_name '{position.x: 0.0, position.y: 0.0, position.z: 0.0}'
+	ros2 service call /get_region_name '{position: {header: {frame_id: "map"}, point: {x: 0.0, y: 0.0, z: 0.0}}}'
 
 ## Nodes
 
@@ -72,6 +72,8 @@ ROS2 Service to generate 2D navigation goals as described above.
 	Topic with a line list connecting the centroids of the regions that are connected in the connectivity graph.
 
 #### Services
+
+Every service response includes a `bool success` and a `string message`, so clients can tell a real failure (invalid input, an internal error) apart from a legitimate empty result, such as an isolated region having no neighbours or a point lying outside every region.
 
 * **`generate_random_goals`** ([semantic_navigation_msgs/GenerateRandomGoals])
 
@@ -123,6 +125,10 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 	Topic of the map where the robot moves.
 
+* **`global_frame`** (string, default: "map")
+
+	TF frame used as `header.frame_id` for published messages and goals. Independent of `map_topic`, which may be remapped to a topic whose name is not a valid TF frame.
+
 * **`is_costmap`** (bool, default: false)
 
 	If the map argument is a costmap, you should also set the flag `is_costmap` to `true`. Then the inflation radius in the service call is ignored (a costmap is already inflated)
@@ -135,6 +141,10 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 	The inflation radius of the robot's footprint.
 
+* **`transform_tolerance`** (double, default: 0.2)
+
+	Timeout (in seconds) used when transforming a `get_region_name` request into the global frame.
+
 * **`auto_connect`** (bool, default: true)
 
 	Whether to detect the connectivity between regions automatically from their geometry. Two regions are connected when their borders are closer than `connectivity_threshold`.
@@ -143,7 +153,7 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 	Maximum distance (in metres) between two region borders to consider them connected when `auto_connect` is enabled.
 
-* **`regions`** (string, default: "regions.yaml")
+* **`regions_filename`** (string, default: "regions.yaml")
 
 	The filepath of the configuration file including the names of regions defined by its points and name. It may also include an optional `connections` section with `add` and `remove` lists of region-name pairs to force or forbid edges in the connectivity graph.
 
