@@ -201,6 +201,10 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf2_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf2_buffer_, this, true);
 
+  // Seed the random number generator once, instead of on every service call
+  std::random_device rd;
+  rng_.seed(rd());
+
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -467,11 +471,9 @@ bool SemanticNavigationTasks::getRandomRegionService(
   std::shared_ptr<GetRandomRegion::Response> response)
 {
   // Generate random region
-  std::random_device rd;       // obtain a random number from hardware
-  std::mt19937 gen(rd());       // seed the generator
   std::uniform_int_distribution<int> dist_region(0, region_list_.size() - 1);
 
-  int region_idx = dist_region(gen);
+  int region_idx = dist_region(rng_);
   response->region_name = region_list_[region_idx].name;
 
   RCLCPP_INFO(
@@ -581,8 +583,6 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
 
   // Generate random goal pose
   auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
-  std::random_device rd;       // obtain a random number from hardware
-  std::mt19937 gen(rd());       // seed the generator
   std::uniform_int_distribution<int> dist_x(cell_min_x, cell_max_x);       // define the range
   std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
   std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
@@ -590,9 +590,9 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
   unsigned int count = 0;
   while (goals.size() < n) {
     count += 1;
-    int cell_x = dist_x(gen);
-    int cell_y = dist_y(gen);
-    double yaw = dist_pi(gen);
+    int cell_x = dist_x(rng_);
+    int cell_y = dist_y(rng_);
+    double yaw = dist_pi(rng_);
 
     // Set a random position and orientation for the goal
     geometry_msgs::msg::PoseStamped pose;

@@ -356,6 +356,8 @@ protected:
   std::string goals_topic_, polygons_topic_, names_topic_, edges_topic_, map_topic_;
   std::vector<semantic_navigation::Region> region_list_;
   RegionGraph region_graph_;
+  // Pseudo-random number generator, seeded once from hardware entropy in on_configure
+  std::mt19937 rng_;
 
   std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;
   std::unique_ptr<tf2_ros::TransformListener> tf2_listener_;
