@@ -1,5 +1,13 @@
 find_package(ament_index_cpp REQUIRED)
 
+# Test for the shared geometry utilities
+ament_add_gtest(test_geometry_utils
+  test_geometry_utils.cpp
+)
+target_include_directories(test_geometry_utils PRIVATE
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+)
+
 # Test for regions
 ament_add_gtest(test_regions
   test_regions.cpp

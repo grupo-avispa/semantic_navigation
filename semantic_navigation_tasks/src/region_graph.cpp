@@ -14,50 +14,14 @@
 // limitations under the License.
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <queue>
 
+#include "semantic_navigation_tasks/geometry_utils.hpp"
 #include "semantic_navigation_tasks/region_graph.hpp"
 
 namespace semantic_navigation
 {
-
-namespace
-{
-
-/**
- * @brief Compute the distance between a point and a segment.
- *
- * @param px X coordinate of the point.
- * @param py Y coordinate of the point.
- * @param x0 X coordinate of the first end of the segment.
- * @param y0 Y coordinate of the first end of the segment.
- * @param x1 X coordinate of the second end of the segment.
- * @param y1 Y coordinate of the second end of the segment.
- * @return Distance between the point and the segment.
- */
-double pointToSegmentDistance(
-  double px, double py, double x0, double y0, double x1, double y1)
-{
-  double dx = x1 - x0;
-  double dy = y1 - y0;
-  double len_sq = dx * dx + dy * dy;
-
-  // Degenerate segment (a single point)
-  if (len_sq < 1e-12) {
-    return std::hypot(px - x0, py - y0);
-  }
-
-  double param = ((px - x0) * dx + (py - y0) * dy) / len_sq;
-  param = std::clamp(param, 0.0, 1.0);
-
-  double xx = x0 + param * dx;
-  double yy = y0 + param * dy;
-  return std::hypot(xx - px, yy - py);
-}
-
-}  // namespace
 
 void RegionGraph::build(
   const std::vector<Region> & regions, double threshold, bool auto_connect,
@@ -216,7 +180,8 @@ double RegionGraph::minDistanceBetweenRegions(const Region & a, const Region & b
       const auto & p0 = pb[i];
       const auto & p1 = pb[(i + 1) % pb.size()];
       min_distance = std::min(
-        min_distance, pointToSegmentDistance(point.x, point.y, p0.x, p0.y, p1.x, p1.y));
+        min_distance,
+        geometry_utils::pointToSegmentDistance(point.x, point.y, p0.x, p0.y, p1.x, p1.y));
     }
   }
 
@@ -226,7 +191,8 @@ double RegionGraph::minDistanceBetweenRegions(const Region & a, const Region & b
       const auto & p0 = pa[i];
       const auto & p1 = pa[(i + 1) % pa.size()];
       min_distance = std::min(
-        min_distance, pointToSegmentDistance(point.x, point.y, p0.x, p0.y, p1.x, p1.y));
+        min_distance,
+        geometry_utils::pointToSegmentDistance(point.x, point.y, p0.x, p0.y, p1.x, p1.y));
     }
   }
 

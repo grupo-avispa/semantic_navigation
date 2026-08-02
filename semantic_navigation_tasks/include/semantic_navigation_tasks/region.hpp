@@ -16,12 +16,12 @@
 #ifndef SEMANTIC_NAVIGATION_TASKS__REGION_HPP_
 #define SEMANTIC_NAVIGATION_TASKS__REGION_HPP_
 
-#include <math.h>
 #include <string>
 
 #include "geometry_msgs/msg/point.hpp"
 #include "polygon_utils/polygon_utils.hpp"
 #include "polygon_msgs/msg/polygon2_d.hpp"
+#include "semantic_navigation_tasks/geometry_utils.hpp"
 
 namespace semantic_navigation
 {
@@ -80,7 +80,7 @@ struct Region
     }
 
     for (unsigned int i = 0; i < polygon.points.size() - 1; i++) {
-      if (distanceToLine(
+      if (geometry_utils::pointToSegmentDistance(
           x, y,
           polygon.points[i].x, polygon.points[i].y,
           polygon.points[i + 1].x, polygon.points[i + 1].y) < distance)
@@ -89,7 +89,7 @@ struct Region
       }
     }
     // Check distance from the last point to the first point
-    if (distanceToLine(
+    if (geometry_utils::pointToSegmentDistance(
         x, y,
         polygon.points.back().x, polygon.points.back().y,
         polygon.points.front().x, polygon.points.front().y) < distance)
@@ -98,33 +98,6 @@ struct Region
     }
 
     return true;
-  }
-
-  double distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1) const
-  {
-    double A = pX - x0;
-    double B = pY - y0;
-    double C = x1 - x0;
-    double D = y1 - y0;
-
-    double dot = A * C + B * D;
-    double len_sq = C * C + D * D;
-    double param = dot / len_sq;
-
-    double xx, yy;
-
-    if (param < 0) {
-      xx = x0;
-      yy = y0;
-    } else if (param > 1) {
-      xx = x1;
-      yy = y1;
-    } else {
-      xx = x0 + param * C;
-      yy = y0 + param * D;
-    }
-
-    return std::hypot(xx - pX, yy - pY);
   }
 };
 
