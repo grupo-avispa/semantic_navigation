@@ -42,6 +42,7 @@ public:
     (void)request_header;
     (void)request;
     response->adjacent_regions = {"region2", "region3"};
+    response->success = true;
   }
 };
 

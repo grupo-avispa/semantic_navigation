@@ -36,6 +36,9 @@ void GetAdjacentRegionsService::on_tick()
 BT::NodeStatus GetAdjacentRegionsService::on_completion(
   std::shared_ptr<semantic_navigation_msgs::srv::GetAdjacentRegions::Response> response)
 {
+  if (!response->success) {
+    return BT::NodeStatus::FAILURE;
+  }
   setOutput("adjacent_regions", response->adjacent_regions);
   return BT::NodeStatus::SUCCESS;
 }

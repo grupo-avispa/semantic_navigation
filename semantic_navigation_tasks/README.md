@@ -73,6 +73,8 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 #### Services
 
+Every service response includes a `bool success` and a `string message`, so clients can tell a real failure (invalid input, an internal error) apart from a legitimate empty result, such as an isolated region having no neighbours or a point lying outside every region.
+
 * **`generate_random_goals`** ([semantic_navigation_msgs/GenerateRandomGoals])
 
 	Service to generate random navigation goals in a specified region.

@@ -4,3 +4,5 @@ string start_region # Name of the start region
 string goal_region # Name of the goal region
 ---
 string[] route # Ordered sequence of regions from start to goal, empty if there is no route
+bool success # True if both start_region and goal_region are known regions (route may be empty)
+string message # Human-readable reason when success is false

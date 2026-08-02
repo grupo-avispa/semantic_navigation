@@ -3,3 +3,5 @@
 string region_name # Name of the region
 ---
 string[] adjacent_regions # Names of the regions directly connected to the requested region
+bool success # True if region_name is a known region (an isolated region is still a success)
+string message # Human-readable reason when success is false

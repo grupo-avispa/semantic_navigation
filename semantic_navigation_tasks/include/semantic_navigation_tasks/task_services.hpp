@@ -173,11 +173,14 @@ protected:
   /**
    * @brief Generate goals inside the regions.
    *
+   * The outcome is reported through response->success/message, not through a return value: the
+   * ROS 2 service transport delivers the response message regardless of what the bound callback
+   * returns, so a bool return here would never actually reach the client.
+   *
    * @param request Request with the name of the region.
-   * @param response Response with the goals.
-   * @return true if the goals are generated.
+   * @param response Response with the goals and the success/message outcome.
    */
-  bool generateRandomGoalsService(
+  void generateRandomGoalsService(
     const std::shared_ptr<GenerateRandomGoals::Request> request,
     std::shared_ptr<GenerateRandomGoals::Response> response);
 
@@ -185,10 +188,9 @@ protected:
    * @brief Get a random named region.
    *
    * @param request Request.
-   * @param response Response with the region.
-   * @return true if the position is generated.
+   * @param response Response with the region and the success/message outcome.
    */
-  bool getRandomRegionService(
+  void getRandomRegionService(
     const std::shared_ptr<GetRandomRegion::Request> request,
     std::shared_ptr<GetRandomRegion::Response> response);
 
@@ -196,10 +198,9 @@ protected:
    * @brief Get the name of the region from a position.
    *
    * @param request Request with the name of the region.
-   * @param response Response with the position.
-   * @return true if the position is generated.
+   * @param response Response with the position and the success/message outcome.
    */
-  bool getRegionNameService(
+  void getRegionNameService(
     const std::shared_ptr<GetRegionName::Request> request,
     std::shared_ptr<GetRegionName::Response> response);
 
@@ -207,10 +208,9 @@ protected:
    * @brief Get the names of all the regions.
    *
    * @param request Request with the name of the region.
-   * @param response Response with the regions.
-   * @return true if the regions are generated.
+   * @param response Response with the regions and the success/message outcome.
    */
-  bool listAllRegionsService(
+  void listAllRegionsService(
     const std::shared_ptr<ListAllRegions::Request> request,
     std::shared_ptr<ListAllRegions::Response> response);
 
@@ -219,10 +219,10 @@ protected:
    *
    * @param request_header Request header.
    * @param request Request with the name of the region.
-   * @param response Response with the names of the adjacent regions.
-   * @return true if the service is processed.
+   * @param response Response with the names of the adjacent regions and the success/message
+   * outcome.
    */
-  bool getAdjacentRegionsService(
+  void getAdjacentRegionsService(
     const std::shared_ptr<rmw_request_id_t> request_header,
     const std::shared_ptr<GetAdjacentRegions::Request> request,
     std::shared_ptr<GetAdjacentRegions::Response> response);
@@ -232,10 +232,9 @@ protected:
    *
    * @param request_header Request header.
    * @param request Request with the names of the two regions.
-   * @param response Response with the connectivity result.
-   * @return true if the service is processed.
+   * @param response Response with the connectivity result and the success/message outcome.
    */
-  bool areRegionsConnectedService(
+  void areRegionsConnectedService(
     const std::shared_ptr<rmw_request_id_t> request_header,
     const std::shared_ptr<AreRegionsConnected::Request> request,
     std::shared_ptr<AreRegionsConnected::Response> response);
@@ -245,10 +244,9 @@ protected:
    *
    * @param request_header Request header.
    * @param request Request with the start and goal regions.
-   * @param response Response with the ordered route.
-   * @return true if the service is processed.
+   * @param response Response with the ordered route and the success/message outcome.
    */
-  bool getRegionRouteService(
+  void getRegionRouteService(
     const std::shared_ptr<rmw_request_id_t> request_header,
     const std::shared_ptr<GetRegionRoute::Request> request,
     std::shared_ptr<GetRegionRoute::Response> response);

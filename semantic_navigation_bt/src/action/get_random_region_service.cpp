@@ -30,12 +30,11 @@ GetRandomRegionService::GetRandomRegionService(
 BT::NodeStatus GetRandomRegionService::on_completion(
   std::shared_ptr<semantic_navigation_msgs::srv::GetRandomRegion::Response> response)
 {
-  BT::NodeStatus status = BT::NodeStatus::FAILURE;
-  if (!response->region_name.empty()) {
-    setOutput("region_name", response->region_name);
-    status = BT::NodeStatus::SUCCESS;
+  if (!response->success) {
+    return BT::NodeStatus::FAILURE;
   }
-  return status;
+  setOutput("region_name", response->region_name);
+  return BT::NodeStatus::SUCCESS;
 }
 
 }  // namespace semantic_navigation_bt

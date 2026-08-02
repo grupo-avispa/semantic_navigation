@@ -2,3 +2,5 @@
 
 ---
 string[] region_names # Regions list
+bool success # True if the request could be processed
+string message # Human-readable reason when success is false

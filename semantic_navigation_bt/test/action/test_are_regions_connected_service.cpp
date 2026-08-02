@@ -41,6 +41,7 @@ public:
     (void)request_header;
     (void)request;
     response->connected = true;
+    response->success = true;
   }
 };
 

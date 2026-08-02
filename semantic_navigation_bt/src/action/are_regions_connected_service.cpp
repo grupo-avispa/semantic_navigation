@@ -36,6 +36,9 @@ void AreRegionsConnectedService::on_tick()
 BT::NodeStatus AreRegionsConnectedService::on_completion(
   std::shared_ptr<semantic_navigation_msgs::srv::AreRegionsConnected::Response> response)
 {
+  if (!response->success) {
+    return BT::NodeStatus::FAILURE;
+  }
   setOutput("connected", response->connected);
   return response->connected ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
 }

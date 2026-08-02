@@ -12,4 +12,6 @@ string INSIDE = inside
 string RANDOM = random
 string REQUESTED = requested
 ---
-geometry_msgs/PoseStamped[] goals # Goals
+geometry_msgs/PoseStamped[] goals # Goals. May contain fewer than `n` poses if the region is hard to sample
+bool success # True if the request was valid and processed (regardless of how many goals fit)
+string message # Human-readable reason when success is false

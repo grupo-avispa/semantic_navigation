@@ -500,7 +500,7 @@ semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
   return CellLimits(cell_min_x, cell_max_x, cell_min_y, cell_max_y);
 }
 
-bool SemanticNavigationTasks::generateRandomGoalsService(
+void SemanticNavigationTasks::generateRandomGoalsService(
   const std::shared_ptr<GenerateRandomGoals::Request> request,
   std::shared_ptr<GenerateRandomGoals::Response> response)
 {
@@ -512,8 +512,10 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
 
   // Get arguments
   if (request->n <= 0) {
-    RCLCPP_ERROR(get_logger(), "The number of goals requested must be greater than zero");
-    return false;
+    response->message = "The number of goals requested must be greater than zero";
+    RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
   }
   unsigned int n = static_cast<unsigned int>(request->n);
   for (const auto & region : region_list_) {
@@ -526,30 +528,35 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
 
   // If the requested region is empty and we don't want to use the full map
   if (current_region.empty() && !full_map_) {
-    RCLCPP_WARN(
-      get_logger(), "The requested region [%s], could not be found in the list",
-      request->region_name.c_str());
-    return false;
+    response->message = "The requested region [" + request->region_name +
+      "], could not be found in the list";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
   }
 
   // Check if we have a map
   if (map_.data.empty()) {
-    RCLCPP_WARN(get_logger(), "Failed to get map at [%s]", map_topic_.c_str());
-    return false;
+    response->message = "Failed to get map at [" + map_topic_ + "]";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
   }
 
   // Process bounding box
   auto limits = processBoundingBox(map_, current_region);
   auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
   if (cell_min_x > cell_max_x || cell_min_y > cell_max_y) {
-    RCLCPP_ERROR(
-      get_logger(), "Invalid bounding box for region [%s]", request->region_name.c_str());
-    return false;
+    response->message = "Invalid bounding box for region [" + request->region_name + "]";
+    RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
   }
 
   // Generate response
   response->goals = generateRandomGoals(
     n, current_region, limits, request->orientation, static_cast<double>(request->yaw));
+  response->success = true;
 
   // Publish goals
   geometry_msgs::msg::PoseArray goals_array;
@@ -559,19 +566,20 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
     goals_array.poses.push_back(goal.pose);
   }
   goals_pub_->publish(goals_array);
-  return true;
 }
 
-bool SemanticNavigationTasks::getRandomRegionService(
+void SemanticNavigationTasks::getRandomRegionService(
   const std::shared_ptr<GetRandomRegion::Request>/*request*/,
   std::shared_ptr<GetRandomRegion::Response> response)
 {
   std::lock_guard<std::recursive_mutex> cfl(mutex_);
 
   if (region_list_.empty()) {
-    RCLCPP_WARN(get_logger(), "Cannot get a random region: the list of regions is empty");
+    response->message = "Cannot get a random region: the list of regions is empty";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
     response->region_name = GetRandomRegion::Response::UNKNOWN;
-    return false;
+    response->success = false;
+    return;
   }
 
   // Generate random region
@@ -579,14 +587,13 @@ bool SemanticNavigationTasks::getRandomRegionService(
 
   size_t region_idx = dist_region(rng_);
   response->region_name = region_list_[region_idx].name;
+  response->success = true;
 
   RCLCPP_INFO(
     get_logger(), "Incoming random region service request: [%s]", response->region_name.c_str());
-
-  return true;
 }
 
-bool SemanticNavigationTasks::getRegionNameService(
+void SemanticNavigationTasks::getRegionNameService(
   const std::shared_ptr<GetRegionName::Request> request,
   std::shared_ptr<GetRegionName::Response> response)
 {
@@ -602,10 +609,12 @@ bool SemanticNavigationTasks::getRegionNameService(
       point_in_map_frame = tf2_buffer_->transform(
         request->position, global_frame_, tf2::durationFromSec(transform_tolerance_));
     } catch (tf2::TransformException & ex) {
-      RCLCPP_ERROR(
-        get_logger(), "Failed to transform point from frame [%s] to frame [%s]: %s",
-        request->position.header.frame_id.c_str(), global_frame_.c_str(), ex.what());
-      return false;
+      response->message = std::string("Failed to transform point from frame [") +
+        request->position.header.frame_id + "] to frame [" + global_frame_ + "]: " + ex.what();
+      RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
+      response->region_name = GetRegionName::Response::UNKNOWN;
+      response->success = false;
+      return;
     }
   } else {
     point_in_map_frame = request->position;
@@ -615,16 +624,18 @@ bool SemanticNavigationTasks::getRegionNameService(
   for (const auto & region : region_list_) {
     if (region.isPointInside(point_in_map_frame.point.x, point_in_map_frame.point.y)) {
       response->region_name = region.name;
-      return true;
+      response->success = true;
+      return;
     }
   }
 
+  // The point does not lie in any region: a normal, expected outcome, not a service failure
   response->region_name = GetRegionName::Response::UNKNOWN;
+  response->success = true;
   RCLCPP_WARN(get_logger(), "Failed to get semantic position: point is outside all regions");
-  return false;
 }
 
-bool SemanticNavigationTasks::listAllRegionsService(
+void SemanticNavigationTasks::listAllRegionsService(
   const std::shared_ptr<ListAllRegions::Request>/* request */,
   std::shared_ptr<ListAllRegions::Response> response)
 {
@@ -634,11 +645,10 @@ bool SemanticNavigationTasks::listAllRegionsService(
   for (const auto & region : region_list_) {
     response->region_names.push_back(region.name);
   }
-
-  return true;
+  response->success = true;
 }
 
-bool SemanticNavigationTasks::getAdjacentRegionsService(
+void SemanticNavigationTasks::getAdjacentRegionsService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GetAdjacentRegions::Request> request,
   std::shared_ptr<GetAdjacentRegions::Response> response)
@@ -647,12 +657,18 @@ bool SemanticNavigationTasks::getAdjacentRegionsService(
     get_logger(), "Incoming adjacent regions service request for region [%s]",
     request->region_name.c_str());
 
-  response->adjacent_regions = region_graph_.getNeighbors(request->region_name);
+  if (!region_graph_.hasRegion(request->region_name)) {
+    response->message = "Unknown region [" + request->region_name + "]";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
+  }
 
-  return true;
+  response->adjacent_regions = region_graph_.getNeighbors(request->region_name);
+  response->success = true;
 }
 
-bool SemanticNavigationTasks::areRegionsConnectedService(
+void SemanticNavigationTasks::areRegionsConnectedService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<AreRegionsConnected::Request> request,
   std::shared_ptr<AreRegionsConnected::Response> response)
@@ -661,12 +677,21 @@ bool SemanticNavigationTasks::areRegionsConnectedService(
     get_logger(), "Incoming connectivity service request between [%s] and [%s]",
     request->region_a.c_str(), request->region_b.c_str());
 
-  response->connected = region_graph_.areConnected(request->region_a, request->region_b);
+  if (!region_graph_.hasRegion(request->region_a) ||
+    !region_graph_.hasRegion(request->region_b))
+  {
+    response->message = "Unknown region: [" + request->region_a + "] or [" +
+      request->region_b + "]";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
+  }
 
-  return true;
+  response->connected = region_graph_.areConnected(request->region_a, request->region_b);
+  response->success = true;
 }
 
-bool SemanticNavigationTasks::getRegionRouteService(
+void SemanticNavigationTasks::getRegionRouteService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GetRegionRoute::Request> request,
   std::shared_ptr<GetRegionRoute::Response> response)
@@ -675,9 +700,18 @@ bool SemanticNavigationTasks::getRegionRouteService(
     get_logger(), "Incoming route service request from [%s] to [%s]",
     request->start_region.c_str(), request->goal_region.c_str());
 
-  response->route = region_graph_.findRoute(request->start_region, request->goal_region);
+  if (!region_graph_.hasRegion(request->start_region) ||
+    !region_graph_.hasRegion(request->goal_region))
+  {
+    response->message = "Unknown region: [" + request->start_region + "] or [" +
+      request->goal_region + "]";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
+  }
 
-  return true;
+  response->route = region_graph_.findRoute(request->start_region, request->goal_region);
+  response->success = true;
 }
 
 std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRandomGoals(

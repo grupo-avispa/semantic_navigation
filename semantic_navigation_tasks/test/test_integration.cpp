@@ -207,8 +207,9 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyRegion) {
   // Wait before checking the results
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-  // Check results
+  // Check results: an unknown region with full_map disabled is a rejected request
   EXPECT_EQ(resp->goals.size(), 0);
+  EXPECT_FALSE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
@@ -245,8 +246,9 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
   // Wait before checking the results
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-  // Check results
+  // Check results: no map received yet is a rejected request
   EXPECT_EQ(resp->goals.size(), 0);
+  EXPECT_FALSE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
@@ -290,6 +292,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
   EXPECT_EQ(resp->goals.size(), 1);
   EXPECT_DOUBLE_EQ(resp->goals[0].pose.position.x, 1.0);
   EXPECT_DOUBLE_EQ(resp->goals[0].pose.position.y, 0.0);
+  EXPECT_TRUE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {
@@ -326,6 +329,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {
 
   // Check results
   EXPECT_FALSE(resp->region_name.empty());
+  EXPECT_TRUE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
@@ -365,6 +369,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
 
   // Check results
   EXPECT_EQ(resp->region_name, "small1");
+  EXPECT_TRUE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
@@ -402,8 +407,9 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
   // Wait before checking the results
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-  // Check results
+  // Check results: a point outside every region is a normal (successful) outcome
   EXPECT_EQ(resp->region_name, "unknown");
+  EXPECT_TRUE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, listAllRegions) {
@@ -440,6 +446,7 @@ TEST_F(SemanticNavigationIntegrationTest, listAllRegions) {
 
   // Check results
   EXPECT_EQ(resp->region_names.size(), 4);
+  EXPECT_TRUE(resp->success);
 }
 
 int main(int argc, char ** argv)

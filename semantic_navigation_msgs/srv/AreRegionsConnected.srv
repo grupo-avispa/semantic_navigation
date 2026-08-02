@@ -4,3 +4,5 @@ string region_a # Name of the first region
 string region_b # Name of the second region
 ---
 bool connected # True if both regions are connected through the connectivity graph
+bool success # True if both region_a and region_b are known regions (connected may still be false)
+string message # Human-readable reason when success is false

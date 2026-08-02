@@ -37,12 +37,11 @@ void GetRegionRouteService::on_tick()
 BT::NodeStatus GetRegionRouteService::on_completion(
   std::shared_ptr<semantic_navigation_msgs::srv::GetRegionRoute::Response> response)
 {
-  BT::NodeStatus status = BT::NodeStatus::FAILURE;
-  if (!response->route.empty()) {
-    setOutput("route", response->route);
-    status = BT::NodeStatus::SUCCESS;
+  if (!response->success || response->route.empty()) {
+    return BT::NodeStatus::FAILURE;
   }
-  return status;
+  setOutput("route", response->route);
+  return BT::NodeStatus::SUCCESS;
 }
 
 }  // namespace semantic_navigation_bt
