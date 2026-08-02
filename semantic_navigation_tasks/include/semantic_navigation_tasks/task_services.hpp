@@ -129,9 +129,12 @@ protected:
   /**
    * @brief Get the region parameters from a file.
    *
+   * Each region must have a `name` and at least 3 `points`, each with exactly 2 coordinates;
+   * malformed entries are skipped with an error log instead of aborting the whole file.
+   *
    * @param filepath Name of the file.
-   * @param regions Regions of interest.
-   * @return true if the regions are loaded.
+   * @param regions Regions of interest. New regions are appended to any already present.
+   * @return true if at least one region was loaded from this call.
    */
   bool getRegionsFromFile(
     const std::string & filename, std::vector<semantic_navigation::Region> & regions);
@@ -149,6 +152,23 @@ protected:
   void getConnectionsFromFile(
     const std::string & filename, std::vector<Connection> & add,
     std::vector<Connection> & remove);
+
+  /**
+   * @brief Load the regions and their manual connectivity overrides from a single read of the
+   * regions file.
+   *
+   * Equivalent to calling getRegionsFromFile followed by getConnectionsFromFile, but the file is
+   * only read and parsed from disk once instead of twice.
+   *
+   * @param filename Name of the file.
+   * @param regions Regions of interest. New regions are appended to any already present.
+   * @param add Edges to force regardless of the geometry.
+   * @param remove Edges to forbid regardless of the geometry.
+   * @return true if at least one region was loaded.
+   */
+  bool loadRegionsAndConnections(
+    const std::string & filename, std::vector<semantic_navigation::Region> & regions,
+    std::vector<Connection> & add, std::vector<Connection> & remove);
 
   /**
    * @brief Generate goals inside the regions.

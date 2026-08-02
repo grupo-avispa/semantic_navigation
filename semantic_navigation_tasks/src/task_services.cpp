@@ -38,6 +38,105 @@ namespace semantic_navigation
 
 using std::placeholders::_1, std::placeholders::_2, std::placeholders::_3;
 
+namespace
+{
+
+/**
+ * @brief Parse the list of regions from an already-loaded YAML node.
+ *
+ * Each region must have a `name` and at least 3 `points`, each with exactly 2 coordinates;
+ * malformed entries are skipped with an error log instead of aborting the whole file.
+ *
+ * @param config Root YAML node of the regions file.
+ * @param logger Logger used to report malformed entries.
+ * @param regions Regions of interest. New regions are appended to any already present.
+ * @return true if at least one region was parsed from this call.
+ */
+bool parseRegionsNode(
+  const YAML::Node & config, const rclcpp::Logger & logger, std::vector<Region> & regions)
+{
+  if (!config["regions"]) {
+    RCLCPP_ERROR(logger, "No regions found in file");
+    return false;
+  }
+
+  const size_t initial_size = regions.size();
+  for (const auto & region : config["regions"]) {
+    if (!region["name"] || !region["points"]) {
+      RCLCPP_ERROR(logger, "Region is not well defined: missing name or points");
+      continue;
+    }
+    if (region["points"].size() < 3) {
+      RCLCPP_ERROR(
+        logger, "Region [%s] has fewer than 3 points, skipping",
+        region["name"].as<std::string>().c_str());
+      continue;
+    }
+
+    Region new_region;
+    new_region.name = region["name"].as<std::string>();
+    bool valid_points = true;
+    for (const auto & point : region["points"]) {
+      if (point.size() != 2) {
+        RCLCPP_ERROR(
+          logger, "Region [%s] has a point without exactly 2 coordinates, skipping",
+          new_region.name.c_str());
+        valid_points = false;
+        break;
+      }
+      polygon_msgs::msg::Point2D new_point;
+      new_point.x = point[0].as<float>();
+      new_point.y = point[1].as<float>();
+      new_region.polygon.points.push_back(new_point);
+    }
+    if (valid_points) {
+      regions.push_back(new_region);
+    }
+  }
+  return regions.size() > initial_size;
+}
+
+/**
+ * @brief Parse the manual connections (add / remove edges) from an already-loaded YAML node.
+ *
+ * The `connections` section is optional: a missing section is not an error, the returned lists
+ * are simply left empty.
+ *
+ * @param config Root YAML node of the regions file.
+ * @param logger Logger used to report malformed entries.
+ * @param add Edges to force regardless of the geometry.
+ * @param remove Edges to forbid regardless of the geometry.
+ */
+void parseConnectionsNode(
+  const YAML::Node & config, const rclcpp::Logger & logger, std::vector<Connection> & add,
+  std::vector<Connection> & remove)
+{
+  if (!config["connections"]) {
+    return;
+  }
+
+  // Lambda to parse a list of pairs of region names into a list of connections
+  auto parse_edges = [&logger](const YAML::Node & node, std::vector<Connection> & edges) {
+      for (const auto & edge : node) {
+        if (edge.size() == 2) {
+          edges.emplace_back(edge[0].as<std::string>(), edge[1].as<std::string>());
+        } else {
+          RCLCPP_ERROR(logger, "A connection must be a pair of region names");
+        }
+      }
+    };
+
+  const auto & connections = config["connections"];
+  if (connections["add"]) {
+    parse_edges(connections["add"], add);
+  }
+  if (connections["remove"]) {
+    parse_edges(connections["remove"], remove);
+  }
+}
+
+}  // namespace
+
 SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & options)
 : nav2_util::LifecycleNode("semantic_navigation_tasks", "", options),
   border_(0.0)
@@ -148,14 +247,13 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter regions_filename is set to: [%s]", regions_filename.c_str());
 
-  if (!getRegionsFromFile(regions_filename, region_list_)) {
+  std::vector<Connection> add_edges, remove_edges;
+  if (!loadRegionsAndConnections(regions_filename, region_list_, add_edges, remove_edges)) {
     RCLCPP_ERROR(get_logger(), "The list of regions could not be found");
     return nav2_util::CallbackReturn::FAILURE;
   }
 
   // Build the connectivity graph between the regions
-  std::vector<Connection> add_edges, remove_edges;
-  getConnectionsFromFile(regions_filename, add_edges, remove_edges);
   region_graph_.build(
     region_list_, connectivity_threshold_, auto_connect_, add_edges, remove_edges);
   RCLCPP_INFO(
@@ -280,35 +378,13 @@ bool SemanticNavigationTasks::getRegionsFromFile(
   const std::string & filename, std::vector<semantic_navigation::Region> & regions)
 {
   RCLCPP_INFO(get_logger(), "Reading regions from file: %s", filename.c_str());
-  bool success = false;
   try {
     YAML::Node config = YAML::LoadFile(filename);
-    // Get the list of regions
-    if (config["regions"]) {
-      for (const auto & region : config["regions"]) {
-        // Extract name and points
-        if (region["name"] && region["points"]) {
-          Region new_region;
-          new_region.name = region["name"].as<std::string>();
-          for (const auto & point : region["points"]) {
-            polygon_msgs::msg::Point2D new_point;
-            new_point.x = point[0].as<float>();
-            new_point.y = point[1].as<float>();
-            new_region.polygon.points.push_back(new_point);
-          }
-          regions.push_back(new_region);
-          success = true;
-        } else {
-          RCLCPP_ERROR(get_logger(), "Region is not well defined");
-        }
-      }
-    } else {
-      RCLCPP_ERROR(get_logger(), "No regions found in file [%s]", filename.c_str());
-    }
+    return parseRegionsNode(config, get_logger(), regions);
   } catch (const YAML::Exception & e) {
-    RCLCPP_ERROR(get_logger(), "Error reading file [%s]", filename.c_str());
+    RCLCPP_ERROR(get_logger(), "Error reading file [%s]: %s", filename.c_str(), e.what());
+    return false;
   }
-  return success;
 }
 
 void SemanticNavigationTasks::getConnectionsFromFile(
@@ -317,31 +393,28 @@ void SemanticNavigationTasks::getConnectionsFromFile(
 {
   try {
     YAML::Node config = YAML::LoadFile(filename);
-    // The connections section is optional
-    if (!config["connections"]) {
-      return;
-    }
+    parseConnectionsNode(config, get_logger(), add, remove);
+  } catch (const YAML::Exception & e) {
+    RCLCPP_ERROR(
+      get_logger(), "Error reading connections from file [%s]: %s", filename.c_str(), e.what());
+  }
+}
 
-    // Lambda to parse a list of pairs of region names into a list of connections
-    auto parse_edges = [this](const YAML::Node & node, std::vector<Connection> & edges) {
-        for (const auto & edge : node) {
-          if (edge.size() == 2) {
-            edges.emplace_back(edge[0].as<std::string>(), edge[1].as<std::string>());
-          } else {
-            RCLCPP_ERROR(get_logger(), "A connection must be a pair of region names");
-          }
-        }
-      };
-
-    const auto & connections = config["connections"];
-    if (connections["add"]) {
-      parse_edges(connections["add"], add);
-    }
-    if (connections["remove"]) {
-      parse_edges(connections["remove"], remove);
-    }
-  } catch (const YAML::Exception &) {
-    RCLCPP_ERROR(get_logger(), "Error reading connections from file [%s]", filename.c_str());
+bool SemanticNavigationTasks::loadRegionsAndConnections(
+  const std::string & filename, std::vector<semantic_navigation::Region> & regions,
+  std::vector<Connection> & add, std::vector<Connection> & remove)
+{
+  RCLCPP_INFO(get_logger(), "Reading regions from file: %s", filename.c_str());
+  try {
+    // Read and parse the file only once, instead of once per section as
+    // getRegionsFromFile + getConnectionsFromFile would.
+    YAML::Node config = YAML::LoadFile(filename);
+    bool loaded = parseRegionsNode(config, get_logger(), regions);
+    parseConnectionsNode(config, get_logger(), add, remove);
+    return loaded;
+  } catch (const YAML::Exception & e) {
+    RCLCPP_ERROR(get_logger(), "Error reading file [%s]: %s", filename.c_str(), e.what());
+    return false;
   }
 }
 
