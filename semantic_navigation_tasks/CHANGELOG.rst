@@ -2,6 +2,20 @@
 Changelog for package semantic_navigation_tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.4.0 (02-08-2026)
+------------------
+* Bound the number of sampling attempts in ``generateRandomGoals`` and validate the requested ``n`` and the region bounding box, so an unreachable region can no longer hang the service while holding its mutex.
+* Fix an out-of-bounds read in ``getRandomRegionService`` on an empty region list, and an off-by-one in ``cell()``'s bounds check.
+* Propagate the requested ``orientation``/``yaw`` through ``generateRandomGoals`` instead of always ignoring them and forcing ``INSIDE``.
+* Use ``double`` precision (instead of truncating to ``int``) for the map bounds in ``processBoundingBox``.
+* Read the regions file once instead of twice per ``on_configure``, and validate that each region has at least 3 points with 2 coordinates.
+* Guard ``Region::isPointAtLeastDistanceFromBorders`` against a degenerate (0 or 1 point) polygon.
+* Pass ``Region``/``vector<Region>``/``Pose`` by ``const&`` instead of by value in the sampling hot path.
+* Unify the point-to-segment distance calculation (previously duplicated) into ``geometry_utils.hpp``.
+* Add the ``global_frame`` parameter, decoupled from ``map_topic``, used as ``header.frame_id`` for published messages.
+* Add ``success``/``message`` to the responses of all 7 services.
+* Downgrade recoverable service failures from ``FATAL`` to ``WARN``/``ERROR``.
+
 3.3.0 (29-06-2026)
 ------------------
 * Add a connectivity graph between regions with automatic detection from the geometry and manual ``add``/``remove`` overrides from the regions file.

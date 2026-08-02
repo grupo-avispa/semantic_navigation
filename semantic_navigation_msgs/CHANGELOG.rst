@@ -2,6 +2,10 @@
 Changelog for package semantic_navigation_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.4.0 (02-08-2026)
+------------------
+* Add ``bool success`` and ``string message`` to the responses of all 7 services, so clients can tell a real failure apart from a legitimate empty result.
+
 3.3.0 (29-06-2026)
 ------------------
 * Add GetAdjacentRegions.srv, AreRegionsConnected.srv and GetRegionRoute.srv to query the connectivity between regions.
