@@ -2,6 +2,11 @@
 Changelog for package semantic_navigation_rviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.4.0 (02-08-2026)
+------------------
+* Fix ``SemanticAnnotationTool::activate()`` recreating ``ros_node_`` and the publishers on every activation instead of only once in ``onInitialize()``.
+* Save regions to a configurable, writable "Save path" using a ``YAML::Emitter`` (truncating the file), instead of appending hand-written YAML into another package's installed ``share/`` folder.
+
 3.1.1 (06-02-2025)
 ------------------
 * First jazzy release.

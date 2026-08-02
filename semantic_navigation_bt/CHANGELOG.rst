@@ -2,6 +2,11 @@
 Changelog for package semantic_navigation_bt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.4.0 (02-08-2026)
+------------------
+* Update the 7 action nodes to check the new ``response->success`` field, instead of inferring success only from whether the result happens to be non-empty.
+* Fix ``GetRegionNameService`` treating the ``UNKNOWN`` sentinel region name as a successful tick.
+
 3.3.0 (29-06-2026)
 ------------------
 * Added "get_adjacent_regions" action BT node.
