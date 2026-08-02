@@ -444,7 +444,7 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
 
   // If the requested region is empty and we don't want to use the full map
   if (current_region.empty() && !full_map_) {
-    RCLCPP_FATAL(
+    RCLCPP_WARN(
       get_logger(), "The requested region [%s], could not be found in the list",
       request->region_name.c_str());
     return false;
@@ -452,7 +452,7 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
 
   // Check if we have a map
   if (map_.data.empty()) {
-    RCLCPP_FATAL(get_logger(), "Failed to get map at [%s]", map_topic_.c_str());
+    RCLCPP_WARN(get_logger(), "Failed to get map at [%s]", map_topic_.c_str());
     return false;
   }
 
@@ -520,7 +520,7 @@ bool SemanticNavigationTasks::getRegionNameService(
       point_in_map_frame = tf2_buffer_->transform(
         request->position, map_topic_, tf2::durationFromSec(transform_tolerance_));
     } catch (tf2::TransformException & ex) {
-      RCLCPP_FATAL(
+      RCLCPP_ERROR(
         get_logger(), "Failed to transform point from frame [%s] to frame [%s]: %s",
         request->position.header.frame_id.c_str(), map_topic_.c_str(), ex.what());
       return false;
@@ -538,7 +538,7 @@ bool SemanticNavigationTasks::getRegionNameService(
   }
 
   response->region_name = GetRegionName::Response::UNKNOWN;
-  RCLCPP_FATAL(get_logger(), "Failed to get semantic position");
+  RCLCPP_WARN(get_logger(), "Failed to get semantic position: point is outside all regions");
   return false;
 }
 
