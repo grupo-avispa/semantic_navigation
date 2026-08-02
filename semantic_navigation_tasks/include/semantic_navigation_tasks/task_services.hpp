@@ -268,7 +268,7 @@ protected:
    * @return std::vector<geometry_msgs::msg::PoseStamped> Goals (may contain fewer than @p n).
    */
   virtual std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
-    unsigned int n, Region region, CellLimits limits, std::string orientation,
+    unsigned int n, const Region & region, CellLimits limits, std::string orientation,
     double requested_yaw);
 
   /**
@@ -284,7 +284,7 @@ protected:
    * @param list List of regions of interest.
    * @return polygon_msgs::msg::Polygon2DCollection Collection of polygons.
    */
-  polygon_msgs::msg::Polygon2DCollection createPolygons(std::vector<Region> list);
+  polygon_msgs::msg::Polygon2DCollection createPolygons(const std::vector<Region> & list);
 
   /**
    * @brief Create a collection of markers with the names of the regions.
@@ -292,7 +292,7 @@ protected:
    * @param list List of regions of interest.
    * @return visualization_msgs::msg::MarkerArray Collection of markers.
    */
-  visualization_msgs::msg::MarkerArray createNames(std::vector<Region> list);
+  visualization_msgs::msg::MarkerArray createNames(const std::vector<Region> & list);
 
   /**
    * @brief Create a collection of markers with the edges of the connectivity graph.
@@ -304,7 +304,7 @@ protected:
    * @return visualization_msgs::msg::MarkerArray Collection of markers.
    */
   visualization_msgs::msg::MarkerArray createEdges(
-    std::vector<Region> list, const RegionGraph & graph);
+    const std::vector<Region> & list, const RegionGraph & graph);
 
   /**
    * @brief Process the bounding box of the regions inside the map.
@@ -313,7 +313,7 @@ protected:
    * @param region Region of interest.
    * @return CellLimits Limits of the cells.
    */
-  CellLimits processBoundingBox(const nav_msgs::msg::OccupancyGrid & map, Region region);
+  CellLimits processBoundingBox(const nav_msgs::msg::OccupancyGrid & map, const Region & region);
 
   /**
    * @brief Get the cell value of the map.
@@ -339,7 +339,7 @@ protected:
    *
    * @return bool True if the point is valid.
    */
-  bool isPointValid(int x, int y, Region region, geometry_msgs::msg::Pose pose);
+  bool isPointValid(int x, int y, const Region & region, const geometry_msgs::msg::Pose & pose);
 
   /**
    * @brief Get the orientation depending on the request:

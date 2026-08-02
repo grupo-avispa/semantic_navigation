@@ -431,7 +431,7 @@ void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::Sh
 }
 
 semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
-  const nav_msgs::msg::OccupancyGrid & map, Region region)
+  const nav_msgs::msg::OccupancyGrid & map, const Region & region)
 {
   double map_min_x = map.info.origin.position.x;
   double map_max_x = map.info.origin.position.x + map.info.width * map.info.resolution;
@@ -455,18 +455,17 @@ semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
     bbox_min_y = std::numeric_limits<double>::infinity();
     bbox_max_y = -std::numeric_limits<double>::infinity();
 
-    for (auto & p : region.polygon.points) {
-      if (p.x < map_min_x) {p.x = map_min_x;}
-      if (p.x > map_max_x) {p.x = map_max_x;}
+    // Clamp each point into the map bounds (without mutating the caller's region) before
+    // folding it into the bounding box.
+    for (const auto & p : region.polygon.points) {
+      double x = std::clamp(static_cast<double>(p.x), map_min_x, map_max_x);
+      double y = std::clamp(static_cast<double>(p.y), map_min_y, map_max_y);
 
-      if (p.x < bbox_min_x) {bbox_min_x = p.x;}
-      if (p.x > bbox_max_x) {bbox_max_x = p.x;}
+      if (x < bbox_min_x) {bbox_min_x = x;}
+      if (x > bbox_max_x) {bbox_max_x = x;}
 
-      if (p.y < map_min_y) {p.y = map_min_y;}
-      if (p.y > map_max_y) {p.y = map_max_y;}
-
-      if (p.y < bbox_min_y) {bbox_min_y = p.y;}
-      if (p.y > bbox_max_y) {bbox_max_y = p.y;}
+      if (y < bbox_min_y) {bbox_min_y = y;}
+      if (y > bbox_max_y) {bbox_max_y = y;}
     }
   }
 
@@ -672,7 +671,7 @@ bool SemanticNavigationTasks::getRegionRouteService(
 }
 
 std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRandomGoals(
-  unsigned int n, Region region, CellLimits limits, std::string orientation,
+  unsigned int n, const Region & region, CellLimits limits, std::string orientation,
   double requested_yaw)
 {
   std::vector<geometry_msgs::msg::PoseStamped> goals;
@@ -757,7 +756,7 @@ bool SemanticNavigationTasks::inCollision(int x, int y)
 }
 
 bool SemanticNavigationTasks::isPointValid(
-  int x, int y, Region region, geometry_msgs::msg::Pose pose)
+  int x, int y, const Region & region, const geometry_msgs::msg::Pose & pose)
 {
   return region.isPointInside(pose.position.x, pose.position.y) &&
          region.isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border_) &&
@@ -791,7 +790,7 @@ void SemanticNavigationTasks::orientationFromRequest(
 }
 
 polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons(
-  std::vector<Region> list)
+  const std::vector<Region> & list)
 {
   polygon_msgs::msg::Polygon2DCollection polygon_array;
   polygon_array.header.frame_id = map_topic_;
@@ -804,7 +803,8 @@ polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons(
   return polygon_array;
 }
 
-visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(std::vector<Region> list)
+visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(
+  const std::vector<Region> & list)
 {
   visualization_msgs::msg::MarkerArray names_array;
   for (const auto & region : list) {
@@ -835,7 +835,7 @@ visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(std::v
 }
 
 visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createEdges(
-  std::vector<Region> list, const RegionGraph & graph)
+  const std::vector<Region> & list, const RegionGraph & graph)
 {
   visualization_msgs::msg::MarkerArray edges_array;
 

@@ -35,9 +35,9 @@ struct Region
   std::string name;  // Name of the region of interest
   polygon_msgs::msg::Polygon2D polygon;  // Polygon defining the region of interest
 
-  inline bool empty() {return polygon.points.empty();}
+  inline bool empty() const {return polygon.points.empty();}
   inline void clear() {return polygon.points.clear();}
-  inline int size() {return polygon.points.size();}
+  inline int size() const {return polygon.points.size();}
 
   inline geometry_msgs::msg::Point centroid() const
   {
@@ -70,7 +70,7 @@ struct Region
    * @param distance Minimum distance from the borders
    * @return bool if given point is inside polygon
    */
-  bool isPointAtLeastDistanceFromBorders(float x, float y, float distance)
+  bool isPointAtLeastDistanceFromBorders(float x, float y, float distance) const
   {
     // A degenerate polygon (0 or 1 points) has no borders to measure against. Returning true
     // avoids the unsigned underflow of `size() - 1` below and the resulting out-of-bounds
@@ -100,7 +100,7 @@ struct Region
     return true;
   }
 
-  double distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1)
+  double distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1) const
   {
     double A = pX - x0;
     double B = pY - y0;
