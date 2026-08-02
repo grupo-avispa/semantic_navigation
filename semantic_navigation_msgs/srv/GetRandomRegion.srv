@@ -2,6 +2,8 @@
 
 ---
 string region_name # Name of the region
+bool success # True if a random region could be selected
+string message # Human-readable reason when success is false
 
 # Constants
 string UNKNOWN = unknown

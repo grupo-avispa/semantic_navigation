@@ -2,7 +2,9 @@
 
 geometry_msgs/PointStamped position # Position
 ---
-string region_name # Name of the region
+string region_name # Name of the region. UNKNOWN if the position does not lie in any region
+bool success # True if the request could be processed (even if the region is UNKNOWN)
+string message # Human-readable reason when success is false, e.g. a TF lookup failure
 
 # Constants
 string UNKNOWN = unknown
