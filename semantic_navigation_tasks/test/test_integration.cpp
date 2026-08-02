@@ -37,7 +37,7 @@ public:
 
   nav_msgs::msg::OccupancyGrid getMap()
   {
-    return map_;
+    return goal_sampler_.getMap();
   }
 
   std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
@@ -45,7 +45,7 @@ public:
     semantic_navigation::CellLimits /*limits*/, std::string /*orientation*/,
     double /*requested_yaw*/) override
   {
-    if (region_list_.empty() || map_.data.empty()) {
+    if (region_list_.empty() || goal_sampler_.getMap().data.empty()) {
       return {};
     } else {
       std::vector<geometry_msgs::msg::PoseStamped> goals;
@@ -60,10 +60,12 @@ public:
 
   void createFreeMap(int width, int height, double resolution)
   {
-    map_.info.width = width;
-    map_.info.height = height;
-    map_.info.resolution = resolution;
-    map_.data = std::vector<int8_t>(width * height, nav2_util::OCC_GRID_FREE);
+    nav_msgs::msg::OccupancyGrid map;
+    map.info.width = width;
+    map.info.height = height;
+    map.info.resolution = resolution;
+    map.data = std::vector<int8_t>(width * height, nav2_util::OCC_GRID_FREE);
+    goal_sampler_.setMap(map);
   }
 };
 

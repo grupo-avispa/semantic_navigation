@@ -18,6 +18,15 @@ target_link_libraries(test_regions
   ament_index_cpp::ament_index_cpp
 )
 
+# Test for the regions file loader (pure domain logic, no rclcpp::init needed)
+ament_add_gtest(test_regions_loader
+  test_regions_loader.cpp
+)
+target_link_libraries(test_regions_loader
+  ${library_name}
+  ament_index_cpp::ament_index_cpp
+)
+
 # Test for the region graph
 ament_add_gtest(test_region_graph
   test_region_graph.cpp

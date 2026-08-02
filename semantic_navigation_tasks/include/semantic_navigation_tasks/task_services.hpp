@@ -17,12 +17,10 @@
 #define SEMANTIC_NAVIGATION_TASKS__TASK_SERVICES_HPP_
 
 // C++
-#include <cmath>
 #include <memory>
 #include <mutex>
 #include <random>
 #include <string>
-#include <tuple>
 #include <vector>
 
 // ROS
@@ -41,6 +39,7 @@
 #include "semantic_navigation_msgs/srv/get_region_name.hpp"
 #include "semantic_navigation_msgs/srv/get_region_route.hpp"
 #include "semantic_navigation_msgs/srv/list_all_regions.hpp"
+#include "semantic_navigation_tasks/goal_sampler.hpp"
 #include "semantic_navigation_tasks/region.hpp"
 #include "semantic_navigation_tasks/region_graph.hpp"
 #include "tf2_ros/buffer.hpp"
@@ -50,11 +49,11 @@
 namespace semantic_navigation
 {
 
-using CellLimits = std::tuple<int, int, int, int>;
-
 /**
  * @class semantic_navigation::SemanticNavigationTasks
- * @brief Class to generate goals inside regions.
+ * @brief Lifecycle node that wires together region loading (RegionsLoader), the connectivity
+ * graph (RegionGraph), goal sampling (GoalSampler) and visualization (region_markers) into the
+ * generate_random_goals / semantic position / connectivity ROS services.
  */
 class SemanticNavigationTasks : public nav2_util::LifecycleNode
 {
@@ -127,10 +126,8 @@ protected:
   nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
   /**
-   * @brief Get the region parameters from a file.
-   *
-   * Each region must have a `name` and at least 3 `points`, each with exactly 2 coordinates;
-   * malformed entries are skipped with an error log instead of aborting the whole file.
+   * @brief Get the region parameters from a file. Thin wrapper around loadRegionsFile() (see
+   * regions_loader.hpp) that logs any warning it returns.
    *
    * @param filepath Name of the file.
    * @param regions Regions of interest. New regions are appended to any already present.
@@ -140,7 +137,8 @@ protected:
     const std::string & filename, std::vector<semantic_navigation::Region> & regions);
 
   /**
-   * @brief Get the manual connections (add / remove edges) from a file.
+   * @brief Get the manual connections (add / remove edges) from a file. Thin wrapper around
+   * loadRegionsFile() (see regions_loader.hpp) that logs any warning it returns.
    *
    * Reads the optional `connections` section of the regions file. Missing sections are not an
    * error: the returned lists are simply left empty.
@@ -252,16 +250,14 @@ protected:
     std::shared_ptr<GetRegionRoute::Response> response);
 
   /**
-   * @brief Generate random goals inside a region.
-   *
-   * Sampling is bounded to a maximum number of attempts, so an unreachable region (e.g. fully
-   * occupied, or with a degenerate bounding box) returns fewer than @p n goals instead of
-   * blocking forever.
+   * @brief Generate random goals inside a region. Thin wrapper around
+   * goal_sampler_.generateRandomGoals(), threading in border_/global_frame_/now(). Kept virtual
+   * (and at this exact signature) so tests can stub it out without a real map.
    *
    * @param n Number of goals.
    * @param region Region of interest.
    * @param limits Limits of the cells.
-   * @param orientation Requested orientation of the goals (see orientationFromRequest).
+   * @param orientation Requested orientation (see GoalSampler::orientationFromRequest).
    * @param requested_yaw Requested yaw, used only when @p orientation is REQUESTED.
    * @return std::vector<geometry_msgs::msg::PoseStamped> Goals (may contain fewer than @p n).
    */
@@ -277,7 +273,7 @@ protected:
   void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
 
   /**
-   * @brief Create a collection of polygons.
+   * @brief Create a collection of polygons. Thin wrapper around region_markers::createPolygons().
    *
    * @param list List of regions of interest.
    * @return polygon_msgs::msg::Polygon2DCollection Collection of polygons.
@@ -285,7 +281,8 @@ protected:
   polygon_msgs::msg::Polygon2DCollection createPolygons(const std::vector<Region> & list);
 
   /**
-   * @brief Create a collection of markers with the names of the regions.
+   * @brief Create a collection of markers with the names of the regions. Thin wrapper around
+   * region_markers::createNames().
    *
    * @param list List of regions of interest.
    * @return visualization_msgs::msg::MarkerArray Collection of markers.
@@ -293,9 +290,8 @@ protected:
   visualization_msgs::msg::MarkerArray createNames(const std::vector<Region> & list);
 
   /**
-   * @brief Create a collection of markers with the edges of the connectivity graph.
-   *
-   * Each edge is drawn as a line between the centroids of the two connected regions.
+   * @brief Create a collection of markers with the edges of the connectivity graph. Thin wrapper
+   * around region_markers::createEdges().
    *
    * @param list List of regions of interest.
    * @param graph Connectivity graph between the regions.
@@ -305,7 +301,8 @@ protected:
     const std::vector<Region> & list, const RegionGraph & graph);
 
   /**
-   * @brief Process the bounding box of the regions inside the map.
+   * @brief Process the bounding box of the regions inside the map. Thin wrapper around
+   * goal_sampler_.processBoundingBox().
    *
    * @param map Map.
    * @param region Region of interest.
@@ -314,7 +311,7 @@ protected:
   CellLimits processBoundingBox(const nav_msgs::msg::OccupancyGrid & map, const Region & region);
 
   /**
-   * @brief Get the cell value of the map.
+   * @brief Get the cell value of the map. Thin wrapper around goal_sampler_.cell().
    *
    * @param x X coordinate.
    * @param y Y coordinate.
@@ -323,7 +320,7 @@ protected:
   int8_t cell(unsigned int x, unsigned int y);
 
   /**
-   * @brief Check if a point is inside the map.
+   * @brief Check if a point is inside the map. Thin wrapper around goal_sampler_.inCollision().
    *
    * @param x X coordinate.
    * @param y Y coordinate.
@@ -333,23 +330,20 @@ protected:
 
   /**
    * @brief Check if the point is valid (i.e., not in collision, inside the map and away from the
-   * border).
+   * border). Thin wrapper around goal_sampler_.isPointValid().
    *
    * @return bool True if the point is valid.
    */
   bool isPointValid(int x, int y, const Region & region, const geometry_msgs::msg::Pose & pose);
 
   /**
-   * @brief Get the orientation depending on the request:
-   * - Outside: arrow pointing outside the region.
-   * - Inside: arrow pointing inside the region.
-   * - Requested: arrow pointing to the requested position.
-   * - Random (or empty/unknown): keeps the orientation already set in @p pose by the caller.
+   * @brief Get the orientation depending on the request. Thin wrapper around
+   * goal_sampler_.orientationFromRequest().
    *
-   * @param pose Pose of the goal. Its orientation is left untouched for RANDOM.
+   * @param pose Pose of the goal.
    * @param region Region of interest.
    * @param orientation Requested orientation in string format.
-   * @param requested_yaw Requested yaw, used only when @p orientation is REQUESTED.
+   * @param requested_yaw Requested yaw (Optional).
    */
   void orientationFromRequest(
     geometry_msgs::msg::Pose & pose, const Region & region, std::string orientation,
@@ -373,10 +367,10 @@ protected:
   rclcpp::Service<GetRegionRoute>::SharedPtr get_region_route_service_;
 
   std::recursive_mutex mutex_;
-  nav_msgs::msg::OccupancyGrid map_;
-  bool is_costmap_, full_map_, auto_connect_;
-  int inflated_footprint_size_;
-  float inflation_radius_, border_;
+  // Map/collision model and random goal sampling; see goal_sampler.hpp.
+  GoalSampler goal_sampler_;
+  bool full_map_, auto_connect_;
+  float border_;
   double connectivity_threshold_;
   std::string goals_topic_, polygons_topic_, names_topic_, edges_topic_, map_topic_;
   // TF frame used as header.frame_id for published messages and goals, independent of the
@@ -384,7 +378,9 @@ protected:
   std::string global_frame_;
   std::vector<semantic_navigation::Region> region_list_;
   RegionGraph region_graph_;
-  // Pseudo-random number generator, seeded once from hardware entropy in on_configure
+  // Pseudo-random number generator used to pick a random region name in getRandomRegionService,
+  // seeded once from hardware entropy in on_configure. Sampling goals within a region has its own
+  // independent generator inside goal_sampler_.
   std::mt19937 rng_;
 
   std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;

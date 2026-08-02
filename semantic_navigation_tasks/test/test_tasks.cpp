@@ -99,16 +99,19 @@ public:
 
   nav_msgs::msg::OccupancyGrid getMap()
   {
-    return map_;
+    return goal_sampler_.getMap();
   }
 
-  void setMap(nav_msgs::msg::OccupancyGrid map) {map_ = map;}
-  void setIsCostmap(bool is_costmap) {is_costmap_ = is_costmap;}
+  void setMap(nav_msgs::msg::OccupancyGrid map) {goal_sampler_.setMap(map);}
+  void setIsCostmap(bool is_costmap) {goal_sampler_.setIsCostmap(is_costmap);}
   void setFullMap(bool full_map) {full_map_ = full_map;}
-  void setInflationRadius(double inflation_radius) {inflation_radius_ = inflation_radius;}
+  void setInflationRadius(double inflation_radius)
+  {
+    goal_sampler_.setInflationRadius(inflation_radius);
+  }
   void setInflatedFootprintSize(double inflation_radius, double resolution)
   {
-    inflated_footprint_size_ = static_cast<int>(inflation_radius / resolution) + 1;
+    goal_sampler_.setInflatedFootprintSize(inflation_radius, resolution);
   }
   void setBorder(float border) {border_ = border;}
   void setRegionList(std::vector<semantic_navigation::Region> list) {region_list_ = list;}
@@ -122,10 +125,12 @@ public:
 
   void createFreeMap(int width, int height, double resolution)
   {
-    map_.info.width = width;
-    map_.info.height = height;
-    map_.info.resolution = resolution;
-    map_.data = std::vector<int8_t>(width * height, nav2_util::OCC_GRID_FREE);
+    nav_msgs::msg::OccupancyGrid map;
+    map.info.width = width;
+    map.info.height = height;
+    map.info.resolution = resolution;
+    map.data = std::vector<int8_t>(width * height, nav2_util::OCC_GRID_FREE);
+    goal_sampler_.setMap(map);
   }
 };
 

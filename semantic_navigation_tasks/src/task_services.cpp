@@ -13,24 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <yaml-cpp/yaml.h>
-#include <algorithm>
-#include <cmath>
-#include <limits>
+#include <random>
 
 // ROS
-#include "angles/angles.h"
 #include "tf2/utils.hpp"
-#include "tf2/LinearMath/Quaternion.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
-#include "nav2_util/occ_grid_values.hpp"
 #include "nav2_util/node_utils.hpp"
 #include "geometry_msgs/msg/pose.hpp"
-#include "geometry_msgs/msg/polygon_stamped.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 
-// Semantic Goals
+// Semantic Navigation
+#include "semantic_navigation_tasks/region_markers.hpp"
+#include "semantic_navigation_tasks/regions_loader.hpp"
 #include "semantic_navigation_tasks/task_services.hpp"
 
 namespace semantic_navigation
@@ -38,107 +33,9 @@ namespace semantic_navigation
 
 using std::placeholders::_1, std::placeholders::_2, std::placeholders::_3;
 
-namespace
-{
-
-/**
- * @brief Parse the list of regions from an already-loaded YAML node.
- *
- * Each region must have a `name` and at least 3 `points`, each with exactly 2 coordinates;
- * malformed entries are skipped with an error log instead of aborting the whole file.
- *
- * @param config Root YAML node of the regions file.
- * @param logger Logger used to report malformed entries.
- * @param regions Regions of interest. New regions are appended to any already present.
- * @return true if at least one region was parsed from this call.
- */
-bool parseRegionsNode(
-  const YAML::Node & config, const rclcpp::Logger & logger, std::vector<Region> & regions)
-{
-  if (!config["regions"]) {
-    RCLCPP_ERROR(logger, "No regions found in file");
-    return false;
-  }
-
-  const size_t initial_size = regions.size();
-  for (const auto & region : config["regions"]) {
-    if (!region["name"] || !region["points"]) {
-      RCLCPP_ERROR(logger, "Region is not well defined: missing name or points");
-      continue;
-    }
-    if (region["points"].size() < 3) {
-      RCLCPP_ERROR(
-        logger, "Region [%s] has fewer than 3 points, skipping",
-        region["name"].as<std::string>().c_str());
-      continue;
-    }
-
-    Region new_region;
-    new_region.name = region["name"].as<std::string>();
-    bool valid_points = true;
-    for (const auto & point : region["points"]) {
-      if (point.size() != 2) {
-        RCLCPP_ERROR(
-          logger, "Region [%s] has a point without exactly 2 coordinates, skipping",
-          new_region.name.c_str());
-        valid_points = false;
-        break;
-      }
-      polygon_msgs::msg::Point2D new_point;
-      new_point.x = point[0].as<float>();
-      new_point.y = point[1].as<float>();
-      new_region.polygon.points.push_back(new_point);
-    }
-    if (valid_points) {
-      regions.push_back(new_region);
-    }
-  }
-  return regions.size() > initial_size;
-}
-
-/**
- * @brief Parse the manual connections (add / remove edges) from an already-loaded YAML node.
- *
- * The `connections` section is optional: a missing section is not an error, the returned lists
- * are simply left empty.
- *
- * @param config Root YAML node of the regions file.
- * @param logger Logger used to report malformed entries.
- * @param add Edges to force regardless of the geometry.
- * @param remove Edges to forbid regardless of the geometry.
- */
-void parseConnectionsNode(
-  const YAML::Node & config, const rclcpp::Logger & logger, std::vector<Connection> & add,
-  std::vector<Connection> & remove)
-{
-  if (!config["connections"]) {
-    return;
-  }
-
-  // Lambda to parse a list of pairs of region names into a list of connections
-  auto parse_edges = [&logger](const YAML::Node & node, std::vector<Connection> & edges) {
-      for (const auto & edge : node) {
-        if (edge.size() == 2) {
-          edges.emplace_back(edge[0].as<std::string>(), edge[1].as<std::string>());
-        } else {
-          RCLCPP_ERROR(logger, "A connection must be a pair of region names");
-        }
-      }
-    };
-
-  const auto & connections = config["connections"];
-  if (connections["add"]) {
-    parse_edges(connections["add"], add);
-  }
-  if (connections["remove"]) {
-    parse_edges(connections["remove"], remove);
-  }
-}
-
-}  // namespace
-
 SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & options)
 : nav2_util::LifecycleNode("semantic_navigation_tasks", "", options),
+  goal_sampler_(get_logger()),
   border_(0.0)
 {
   RCLCPP_INFO(get_logger(), "Creating Semantic Navigation Tasks");
@@ -147,13 +44,15 @@ SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & opt
 nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycle::State &)
 {
   // BOOLEAN PARAMS ..........................................................................
+  bool is_costmap = false;
   nav2_util::declare_parameter_if_not_declared(
     this, "is_costmap",
     rclcpp::ParameterValue(false), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Is the map a costmap?"));
-  this->get_parameter("is_costmap", is_costmap_);
+  this->get_parameter("is_costmap", is_costmap);
+  goal_sampler_.setIsCostmap(is_costmap);
   RCLCPP_INFO(
-    get_logger(), "The parameter is_costmap is set to: [%s]", is_costmap_ ? "true" : "false");
+    get_logger(), "The parameter is_costmap is set to: [%s]", is_costmap ? "true" : "false");
 
   nav2_util::declare_parameter_if_not_declared(
     this, "full_map",
@@ -172,13 +71,15 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
     get_logger(), "The parameter auto_connect is set to: [%s]", auto_connect_ ? "true" : "false");
 
   // FLOAT PARAMS ..........................................................................
+  double inflation_radius = 0.5;
   nav2_util::declare_parameter_if_not_declared(
     this, "inflation_radius",
     rclcpp::ParameterValue(0.5), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Inflation radius for the robot footprint"));
-  this->get_parameter("inflation_radius", inflation_radius_);
+  this->get_parameter("inflation_radius", inflation_radius);
+  goal_sampler_.setInflationRadius(inflation_radius);
   RCLCPP_INFO(
-    get_logger(), "The parameter inflation_radius is set to: [%f]", inflation_radius_);
+    get_logger(), "The parameter inflation_radius is set to: [%f]", inflation_radius);
 
   nav2_util::declare_parameter_if_not_declared(
     this, "transform_tolerance",
@@ -311,9 +212,11 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf2_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf2_buffer_, this, true);
 
-  // Seed the random number generator once, instead of on every service call
+  // Seed the random number generators once, instead of on every service call. rng_ and
+  // goal_sampler_'s internal generator are independent, so each gets its own draw of entropy.
   std::random_device rd;
   rng_.seed(rd());
+  goal_sampler_.seed(rd());
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -388,26 +291,24 @@ bool SemanticNavigationTasks::getRegionsFromFile(
   const std::string & filename, std::vector<semantic_navigation::Region> & regions)
 {
   RCLCPP_INFO(get_logger(), "Reading regions from file: %s", filename.c_str());
-  try {
-    YAML::Node config = YAML::LoadFile(filename);
-    return parseRegionsNode(config, get_logger(), regions);
-  } catch (const YAML::Exception & e) {
-    RCLCPP_ERROR(get_logger(), "Error reading file [%s]: %s", filename.c_str(), e.what());
-    return false;
+  auto data = loadRegionsFile(filename);
+  for (const auto & warning : data.warnings) {
+    RCLCPP_ERROR(get_logger(), "%s", warning.c_str());
   }
+  regions.insert(regions.end(), data.regions.begin(), data.regions.end());
+  return data.success;
 }
 
 void SemanticNavigationTasks::getConnectionsFromFile(
   const std::string & filename, std::vector<Connection> & add,
   std::vector<Connection> & remove)
 {
-  try {
-    YAML::Node config = YAML::LoadFile(filename);
-    parseConnectionsNode(config, get_logger(), add, remove);
-  } catch (const YAML::Exception & e) {
-    RCLCPP_ERROR(
-      get_logger(), "Error reading connections from file [%s]: %s", filename.c_str(), e.what());
+  auto data = loadRegionsFile(filename);
+  for (const auto & warning : data.warnings) {
+    RCLCPP_ERROR(get_logger(), "%s", warning.c_str());
   }
+  add.insert(add.end(), data.add_edges.begin(), data.add_edges.end());
+  remove.insert(remove.end(), data.remove_edges.begin(), data.remove_edges.end());
 }
 
 bool SemanticNavigationTasks::loadRegionsAndConnections(
@@ -415,17 +316,14 @@ bool SemanticNavigationTasks::loadRegionsAndConnections(
   std::vector<Connection> & add, std::vector<Connection> & remove)
 {
   RCLCPP_INFO(get_logger(), "Reading regions from file: %s", filename.c_str());
-  try {
-    // Read and parse the file only once, instead of once per section as
-    // getRegionsFromFile + getConnectionsFromFile would.
-    YAML::Node config = YAML::LoadFile(filename);
-    bool loaded = parseRegionsNode(config, get_logger(), regions);
-    parseConnectionsNode(config, get_logger(), add, remove);
-    return loaded;
-  } catch (const YAML::Exception & e) {
-    RCLCPP_ERROR(get_logger(), "Error reading file [%s]: %s", filename.c_str(), e.what());
-    return false;
+  auto data = loadRegionsFile(filename);
+  for (const auto & warning : data.warnings) {
+    RCLCPP_ERROR(get_logger(), "%s", warning.c_str());
   }
+  regions.insert(regions.end(), data.regions.begin(), data.regions.end());
+  add.insert(add.end(), data.add_edges.begin(), data.add_edges.end());
+  remove.insert(remove.end(), data.remove_edges.begin(), data.remove_edges.end());
+  return data.success;
 }
 
 void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
@@ -435,69 +333,13 @@ void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::Sh
     get_logger(), "Received a %d X %d map @ %.3f m/pix",
     msg->info.width, msg->info.height, msg->info.resolution);
 
-  map_ = *msg;
-
-  inflated_footprint_size_ = static_cast<int>(inflation_radius_ / map_.info.resolution) + 1;
+  goal_sampler_.setMap(*msg);
 }
 
 semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
   const nav_msgs::msg::OccupancyGrid & map, const Region & region)
 {
-  double map_min_x = map.info.origin.position.x;
-  double map_max_x = map.info.origin.position.x + map.info.width * map.info.resolution;
-  double map_min_y = map.info.origin.position.y;
-  double map_max_y = map.info.origin.position.y + map.info.height * map.info.resolution;
-
-  // Region must lie inside the map boundaries
-  // If the region is empty, the whole map is treated as the region by default
-  double bbox_min_x, bbox_max_x, bbox_min_y, bbox_max_y;
-  if (region.empty()) {
-    bbox_min_x = map_min_x;
-    bbox_max_x = map_max_x;
-    bbox_min_y = map_min_y;
-    bbox_max_y = map_max_y;
-    RCLCPP_INFO(get_logger(), "No region specified, full map is used");
-  } else {
-    // If the region is outside the map, adjust to map boundaries
-    // Determine bounding box of Region
-    bbox_min_x = std::numeric_limits<double>::infinity();
-    bbox_max_x = -std::numeric_limits<double>::infinity();
-    bbox_min_y = std::numeric_limits<double>::infinity();
-    bbox_max_y = -std::numeric_limits<double>::infinity();
-
-    // Clamp each point into the map bounds (without mutating the caller's region) before
-    // folding it into the bounding box.
-    for (const auto & p : region.polygon.points) {
-      double x = std::clamp(static_cast<double>(p.x), map_min_x, map_max_x);
-      double y = std::clamp(static_cast<double>(p.y), map_min_y, map_max_y);
-
-      if (x < bbox_min_x) {bbox_min_x = x;}
-      if (x > bbox_max_x) {bbox_max_x = x;}
-
-      if (y < bbox_min_y) {bbox_min_y = y;}
-      if (y > bbox_max_y) {bbox_max_y = y;}
-    }
-  }
-
-  // Calculate bounding box for cell array. Floor (rather than truncate) so that negative
-  // coordinates round towards the map origin instead of towards zero.
-  int cell_min_x = static_cast<int>(
-    std::floor((bbox_min_x - map_.info.origin.position.x) / map_.info.resolution));
-  int cell_max_x = static_cast<int>(
-    std::floor((bbox_max_x - map_.info.origin.position.x) / map_.info.resolution));
-  int cell_min_y = static_cast<int>(
-    std::floor((bbox_min_y - map_.info.origin.position.y) / map_.info.resolution));
-  int cell_max_y = static_cast<int>(
-    std::floor((bbox_max_y - map_.info.origin.position.y) / map_.info.resolution));
-
-  RCLCPP_INFO(
-    get_logger(), "Region bounding box (meters): (%f,%f) (%f,%f)",
-    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y);
-  RCLCPP_INFO(
-    get_logger(), "Region bounding box (cells): (%i,%i) (%i,%i)",
-    cell_min_x, cell_min_y, cell_max_x, cell_max_y);
-
-  return CellLimits(cell_min_x, cell_max_x, cell_min_y, cell_max_y);
+  return goal_sampler_.processBoundingBox(map, region);
 }
 
 void SemanticNavigationTasks::generateRandomGoalsService(
@@ -536,7 +378,7 @@ void SemanticNavigationTasks::generateRandomGoalsService(
   }
 
   // Check if we have a map
-  if (map_.data.empty()) {
+  if (goal_sampler_.getMap().data.empty()) {
     response->message = "Failed to get map at [" + map_topic_ + "]";
     RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
     response->success = false;
@@ -544,7 +386,7 @@ void SemanticNavigationTasks::generateRandomGoalsService(
   }
 
   // Process bounding box
-  auto limits = processBoundingBox(map_, current_region);
+  auto limits = processBoundingBox(goal_sampler_.getMap(), current_region);
   auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
   if (cell_min_x > cell_max_x || cell_min_y > cell_max_y) {
     response->message = "Invalid bounding box for region [" + request->region_name + "]";
@@ -718,215 +560,49 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
   unsigned int n, const Region & region, CellLimits limits, std::string orientation,
   double requested_yaw)
 {
-  std::vector<geometry_msgs::msg::PoseStamped> goals;
-
-  // Generate random goal pose
-  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
-  std::uniform_int_distribution<int> dist_x(cell_min_x, cell_max_x);       // define the range
-  std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
-  std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
-
-  // Bound the number of attempts so that an unreachable region (e.g. fully occupied, or
-  // degenerate after being clamped to the map) cannot hang the service indefinitely while it
-  // holds mutex_.
-  const unsigned int max_attempts = std::max<unsigned int>(1000u, n * 100u);
-  unsigned int attempts = 0;
-  while (goals.size() < n && attempts < max_attempts) {
-    ++attempts;
-    int cell_x = dist_x(rng_);
-    int cell_y = dist_y(rng_);
-    double yaw = dist_pi(rng_);
-
-    // Set a random position and orientation for the goal
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header.frame_id = global_frame_;
-    pose.header.stamp = this->now();
-    pose.pose.position.x = map_.info.origin.position.x + cell_x * map_.info.resolution;
-    pose.pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
-    pose.pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
-
-    // If the point lies within region and is not in collision
-    if (isPointValid(cell_x, cell_y, region, pose.pose)) {
-      // Generate orientation depending on the request (keeps the sampled yaw for RANDOM)
-      orientationFromRequest(pose.pose, region, orientation, requested_yaw);
-      RCLCPP_INFO(
-        get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)",
-        goals.size() + 1, pose.pose.position.x, pose.pose.position.y,
-        tf2::getYaw(pose.pose.orientation));
-      goals.push_back(pose);
-    }
-  }
-
-  if (goals.size() < n) {
-    RCLCPP_WARN(
-      get_logger(), "Only %zu/%u goals could be generated after %u attempts",
-      goals.size(), n, attempts);
-  }
-
-  return goals;
+  return goal_sampler_.generateRandomGoals(
+    n, region, limits, orientation, requested_yaw, border_, global_frame_, this->now());
 }
 
 int8_t SemanticNavigationTasks::cell(unsigned int x, unsigned int y)
 {
-  // Return 'unknown' if out of bounds. Valid indices are [0, width) and [0, height).
-  if (x >= map_.info.width || y >= map_.info.height) {
-    return nav2_util::OCC_GRID_UNKNOWN;
-  }
-
-  return map_.data[x + map_.info.width * y];
+  return goal_sampler_.cell(x, y);
 }
 
 bool SemanticNavigationTasks::inCollision(int x, int y)
 {
-  int x_min, x_max, y_min, y_max;
-
-  if (is_costmap_) {
-    return cell(x, y) != nav2_util::OCC_GRID_FREE;
-  }
-
-  x_min = x - inflated_footprint_size_;
-  x_max = x + inflated_footprint_size_;
-  y_min = y - inflated_footprint_size_;
-  y_max = y + inflated_footprint_size_;
-
-  for (int i = x_min; i < x_max; i++) {
-    for (int j = y_min; j < y_max; j++) {
-      if (cell(i, j) != nav2_util::OCC_GRID_FREE) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return goal_sampler_.inCollision(x, y);
 }
 
 bool SemanticNavigationTasks::isPointValid(
   int x, int y, const Region & region, const geometry_msgs::msg::Pose & pose)
 {
-  return region.isPointInside(pose.position.x, pose.position.y) &&
-         region.isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border_) &&
-         !inCollision(x, y);
+  return goal_sampler_.isPointValid(x, y, region, pose, border_);
 }
 
 void SemanticNavigationTasks::orientationFromRequest(
   geometry_msgs::msg::Pose & pose, const Region & region, std::string orientation,
   double requested_yaw)
 {
-  // Random (default) or unset orientation: keep the yaw already sampled by the caller
-  if (orientation.empty() || orientation == GenerateRandomGoals::Request::RANDOM) {
-    return;
-  }
-
-  double yaw = 0.0;
-  if (orientation == GenerateRandomGoals::Request::OUTSIDE) {
-    yaw = atan2(
-      (pose.position.y - region.centroid().y), (pose.position.x - region.centroid().x));
-  } else if (orientation == GenerateRandomGoals::Request::INSIDE) {
-    yaw = atan2(
-      (pose.position.y - region.centroid().y), (pose.position.x - region.centroid().x)) + M_PI;
-  } else if (orientation == GenerateRandomGoals::Request::REQUESTED) {
-    yaw = angles::normalize_angle(requested_yaw);
-  } else {
-    RCLCPP_WARN(
-      get_logger(), "Unknown orientation [%s], keeping the random yaw", orientation.c_str());
-    return;
-  }
-  pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
+  goal_sampler_.orientationFromRequest(pose, region, orientation, requested_yaw);
 }
 
 polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons(
   const std::vector<Region> & list)
 {
-  polygon_msgs::msg::Polygon2DCollection polygon_array;
-  polygon_array.header.frame_id = global_frame_;
-  polygon_array.header.stamp = this->now();
-
-  for (const auto & region : list) {
-    polygon_array.polygons.push_back(region.polygon);
-  }
-
-  return polygon_array;
+  return region_markers::createPolygons(list, global_frame_, this->now());
 }
 
 visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(
   const std::vector<Region> & list)
 {
-  visualization_msgs::msg::MarkerArray names_array;
-  for (const auto & region : list) {
-    // Create label
-    visualization_msgs::msg::Marker label_marker;
-    label_marker.header.frame_id = global_frame_;
-    label_marker.header.stamp = this->now();
-    label_marker.ns = "label_region";
-    label_marker.id = names_array.markers.size();
-    label_marker.text = region.name;
-    label_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-    label_marker.action = visualization_msgs::msg::Marker::ADD;
-    label_marker.pose.position.x = region.centroid().x;
-    label_marker.pose.position.y = region.centroid().y;
-    label_marker.pose.position.z = 0.05;
-    label_marker.pose.orientation.x = 0.0;
-    label_marker.pose.orientation.y = 0.0;
-    label_marker.pose.orientation.z = 0.0;
-    label_marker.pose.orientation.w = 1.0;
-    label_marker.scale.z = 0.5;
-    label_marker.color.r = 1.0;
-    label_marker.color.g = 1.0;
-    label_marker.color.b = 1.0;
-    label_marker.color.a = 1.0f;
-    names_array.markers.push_back(label_marker);
-  }
-  return names_array;
+  return region_markers::createNames(list, global_frame_, this->now());
 }
 
 visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createEdges(
   const std::vector<Region> & list, const RegionGraph & graph)
 {
-  visualization_msgs::msg::MarkerArray edges_array;
-
-  // Index the centroids by region name for a quick lookup
-  std::unordered_map<std::string, geometry_msgs::msg::Point> centroids;
-  for (const auto & region : list) {
-    if (!region.polygon.points.empty()) {
-      centroids[region.name] = region.centroid();
-    }
-  }
-
-  // Draw a single line list with one segment per undirected edge, avoiding duplicates
-  visualization_msgs::msg::Marker edge_marker;
-  edge_marker.header.frame_id = global_frame_;
-  edge_marker.header.stamp = this->now();
-  edge_marker.ns = "edges_region";
-  edge_marker.id = 0;
-  edge_marker.type = visualization_msgs::msg::Marker::LINE_LIST;
-  edge_marker.action = visualization_msgs::msg::Marker::ADD;
-  edge_marker.pose.orientation.w = 1.0;
-  edge_marker.scale.x = 0.05;
-  edge_marker.color.r = 0.0;
-  edge_marker.color.g = 1.0;
-  edge_marker.color.b = 0.0;
-  edge_marker.color.a = 1.0f;
-
-  for (const auto & region : list) {
-    auto centroid_it = centroids.find(region.name);
-    if (centroid_it == centroids.end()) {
-      continue;
-    }
-    for (const auto & neighbor : graph.getNeighbors(region.name)) {
-      // Each undirected edge is drawn only once
-      if (region.name >= neighbor) {
-        continue;
-      }
-      auto neighbor_it = centroids.find(neighbor);
-      if (neighbor_it == centroids.end()) {
-        continue;
-      }
-      edge_marker.points.push_back(centroid_it->second);
-      edge_marker.points.push_back(neighbor_it->second);
-    }
-  }
-
-  edges_array.markers.push_back(edge_marker);
-  return edges_array;
+  return region_markers::createEdges(list, graph, global_frame_, this->now());
 }
 
 }  // namespace semantic_navigation
