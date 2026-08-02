@@ -23,7 +23,7 @@ A ROS metapackage for semantic navigation. At the moment the included packages a
 
 **Author: Alberto Tudela<br />**
 
-The semantic_navigation package has been tested under [ROS2] Rolling on [Ubuntu] 24.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
+The semantic_navigation package has been tested under [ROS2] Jazzy on [Ubuntu] 24.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
 ## Installation
 
@@ -39,7 +39,7 @@ The semantic_navigation package has been tested under [ROS2] Rolling on [Ubuntu]
 To build from source, clone the latest version from the main repository into your colcon workspace and compile the package using
 ```bash
 cd colcon_workspace/src
-git clone https://gitlab.com/grupo-avispa/ros/semantic_navigation.git
+git clone https://github.com/grupo-avispa/semantic_navigation.git
 cd ../
 rosdep install -i --from-path src --rosdistro jazzy -y
 colcon build --symlink-install
