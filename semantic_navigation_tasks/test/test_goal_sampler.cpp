@@ -162,6 +162,10 @@ TEST(GoalSamplerTest, generateRandomGoalsProducesRequestedCountAndOrientation) {
   GoalSampler sampler;
   sampler.setMap(makeFreeMap(10, 10, 0.5));
   sampler.seed(42);
+  // The region sits at the map's corner: disable the inflated footprint so its cells are not
+  // all considered in collision with the outside of the map.
+  sampler.setInflationRadius(0.0);
+  sampler.setInflatedFootprintSize(0.0, 0.5);
   auto region = makeSquareRegion("r", 0.0, 0.0, 1.0);
   auto limits = sampler.processBoundingBox(sampler.getMap(), region);
 

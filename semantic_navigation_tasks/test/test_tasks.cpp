@@ -90,8 +90,8 @@ public:
   }
 
   std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
-    unsigned int n, semantic_navigation::Region region, semantic_navigation::CellLimits limits,
-    std::string orientation, double requested_yaw)
+    unsigned int n, const semantic_navigation::Region & region,
+    semantic_navigation::CellLimits limits, std::string orientation, double requested_yaw)
   {
     return SemanticNavigationTasks::generateRandomGoals(
       n, region, limits, orientation, requested_yaw);
@@ -498,9 +498,10 @@ TEST(SemanticNavigationTasksTest, inCollisionCostmap) {
   node->setInflationRadius(0.5);
   node->setInflatedFootprintSize(0.5, 0.5);
 
-  // Check if the point is in collision
+  // Check if the point is in collision. (10, 10) is out of bounds for a 10x10 map (valid
+  // indices are [0, 9]), so cell() reports it OCC_GRID_UNKNOWN, which counts as a collision.
   EXPECT_FALSE(node->inCollision(0, 0));
-  EXPECT_FALSE(node->inCollision(10, 10));
+  EXPECT_TRUE(node->inCollision(10, 10));
   EXPECT_FALSE(node->inCollision(2, 2));
   EXPECT_FALSE(node->inCollision(8, 8));
 
@@ -630,6 +631,10 @@ TEST(SemanticNavigationTasksTest, generateRandomGoals) {
 
   // Create the names
   node->createFreeMap(10, 10, 0.5);
+  // The requested region sits at the map's corner: disable the inflated footprint so its cells
+  // are not all considered in collision with the outside of the map.
+  node->setInflationRadius(0);
+  node->setInflatedFootprintSize(0, 0.5);
 
   // Process the bounding box for a 1x1 square region
   auto limits = node->processBoundingBox(node->getMap(), regions[0]);
