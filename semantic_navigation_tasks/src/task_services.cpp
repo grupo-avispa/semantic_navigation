@@ -470,10 +470,18 @@ bool SemanticNavigationTasks::getRandomRegionService(
   const std::shared_ptr<GetRandomRegion::Request>/*request*/,
   std::shared_ptr<GetRandomRegion::Response> response)
 {
-  // Generate random region
-  std::uniform_int_distribution<int> dist_region(0, region_list_.size() - 1);
+  std::lock_guard<std::recursive_mutex> cfl(mutex_);
 
-  int region_idx = dist_region(rng_);
+  if (region_list_.empty()) {
+    RCLCPP_WARN(get_logger(), "Cannot get a random region: the list of regions is empty");
+    response->region_name = GetRandomRegion::Response::UNKNOWN;
+    return false;
+  }
+
+  // Generate random region
+  std::uniform_int_distribution<size_t> dist_region(0, region_list_.size() - 1);
+
+  size_t region_idx = dist_region(rng_);
   response->region_name = region_list_[region_idx].name;
 
   RCLCPP_INFO(
