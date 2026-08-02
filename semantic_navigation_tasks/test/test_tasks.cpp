@@ -434,10 +434,11 @@ TEST(SemanticNavigationTasksTest, cellCheck) {
   // Check the cells inside the map
   EXPECT_EQ(node->cell(2, 2), nav2_util::OCC_GRID_FREE);
   EXPECT_EQ(node->cell(5, 5), nav2_util::OCC_GRID_FREE);
-  // Check the cells in the limits of the map
+  // Check the cells in the limits of the map (valid indices are [0, 9] for a 10x10 map)
   EXPECT_EQ(node->cell(0, 0), nav2_util::OCC_GRID_FREE);
-  EXPECT_EQ(node->cell(10, 10), nav2_util::OCC_GRID_FREE);
-  // Check the cells outside the limits of the map
+  EXPECT_EQ(node->cell(9, 9), nav2_util::OCC_GRID_FREE);
+  // Check the cells just outside the limits of the map
+  EXPECT_EQ(node->cell(10, 10), nav2_util::OCC_GRID_UNKNOWN);
   EXPECT_EQ(node->cell(0, 13), nav2_util::OCC_GRID_UNKNOWN);
   EXPECT_EQ(node->cell(13, 0), nav2_util::OCC_GRID_UNKNOWN);
   EXPECT_EQ(node->cell(13, 13), nav2_util::OCC_GRID_UNKNOWN);

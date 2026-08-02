@@ -619,8 +619,8 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
 
 int8_t SemanticNavigationTasks::cell(unsigned int x, unsigned int y)
 {
-  // Return 'unknown' if out of bounds
-  if (x > map_.info.width || y > map_.info.height) {
+  // Return 'unknown' if out of bounds. Valid indices are [0, width) and [0, height).
+  if (x >= map_.info.width || y >= map_.info.height) {
     return nav2_util::OCC_GRID_UNKNOWN;
   }
 
