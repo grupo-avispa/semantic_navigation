@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #include <yaml-cpp/yaml.h>
+#include <cmath>
 #include <limits>
 
 // ROS
@@ -358,14 +359,14 @@ void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::Sh
 semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
   const nav_msgs::msg::OccupancyGrid & map, Region region)
 {
-  int map_min_x = map.info.origin.position.x;
-  int map_max_x = map.info.origin.position.x + map.info.width * map.info.resolution;
-  int map_min_y = map.info.origin.position.y;
-  int map_max_y = map.info.origin.position.y + map.info.height * map.info.resolution;
+  double map_min_x = map.info.origin.position.x;
+  double map_max_x = map.info.origin.position.x + map.info.width * map.info.resolution;
+  double map_min_y = map.info.origin.position.y;
+  double map_max_y = map.info.origin.position.y + map.info.height * map.info.resolution;
 
   // Region must lie inside the map boundaries
   // If the region is empty, the whole map is treated as the region by default
-  float bbox_min_x, bbox_max_x, bbox_min_y, bbox_max_y;
+  double bbox_min_x, bbox_max_x, bbox_min_y, bbox_max_y;
   if (region.empty()) {
     bbox_min_x = map_min_x;
     bbox_max_x = map_max_x;
@@ -395,15 +396,16 @@ semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
     }
   }
 
-  // Calculate bounding box for cell array
-  int cell_min_x =
-    static_cast<int>((bbox_min_x - map_.info.origin.position.x) / map_.info.resolution);
-  int cell_max_x =
-    static_cast<int>((bbox_max_x - map_.info.origin.position.x) / map_.info.resolution);
-  int cell_min_y =
-    static_cast<int>((bbox_min_y - map_.info.origin.position.y) / map_.info.resolution);
-  int cell_max_y =
-    static_cast<int>((bbox_max_y - map_.info.origin.position.y) / map_.info.resolution);
+  // Calculate bounding box for cell array. Floor (rather than truncate) so that negative
+  // coordinates round towards the map origin instead of towards zero.
+  int cell_min_x = static_cast<int>(
+    std::floor((bbox_min_x - map_.info.origin.position.x) / map_.info.resolution));
+  int cell_max_x = static_cast<int>(
+    std::floor((bbox_max_x - map_.info.origin.position.x) / map_.info.resolution));
+  int cell_min_y = static_cast<int>(
+    std::floor((bbox_min_y - map_.info.origin.position.y) / map_.info.resolution));
+  int cell_max_y = static_cast<int>(
+    std::floor((bbox_max_y - map_.info.origin.position.y) / map_.info.resolution));
 
   RCLCPP_INFO(
     get_logger(), "Region bounding box (meters): (%f,%f) (%f,%f)",
