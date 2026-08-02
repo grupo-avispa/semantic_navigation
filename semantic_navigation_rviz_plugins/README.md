@@ -18,12 +18,9 @@ For the Semantic Annotation Tool:
 * Open the plugin in Rviz2 by clicking "+" in the tool panel and select "Semantic Annotation".
 * In the Displays panel, add a display of polygon_rviz_plugins/Polygons type and make sure the name of the topic is "/polygons".
 * In the Displays panel, add a display of rviz/MarkerArray type and make sure the name of the topic is "/names".
-* In the Tool properties panel, you can change the inflation radius, write the regions names splitted by a comma (,) and the YAML configuration filename. It will store in the config folder of semantic_goals_generator package.
+* In the Tool properties panel, you can change the inflation radius, write the regions names splitted by a comma (,), the YAML configuration filename and the save path (a writable directory; defaults to your home folder). The file is saved as `<save path>/<filename>.yaml`.
 * Click with the left button on the map to add new points to a polygon.
 * Click with the right button to start a new polygon.
 * Click with the middle button to erase all polygons, save them and start over.
-
-## Future work
-- [ ] Use yaml_cpp_vendor to save the regions in a YAML file (specialize the YAML::convert<> template class).
 
 [Rviz2]: https://github.com/ros2/rviz
