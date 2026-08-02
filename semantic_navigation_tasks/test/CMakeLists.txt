@@ -37,6 +37,22 @@ target_link_libraries(test_region_graph
   ament_index_cpp::ament_index_cpp
 )
 
+# Test for the goal sampler (pure domain logic against a synthetic map, no rclcpp::init needed)
+ament_add_gtest(test_goal_sampler
+  test_goal_sampler.cpp
+)
+target_link_libraries(test_goal_sampler
+  ${library_name}
+)
+
+# Test for the region visualization markers (pure domain logic, no rclcpp::init needed)
+ament_add_gtest(test_region_markers
+  test_region_markers.cpp
+)
+target_link_libraries(test_region_markers
+  ${library_name}
+)
+
 # Test for tasks
 ament_add_gtest(test_tasks
   test_tasks.cpp
