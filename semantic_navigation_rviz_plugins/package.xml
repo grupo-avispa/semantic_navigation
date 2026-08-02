@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>semantic_navigation_rviz_plugins</name>
-  <version>3.1.2</version>
+  <version>3.4.0</version>
   <description>Panel for Rviz2 to send the robot to a region and tool to save regions in a YAML file.</description>
   <maintainer email="ajtudela@gmail.com">Alberto Tudela</maintainer>
   <license>Apache-2.0</license>
@@ -21,6 +21,7 @@
   <depend>semantic_navigation_msgs</depend>
   <depend>semantic_navigation_tasks</depend>
   <depend>visualization_msgs</depend>
+  <depend>yaml_cpp_vendor</depend>
   <exec_depend>libqt6-core</exec_depend>
   <exec_depend>libqt6-gui</exec_depend>
   <exec_depend>libqt6-opengl</exec_depend>

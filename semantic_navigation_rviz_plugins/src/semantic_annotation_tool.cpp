@@ -13,18 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// C++
-#include <fstream>
-
-// OGRE
+// OGRE, Qt and YAML: cpplint treats these as "C system" headers (they are not in its list of
+// known C++ standard headers), which must come before any C++ system header such as <fstream>
+// below, or it flags a build/include_order violation.
 #include <OgrePlane.h>
 #include <OgreSceneNode.h>
 #include <OgreSceneManager.h>
 #include <OgreEntity.h>
 #include <OgreViewport.h>
+#include <QDir>
+#include <yaml-cpp/yaml.h>
+
+// C++
+#include <fstream>
 
 // ROS
-#include "ament_index_cpp/get_package_share_path.hpp"
 #include "nav2_util/string_utils.hpp"
 #include "rviz_common/display_context.hpp"
 #include "rviz_common/properties/vector_property.hpp"
@@ -54,7 +57,11 @@ SemanticAnnotationTool::SemanticAnnotationTool()
     getPropertyContainer(), SLOT(update_property()), this);
   filename_property_ = new rviz_common::properties::StringProperty(
     "YAML config filename", QString::fromStdString("default"),
-    "Filename to save the regions located in the share folder.",
+    "Filename (without extension) used to save the regions.",
+    getPropertyContainer(), SLOT(update_property()), this);
+  save_path_property_ = new rviz_common::properties::StringProperty(
+    "Save path", QDir::homePath(),
+    "Writable directory where the regions YAML file is saved.",
     getPropertyContainer(), SLOT(update_property()), this);
 }
 
@@ -76,6 +83,7 @@ void SemanticAnnotationTool::update_property()
 {
   inflation_radius_ = inflation_property_->getFloat();
   filename_ = filename_property_->getStdString();
+  save_path_ = save_path_property_->getStdString();
 
   // Convert string "list" to vector of strings
   std::string name_list = names_property_->getStdString();
@@ -89,7 +97,11 @@ void SemanticAnnotationTool::update_property()
 
 void SemanticAnnotationTool::activate()
 {
-  onInitialize();
+  // Reset the drawing state and reload the properties, but do not recreate ros_node_ or the
+  // publishers: onInitialize() already created them once when the tool was loaded, and RViz
+  // calls activate() again every time the tool is reselected in the toolbar.
+  new_polygon_ = true;
+  update_property();
   RCLCPP_INFO(ros_node_->get_logger(), "Semantic annotation tool started!");
 }
 
@@ -152,21 +164,40 @@ int SemanticAnnotationTool::processMouseEvent(rviz_common::ViewportMouseEvent & 
 
 void SemanticAnnotationTool::save_polygon(const std::string filename)
 {
-  std::filesystem::path pkg_path =
-    ament_index_cpp::get_package_share_path("semantic_navigation_tasks");
-  std::string filepath = std::string(pkg_path) + "/params/" + filename + ".yaml";
-  std::ofstream regionfile(filepath, std::ofstream::app);
-
-  regionfile << "regions:" << std::endl;
+  // Serialize the whole collection at once with yaml-cpp, instead of hand-writing YAML text with
+  // std::ofstream::app: appending meant every save added another "regions:" block, producing a
+  // file with duplicate top-level keys that getRegionsFromFile() cannot parse back correctly.
+  YAML::Emitter out;
+  out << YAML::BeginMap;
+  out << YAML::Key << "regions" << YAML::Value << YAML::BeginSeq;
   for (const auto & region : region_list_) {
-    regionfile << "  - {name: '" << region.name << "', points: [";
-    auto points = region.polygon.points;
-    for (unsigned int p = 0; p < points.size() - 1; p++) {
-      regionfile << "[" << points[p].x << ", " << points[p].y << "], ";
+    if (region.empty()) {
+      RCLCPP_WARN(
+        ros_node_->get_logger(), "Skipping region [%s] with no points", region.name.c_str());
+      continue;
     }
-    regionfile << "[" << points.back().x << ", " << points.back().y << "]]}" << std::endl;
+    out << YAML::BeginMap;
+    out << YAML::Key << "name" << YAML::Value << region.name;
+    out << YAML::Key << "points" << YAML::Value << YAML::BeginSeq;
+    for (const auto & point : region.polygon.points) {
+      out << YAML::Flow << YAML::BeginSeq << point.x << point.y << YAML::EndSeq;
+    }
+    out << YAML::EndSeq;
+    out << YAML::EndMap;
   }
-  regionfile << "\n";
+  out << YAML::EndSeq;
+  out << YAML::EndMap;
+
+  // Write into a writable, user-configurable directory instead of another package's installed
+  // share/ folder, which is often read-only and is not the source tree anyway.
+  std::string filepath = save_path_ + "/" + filename + ".yaml";
+  std::ofstream regionfile(filepath, std::ofstream::trunc);
+  if (!regionfile.is_open()) {
+    RCLCPP_ERROR(
+      ros_node_->get_logger(), "Failed to open [%s] for writing the regions", filepath.c_str());
+    return;
+  }
+  regionfile << out.c_str() << std::endl;
   regionfile.close();
 
   RCLCPP_INFO(ros_node_->get_logger(), "Regions saved in %s", filepath.c_str());

@@ -98,8 +98,8 @@ protected:
 
 private:
   /**
-   * @brief Save the polygons in a YAML file.
-   * @param filename Name of the file.
+   * @brief Save the polygons in a YAML file under save_path_, overwriting any previous content.
+   * @param filename Name of the file (without extension).
    */
   void save_polygon(const std::string filename);
 
@@ -114,12 +114,15 @@ private:
   rviz_common::properties::FloatProperty * inflation_property_;
   rviz_common::properties::StringProperty * names_property_;
   rviz_common::properties::StringProperty * filename_property_;
+  rviz_common::properties::StringProperty * save_path_property_;
 
   std::vector<semantic_navigation::Region> region_list_;
   std::vector<std::string> names_;
   bool new_polygon_;
   float inflation_radius_;
   std::string filename_;
+  // Writable directory where save_polygon() writes filename_ + ".yaml"
+  std::string save_path_;
 };
 
 }  // namespace semantic_navigation_rviz_plugins

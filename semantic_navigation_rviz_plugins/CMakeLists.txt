@@ -68,6 +68,8 @@ find_package(rviz_rendering REQUIRED)
 find_package(semantic_navigation_msgs REQUIRED)
 find_package(semantic_navigation_tasks REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # In Kilted and older distros, rviz with Qt6 is not supported
 if(TARGET Qt5::Core)
@@ -148,6 +150,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE
   nav2_util::nav2_util_core
   polygon_utils::polygon_utils
+  yaml-cpp::yaml-cpp
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
