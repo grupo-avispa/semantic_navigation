@@ -104,15 +104,17 @@ CellLimits GoalSampler::processBoundingBox(
   }
 
   // Calculate bounding box for cell array. Floor (rather than truncate) so that negative
-  // coordinates round towards the map origin instead of towards zero.
+  // coordinates round towards the map origin instead of towards zero. Use the map argument
+  // throughout (not the map_ member) so this method gives a consistent answer regardless of
+  // whether it is called with the currently stored map or a different, e.g. synthetic, one.
   int cell_min_x = static_cast<int>(
-    std::floor((bbox_min_x - map_.info.origin.position.x) / map_.info.resolution));
+    std::floor((bbox_min_x - map.info.origin.position.x) / map.info.resolution));
   int cell_max_x = static_cast<int>(
-    std::floor((bbox_max_x - map_.info.origin.position.x) / map_.info.resolution));
+    std::floor((bbox_max_x - map.info.origin.position.x) / map.info.resolution));
   int cell_min_y = static_cast<int>(
-    std::floor((bbox_min_y - map_.info.origin.position.y) / map_.info.resolution));
+    std::floor((bbox_min_y - map.info.origin.position.y) / map.info.resolution));
   int cell_max_y = static_cast<int>(
-    std::floor((bbox_max_y - map_.info.origin.position.y) / map_.info.resolution));
+    std::floor((bbox_max_y - map.info.origin.position.y) / map.info.resolution));
 
   RCLCPP_INFO(
     logger_, "Region bounding box (meters): (%f,%f) (%f,%f)",

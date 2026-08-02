@@ -98,6 +98,9 @@ public:
   /**
    * @brief Process the bounding box of a region inside the map.
    *
+   * Uses only @p map (not the stored map_), so the result is consistent whether or not @p map
+   * is the same object last passed to setMap().
+   *
    * @param map Map.
    * @param region Region of interest.
    * @return CellLimits Limits of the cells.
