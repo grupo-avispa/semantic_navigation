@@ -13,22 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <yaml-cpp/yaml.h>
-#include <limits>
+#include <random>
 
 // ROS
-#include "angles/angles.h"
 #include "tf2/utils.hpp"
-#include "tf2/LinearMath/Quaternion.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
-#include "nav2_util/occ_grid_values.hpp"
 #include "nav2_ros_common/node_utils.hpp"
 #include "geometry_msgs/msg/pose.hpp"
-#include "geometry_msgs/msg/polygon_stamped.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 
-// Semantic Goals
+// Semantic Navigation
+#include "semantic_navigation_tasks/region_markers.hpp"
+#include "semantic_navigation_tasks/regions_loader.hpp"
 #include "semantic_navigation_tasks/task_services.hpp"
 
 namespace semantic_navigation
@@ -38,6 +35,7 @@ using std::placeholders::_1, std::placeholders::_2, std::placeholders::_3;
 
 SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & options)
 : nav2::LifecycleNode("semantic_navigation_tasks", "", options),
+  goal_sampler_(get_logger()),
   border_(0.0)
 {
   RCLCPP_INFO(get_logger(), "Creating Semantic Navigation Tasks");
@@ -46,13 +44,15 @@ SemanticNavigationTasks::SemanticNavigationTasks(const rclcpp::NodeOptions & opt
 nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycle::State &)
 {
   // BOOLEAN PARAMS ..........................................................................
+  bool is_costmap = false;
   nav2::declare_parameter_if_not_declared(
     this, "is_costmap",
     rclcpp::ParameterValue(false), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Is the map a costmap?"));
-  this->get_parameter("is_costmap", is_costmap_);
+  this->get_parameter("is_costmap", is_costmap);
+  goal_sampler_.setIsCostmap(is_costmap);
   RCLCPP_INFO(
-    get_logger(), "The parameter is_costmap is set to: [%s]", is_costmap_ ? "true" : "false");
+    get_logger(), "The parameter is_costmap is set to: [%s]", is_costmap ? "true" : "false");
 
   nav2::declare_parameter_if_not_declared(
     this, "full_map",
@@ -71,13 +71,15 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
     get_logger(), "The parameter auto_connect is set to: [%s]", auto_connect_ ? "true" : "false");
 
   // FLOAT PARAMS ..........................................................................
+  double inflation_radius = 0.5;
   nav2::declare_parameter_if_not_declared(
     this, "inflation_radius",
     rclcpp::ParameterValue(0.5), rcl_interfaces::msg::ParameterDescriptor()
     .set__description("Inflation radius for the robot footprint"));
-  this->get_parameter("inflation_radius", inflation_radius_);
+  this->get_parameter("inflation_radius", inflation_radius);
+  goal_sampler_.setInflationRadius(inflation_radius);
   RCLCPP_INFO(
-    get_logger(), "The parameter inflation_radius is set to: [%f]", inflation_radius_);
+    get_logger(), "The parameter inflation_radius is set to: [%f]", inflation_radius);
 
   nav2::declare_parameter_if_not_declared(
     this, "transform_tolerance",
@@ -137,6 +139,16 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
   RCLCPP_INFO(
     get_logger(), "The parameter map_topic is set to: [%s]", map_topic_.c_str());
 
+  nav2::declare_parameter_if_not_declared(
+    this, "global_frame",
+    rclcpp::ParameterValue("map"), rcl_interfaces::msg::ParameterDescriptor()
+    .set__description(
+      "TF frame used as header.frame_id for published messages and goals. Independent of "
+      "map_topic, which may be remapped to a topic whose name does not match a TF frame."));
+  this->get_parameter("global_frame", global_frame_);
+  RCLCPP_INFO(
+    get_logger(), "The parameter global_frame is set to: [%s]", global_frame_.c_str());
+
   std::string regions_filename;
   nav2::declare_parameter_if_not_declared(
     this, "regions_filename",
@@ -146,14 +158,13 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
   RCLCPP_INFO(
     get_logger(), "The parameter regions_filename is set to: [%s]", regions_filename.c_str());
 
-  if (!getRegionsFromFile(regions_filename, region_list_)) {
+  std::vector<Connection> add_edges, remove_edges;
+  if (!loadRegionsAndConnections(regions_filename, region_list_, add_edges, remove_edges)) {
     RCLCPP_ERROR(get_logger(), "The list of regions could not be found");
     return nav2::CallbackReturn::FAILURE;
   }
 
   // Build the connectivity graph between the regions
-  std::vector<Connection> add_edges, remove_edges;
-  getConnectionsFromFile(regions_filename, add_edges, remove_edges);
   region_graph_.build(
     region_list_, connectivity_threshold_, auto_connect_, add_edges, remove_edges);
   RCLCPP_INFO(
@@ -200,6 +211,12 @@ nav2::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lifecycl
   // TF Buffer and Listener
   tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf2_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf2_buffer_, this, true);
+
+  // Seed the random number generators once, instead of on every service call. rng_ and
+  // goal_sampler_'s internal generator are independent, so each gets its own draw of entropy.
+  std::random_device rd;
+  rng_.seed(rd());
+  goal_sampler_.seed(rd());
 
   return nav2::CallbackReturn::SUCCESS;
 }
@@ -274,69 +291,39 @@ bool SemanticNavigationTasks::getRegionsFromFile(
   const std::string & filename, std::vector<semantic_navigation::Region> & regions)
 {
   RCLCPP_INFO(get_logger(), "Reading regions from file: %s", filename.c_str());
-  bool success = false;
-  try {
-    YAML::Node config = YAML::LoadFile(filename);
-    // Get the list of regions
-    if (config["regions"]) {
-      for (const auto & region : config["regions"]) {
-        // Extract name and points
-        if (region["name"] && region["points"]) {
-          Region new_region;
-          new_region.name = region["name"].as<std::string>();
-          for (const auto & point : region["points"]) {
-            polygon_msgs::msg::Point2D new_point;
-            new_point.x = point[0].as<float>();
-            new_point.y = point[1].as<float>();
-            new_region.polygon.points.push_back(new_point);
-          }
-          regions.push_back(new_region);
-          success = true;
-        } else {
-          RCLCPP_ERROR(get_logger(), "Region is not well defined");
-        }
-      }
-    } else {
-      RCLCPP_ERROR(get_logger(), "No regions found in file [%s]", filename.c_str());
-    }
-  } catch (const YAML::Exception & e) {
-    RCLCPP_ERROR(get_logger(), "Error reading file [%s]", filename.c_str());
+  auto data = loadRegionsFile(filename);
+  for (const auto & warning : data.warnings) {
+    RCLCPP_ERROR(get_logger(), "%s", warning.c_str());
   }
-  return success;
+  regions.insert(regions.end(), data.regions.begin(), data.regions.end());
+  return data.success;
 }
 
 void SemanticNavigationTasks::getConnectionsFromFile(
   const std::string & filename, std::vector<Connection> & add,
   std::vector<Connection> & remove)
 {
-  try {
-    YAML::Node config = YAML::LoadFile(filename);
-    // The connections section is optional
-    if (!config["connections"]) {
-      return;
-    }
-
-    // Lambda to parse a list of pairs of region names into a list of connections
-    auto parse_edges = [this](const YAML::Node & node, std::vector<Connection> & edges) {
-        for (const auto & edge : node) {
-          if (edge.size() == 2) {
-            edges.emplace_back(edge[0].as<std::string>(), edge[1].as<std::string>());
-          } else {
-            RCLCPP_ERROR(get_logger(), "A connection must be a pair of region names");
-          }
-        }
-      };
-
-    const auto & connections = config["connections"];
-    if (connections["add"]) {
-      parse_edges(connections["add"], add);
-    }
-    if (connections["remove"]) {
-      parse_edges(connections["remove"], remove);
-    }
-  } catch (const YAML::Exception &) {
-    RCLCPP_ERROR(get_logger(), "Error reading connections from file [%s]", filename.c_str());
+  auto data = loadRegionsFile(filename);
+  for (const auto & warning : data.warnings) {
+    RCLCPP_ERROR(get_logger(), "%s", warning.c_str());
   }
+  add.insert(add.end(), data.add_edges.begin(), data.add_edges.end());
+  remove.insert(remove.end(), data.remove_edges.begin(), data.remove_edges.end());
+}
+
+bool SemanticNavigationTasks::loadRegionsAndConnections(
+  const std::string & filename, std::vector<semantic_navigation::Region> & regions,
+  std::vector<Connection> & add, std::vector<Connection> & remove)
+{
+  RCLCPP_INFO(get_logger(), "Reading regions from file: %s", filename.c_str());
+  auto data = loadRegionsFile(filename);
+  for (const auto & warning : data.warnings) {
+    RCLCPP_ERROR(get_logger(), "%s", warning.c_str());
+  }
+  regions.insert(regions.end(), data.regions.begin(), data.regions.end());
+  add.insert(add.end(), data.add_edges.begin(), data.add_edges.end());
+  remove.insert(remove.end(), data.remove_edges.begin(), data.remove_edges.end());
+  return data.success;
 }
 
 void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
@@ -346,72 +333,16 @@ void SemanticNavigationTasks::mapCallback(const nav_msgs::msg::OccupancyGrid::Sh
     get_logger(), "Received a %d X %d map @ %.3f m/pix",
     msg->info.width, msg->info.height, msg->info.resolution);
 
-  map_ = *msg;
-
-  inflated_footprint_size_ = static_cast<int>(inflation_radius_ / map_.info.resolution) + 1;
+  goal_sampler_.setMap(*msg);
 }
 
 semantic_navigation::CellLimits SemanticNavigationTasks::processBoundingBox(
-  const nav_msgs::msg::OccupancyGrid & map, Region region)
+  const nav_msgs::msg::OccupancyGrid & map, const Region & region)
 {
-  int map_min_x = map.info.origin.position.x;
-  int map_max_x = map.info.origin.position.x + map.info.width * map.info.resolution;
-  int map_min_y = map.info.origin.position.y;
-  int map_max_y = map.info.origin.position.y + map.info.height * map.info.resolution;
-
-  // Region must lie inside the map boundaries
-  // If the region is empty, the whole map is treated as the region by default
-  float bbox_min_x, bbox_max_x, bbox_min_y, bbox_max_y;
-  if (region.empty()) {
-    bbox_min_x = map_min_x;
-    bbox_max_x = map_max_x;
-    bbox_min_y = map_min_y;
-    bbox_max_y = map_max_y;
-    RCLCPP_INFO(get_logger(), "No region specified, full map is used");
-  } else {
-    // If the region is outside the map, adjust to map boundaries
-    // Determine bounding box of Region
-    bbox_min_x = std::numeric_limits<double>::infinity();
-    bbox_max_x = -std::numeric_limits<double>::infinity();
-    bbox_min_y = std::numeric_limits<double>::infinity();
-    bbox_max_y = -std::numeric_limits<double>::infinity();
-
-    for (auto & p : region.polygon.points) {
-      if (p.x < map_min_x) {p.x = map_min_x;}
-      if (p.x > map_max_x) {p.x = map_max_x;}
-
-      if (p.x < bbox_min_x) {bbox_min_x = p.x;}
-      if (p.x > bbox_max_x) {bbox_max_x = p.x;}
-
-      if (p.y < map_min_y) {p.y = map_min_y;}
-      if (p.y > map_max_y) {p.y = map_max_y;}
-
-      if (p.y < bbox_min_y) {bbox_min_y = p.y;}
-      if (p.y > bbox_max_y) {bbox_max_y = p.y;}
-    }
-  }
-
-  // Calculate bounding box for cell array
-  int cell_min_x =
-    static_cast<int>((bbox_min_x - map_.info.origin.position.x) / map_.info.resolution);
-  int cell_max_x =
-    static_cast<int>((bbox_max_x - map_.info.origin.position.x) / map_.info.resolution);
-  int cell_min_y =
-    static_cast<int>((bbox_min_y - map_.info.origin.position.y) / map_.info.resolution);
-  int cell_max_y =
-    static_cast<int>((bbox_max_y - map_.info.origin.position.y) / map_.info.resolution);
-
-  RCLCPP_INFO(
-    get_logger(), "Region bounding box (meters): (%f,%f) (%f,%f)",
-    bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y);
-  RCLCPP_INFO(
-    get_logger(), "Region bounding box (cells): (%i,%i) (%i,%i)",
-    cell_min_x, cell_min_y, cell_max_x, cell_max_y);
-
-  return CellLimits(cell_min_x, cell_max_x, cell_min_y, cell_max_y);
+  return goal_sampler_.processBoundingBox(map, region);
 }
 
-bool SemanticNavigationTasks::generateRandomGoalsService(
+void SemanticNavigationTasks::generateRandomGoalsService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GenerateRandomGoals::Request> request,
   std::shared_ptr<GenerateRandomGoals::Response> response)
@@ -423,7 +354,13 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
     request->n, request->region_name.c_str());
 
   // Get arguments
-  uint64_t n = request->n;
+  if (request->n <= 0) {
+    response->message = "The number of goals requested must be greater than zero";
+    RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
+  }
+  unsigned int n = static_cast<unsigned int>(request->n);
   for (const auto & region : region_list_) {
     if (region.name == request->region_name) {
       current_region = region;
@@ -434,55 +371,76 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
 
   // If the requested region is empty and we don't want to use the full map
   if (current_region.empty() && !full_map_) {
-    RCLCPP_FATAL(
-      get_logger(), "The requested region [%s], could not be found in the list",
-      request->region_name.c_str());
-    return false;
+    response->message = "The requested region [" + request->region_name +
+      "], could not be found in the list";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
   }
 
   // Check if we have a map
-  if (map_.data.empty()) {
-    RCLCPP_FATAL(get_logger(), "Failed to get map at [%s]", map_topic_.c_str());
-    return false;
+  if (goal_sampler_.getMap().data.empty()) {
+    response->message = "Failed to get map at [" + map_topic_ + "]";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
   }
 
   // Process bounding box
-  auto limits = processBoundingBox(map_, current_region);
+  auto limits = processBoundingBox(goal_sampler_.getMap(), current_region);
+  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
+  if (cell_min_x > cell_max_x || cell_min_y > cell_max_y) {
+    response->message = "Invalid bounding box for region [" + request->region_name + "]";
+    RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
+  }
 
   // Generate response
-  response->goals = generateRandomGoals(n, current_region, limits);
+  auto goals = generateRandomGoals(
+    n, current_region, limits, request->orientation, static_cast<double>(request->yaw));
+  response->goals.header.frame_id = global_frame_;
+  response->goals.header.stamp = this->now();
+  response->goals.goals = goals;
+  response->success = true;
 
   // Publish goals
   geometry_msgs::msg::PoseArray goals_array;
-  goals_array.header.frame_id = map_topic_;
+  goals_array.header.frame_id = global_frame_;
   goals_array.header.stamp = this->now();
-  for (const auto & goal : response->goals.goals) {
+  for (const auto & goal : goals) {
     goals_array.poses.push_back(goal.pose);
   }
   goals_pub_->publish(goals_array);
-  return true;
 }
 
-bool SemanticNavigationTasks::getRandomRegionService(
+void SemanticNavigationTasks::getRandomRegionService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GetRandomRegion::Request>/*request*/,
   std::shared_ptr<GetRandomRegion::Response> response)
 {
-  // Generate random region
-  std::random_device rd;       // obtain a random number from hardware
-  std::mt19937 gen(rd());       // seed the generator
-  std::uniform_int_distribution<int> dist_region(0, region_list_.size());       // define the range
+  std::lock_guard<std::recursive_mutex> cfl(mutex_);
 
-  int region_idx = dist_region(gen);
+  if (region_list_.empty()) {
+    response->message = "Cannot get a random region: the list of regions is empty";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->region_name = GetRandomRegion::Response::UNKNOWN;
+    response->success = false;
+    return;
+  }
+
+  // Generate random region
+  std::uniform_int_distribution<size_t> dist_region(0, region_list_.size() - 1);
+
+  size_t region_idx = dist_region(rng_);
   response->region_name = region_list_[region_idx].name;
+  response->success = true;
 
   RCLCPP_INFO(
     get_logger(), "Incoming random region service request: [%s]", response->region_name.c_str());
-
-  return true;
 }
 
-bool SemanticNavigationTasks::getRegionNameService(
+void SemanticNavigationTasks::getRegionNameService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GetRegionName::Request> request,
   std::shared_ptr<GetRegionName::Response> response)
@@ -492,17 +450,19 @@ bool SemanticNavigationTasks::getRegionNameService(
     request->position.point.x, request->position.point.y,
     request->position.header.frame_id.c_str());
 
-  // If the request frame is different than the map frame, transform the point
+  // If the request frame is different than the global frame, transform the point
   geometry_msgs::msg::PointStamped point_in_map_frame;
-  if (request->position.header.frame_id != map_topic_) {
+  if (request->position.header.frame_id != global_frame_) {
     try {
       point_in_map_frame = tf2_buffer_->transform(
-        request->position, map_topic_, tf2::durationFromSec(transform_tolerance_));
+        request->position, global_frame_, tf2::durationFromSec(transform_tolerance_));
     } catch (tf2::TransformException & ex) {
-      RCLCPP_FATAL(
-        get_logger(), "Failed to transform point from frame [%s] to frame [%s]: %s",
-        request->position.header.frame_id.c_str(), map_topic_.c_str(), ex.what());
-      return false;
+      response->message = std::string("Failed to transform point from frame [") +
+        request->position.header.frame_id + "] to frame [" + global_frame_ + "]: " + ex.what();
+      RCLCPP_ERROR(get_logger(), "%s", response->message.c_str());
+      response->region_name = GetRegionName::Response::UNKNOWN;
+      response->success = false;
+      return;
     }
   } else {
     point_in_map_frame = request->position;
@@ -512,18 +472,20 @@ bool SemanticNavigationTasks::getRegionNameService(
   for (const auto & region : region_list_) {
     if (region.isPointInside(point_in_map_frame.point.x, point_in_map_frame.point.y)) {
       response->region_name = region.name;
-      return true;
+      response->success = true;
+      return;
     }
   }
 
+  // The point does not lie in any region: a normal, expected outcome, not a service failure
   response->region_name = GetRegionName::Response::UNKNOWN;
-  RCLCPP_FATAL(get_logger(), "Failed to get semantic position");
-  return false;
+  response->success = true;
+  RCLCPP_WARN(get_logger(), "Failed to get semantic position: point is outside all regions");
 }
 
-bool SemanticNavigationTasks::listAllRegionsService(
+void SemanticNavigationTasks::listAllRegionsService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
-  const std::shared_ptr<ListAllRegions::Request>/*request*/,
+  const std::shared_ptr<ListAllRegions::Request>/* request */,
   std::shared_ptr<ListAllRegions::Response> response)
 {
   RCLCPP_INFO(get_logger(), "Incoming regions service request");
@@ -532,11 +494,10 @@ bool SemanticNavigationTasks::listAllRegionsService(
   for (const auto & region : region_list_) {
     response->region_names.push_back(region.name);
   }
-
-  return true;
+  response->success = true;
 }
 
-bool SemanticNavigationTasks::getAdjacentRegionsService(
+void SemanticNavigationTasks::getAdjacentRegionsService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GetAdjacentRegions::Request> request,
   std::shared_ptr<GetAdjacentRegions::Response> response)
@@ -545,12 +506,18 @@ bool SemanticNavigationTasks::getAdjacentRegionsService(
     get_logger(), "Incoming adjacent regions service request for region [%s]",
     request->region_name.c_str());
 
-  response->adjacent_regions = region_graph_.getNeighbors(request->region_name);
+  if (!region_graph_.hasRegion(request->region_name)) {
+    response->message = "Unknown region [" + request->region_name + "]";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
+  }
 
-  return true;
+  response->adjacent_regions = region_graph_.getNeighbors(request->region_name);
+  response->success = true;
 }
 
-bool SemanticNavigationTasks::areRegionsConnectedService(
+void SemanticNavigationTasks::areRegionsConnectedService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<AreRegionsConnected::Request> request,
   std::shared_ptr<AreRegionsConnected::Response> response)
@@ -559,12 +526,21 @@ bool SemanticNavigationTasks::areRegionsConnectedService(
     get_logger(), "Incoming connectivity service request between [%s] and [%s]",
     request->region_a.c_str(), request->region_b.c_str());
 
-  response->connected = region_graph_.areConnected(request->region_a, request->region_b);
+  if (!region_graph_.hasRegion(request->region_a) ||
+    !region_graph_.hasRegion(request->region_b))
+  {
+    response->message = "Unknown region: [" + request->region_a + "] or [" +
+      request->region_b + "]";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
+  }
 
-  return true;
+  response->connected = region_graph_.areConnected(request->region_a, request->region_b);
+  response->success = true;
 }
 
-bool SemanticNavigationTasks::getRegionRouteService(
+void SemanticNavigationTasks::getRegionRouteService(
   const std::shared_ptr<rmw_request_id_t>/*request_header*/,
   const std::shared_ptr<GetRegionRoute::Request> request,
   std::shared_ptr<GetRegionRoute::Response> response)
@@ -573,207 +549,67 @@ bool SemanticNavigationTasks::getRegionRouteService(
     get_logger(), "Incoming route service request from [%s] to [%s]",
     request->start_region.c_str(), request->goal_region.c_str());
 
-  response->route = region_graph_.findRoute(request->start_region, request->goal_region);
-
-  return true;
-}
-
-nav_msgs::msg::Goals SemanticNavigationTasks::generateRandomGoals(
-  unsigned int n, Region region, CellLimits limits)
-{
-  nav_msgs::msg::Goals goals;
-  goals.header.frame_id = map_topic_;
-  goals.header.stamp = this->now();
-
-  // Generate random goal pose
-  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
-  std::random_device rd;       // obtain a random number from hardware
-  std::mt19937 gen(rd());       // seed the generator
-  std::uniform_int_distribution<int> dist_x(cell_min_x, cell_max_x);       // define the range
-  std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
-  std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
-
-  unsigned int count = 0;
-  while (goals.goals.size() < n) {
-    count += 1;
-    int cell_x = dist_x(gen);
-    int cell_y = dist_y(gen);
-    double yaw = dist_pi(gen);
-
-    // Set a random position and orientation for the goal
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header.frame_id = map_topic_;
-    pose.header.stamp = this->now();
-    pose.pose.position.x = map_.info.origin.position.x + cell_x * map_.info.resolution;
-    pose.pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
-    pose.pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
-
-    // If the point lies within region and is not in collision
-    if (isPointValid(cell_x, cell_y, region, pose.pose)) {
-      // Generate orientation depending on the request
-      orientationFromRequest(pose.pose, region, GenerateRandomGoals::Request::INSIDE, 0.0);
-      RCLCPP_INFO(
-        get_logger(), "Pose %lu (x: %f, y: %f, yaw: %f)",
-        goals.goals.size() + 1, pose.pose.position.x, pose.pose.position.y,
-        tf2::getYaw(pose.pose.orientation));
-      goals.goals.push_back(pose);
-    }
+  if (!region_graph_.hasRegion(request->start_region) ||
+    !region_graph_.hasRegion(request->goal_region))
+  {
+    response->message = "Unknown region: [" + request->start_region + "] or [" +
+      request->goal_region + "]";
+    RCLCPP_WARN(get_logger(), "%s", response->message.c_str());
+    response->success = false;
+    return;
   }
 
-  return goals;
+  response->route = region_graph_.findRoute(request->start_region, request->goal_region);
+  response->success = true;
+}
+
+std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRandomGoals(
+  unsigned int n, const Region & region, CellLimits limits, std::string orientation,
+  double requested_yaw)
+{
+  return goal_sampler_.generateRandomGoals(
+    n, region, limits, orientation, requested_yaw, border_, global_frame_, this->now());
 }
 
 int8_t SemanticNavigationTasks::cell(unsigned int x, unsigned int y)
 {
-  // Return 'unknown' if out of bounds
-  if (x > map_.info.width || y > map_.info.height) {
-    return nav2_util::OCC_GRID_UNKNOWN;
-  }
-
-  return map_.data[x + map_.info.width * y];
+  return goal_sampler_.cell(x, y);
 }
 
 bool SemanticNavigationTasks::inCollision(int x, int y)
 {
-  int x_min, x_max, y_min, y_max;
-
-  if (is_costmap_) {
-    return cell(x, y) != nav2_util::OCC_GRID_FREE;
-  }
-
-  x_min = x - inflated_footprint_size_;
-  x_max = x + inflated_footprint_size_;
-  y_min = y - inflated_footprint_size_;
-  y_max = y + inflated_footprint_size_;
-
-  for (int i = x_min; i < x_max; i++) {
-    for (int j = y_min; j < y_max; j++) {
-      if (cell(i, j) != nav2_util::OCC_GRID_FREE) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return goal_sampler_.inCollision(x, y);
 }
 
 bool SemanticNavigationTasks::isPointValid(
-  int x, int y, Region region, geometry_msgs::msg::Pose pose)
+  int x, int y, const Region & region, const geometry_msgs::msg::Pose & pose)
 {
-  return region.isPointInside(pose.position.x, pose.position.y) &&
-         region.isPointAtLeastDistanceFromBorders(pose.position.x, pose.position.y, border_) &&
-         !inCollision(x, y);
+  return goal_sampler_.isPointValid(x, y, region, pose, border_);
 }
 
 void SemanticNavigationTasks::orientationFromRequest(
   geometry_msgs::msg::Pose & pose, const Region & region, std::string orientation,
   double requested_yaw)
 {
-  double yaw = 0.0;
-  if (orientation == GenerateRandomGoals::Request::OUTSIDE) {
-    yaw = atan2(
-      (pose.position.y - region.centroid().y), (pose.position.x - region.centroid().x));
-  } else if (orientation == GenerateRandomGoals::Request::INSIDE) {
-    yaw = atan2(
-      (pose.position.y - region.centroid().y), (pose.position.x - region.centroid().x)) + M_PI;
-  } else if (orientation == GenerateRandomGoals::Request::REQUESTED) {
-    yaw = angles::normalize_angle(requested_yaw);
-  }
-  pose.orientation = tf2::toMsg(tf2::Quaternion({0, 0, 1}, yaw));
+  goal_sampler_.orientationFromRequest(pose, region, orientation, requested_yaw);
 }
 
 polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons(
-  std::vector<Region> list)
+  const std::vector<Region> & list)
 {
-  polygon_msgs::msg::Polygon2DCollection polygon_array;
-  polygon_array.header.frame_id = map_topic_;
-  polygon_array.header.stamp = this->now();
-
-  for (const auto & region : list) {
-    polygon_array.polygons.push_back(region.polygon);
-  }
-
-  return polygon_array;
+  return region_markers::createPolygons(list, global_frame_, this->now());
 }
 
-visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(std::vector<Region> list)
+visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(
+  const std::vector<Region> & list)
 {
-  visualization_msgs::msg::MarkerArray names_array;
-  for (const auto & region : list) {
-    // Create label
-    visualization_msgs::msg::Marker label_marker;
-    label_marker.header.frame_id = map_topic_;
-    label_marker.header.stamp = this->now();
-    label_marker.ns = "label_region";
-    label_marker.id = names_array.markers.size();
-    label_marker.text = region.name;
-    label_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-    label_marker.action = visualization_msgs::msg::Marker::ADD;
-    label_marker.pose.position.x = region.centroid().x;
-    label_marker.pose.position.y = region.centroid().y;
-    label_marker.pose.position.z = 0.05;
-    label_marker.pose.orientation.x = 0.0;
-    label_marker.pose.orientation.y = 0.0;
-    label_marker.pose.orientation.z = 0.0;
-    label_marker.pose.orientation.w = 1.0;
-    label_marker.scale.z = 0.5;
-    label_marker.color.r = 1.0;
-    label_marker.color.g = 1.0;
-    label_marker.color.b = 1.0;
-    label_marker.color.a = 1.0f;
-    names_array.markers.push_back(label_marker);
-  }
-  return names_array;
+  return region_markers::createNames(list, global_frame_, this->now());
 }
 
 visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createEdges(
-  std::vector<Region> list, const RegionGraph & graph)
+  const std::vector<Region> & list, const RegionGraph & graph)
 {
-  visualization_msgs::msg::MarkerArray edges_array;
-
-  // Index the centroids by region name for a quick lookup
-  std::unordered_map<std::string, geometry_msgs::msg::Point> centroids;
-  for (const auto & region : list) {
-    if (!region.polygon.points.empty()) {
-      centroids[region.name] = region.centroid();
-    }
-  }
-
-  // Draw a single line list with one segment per undirected edge, avoiding duplicates
-  visualization_msgs::msg::Marker edge_marker;
-  edge_marker.header.frame_id = map_topic_;
-  edge_marker.header.stamp = this->now();
-  edge_marker.ns = "edges_region";
-  edge_marker.id = 0;
-  edge_marker.type = visualization_msgs::msg::Marker::LINE_LIST;
-  edge_marker.action = visualization_msgs::msg::Marker::ADD;
-  edge_marker.pose.orientation.w = 1.0;
-  edge_marker.scale.x = 0.05;
-  edge_marker.color.r = 0.0;
-  edge_marker.color.g = 1.0;
-  edge_marker.color.b = 0.0;
-  edge_marker.color.a = 1.0f;
-
-  for (const auto & region : list) {
-    auto centroid_it = centroids.find(region.name);
-    if (centroid_it == centroids.end()) {
-      continue;
-    }
-    for (const auto & neighbor : graph.getNeighbors(region.name)) {
-      // Each undirected edge is drawn only once
-      if (region.name >= neighbor) {
-        continue;
-      }
-      auto neighbor_it = centroids.find(neighbor);
-      if (neighbor_it == centroids.end()) {
-        continue;
-      }
-      edge_marker.points.push_back(centroid_it->second);
-      edge_marker.points.push_back(neighbor_it->second);
-    }
-  }
-
-  edges_array.markers.push_back(edge_marker);
-  return edges_array;
+  return region_markers::createEdges(list, graph, global_frame_, this->now());
 }
 
 }  // namespace semantic_navigation

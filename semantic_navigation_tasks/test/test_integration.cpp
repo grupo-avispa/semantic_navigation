@@ -37,32 +37,33 @@ public:
 
   nav_msgs::msg::OccupancyGrid getMap()
   {
-    return map_;
+    return goal_sampler_.getMap();
   }
 
-  nav_msgs::msg::Goals generateRandomGoals(
-    unsigned int /*n*/, semantic_navigation::Region /*region*/,
-    semantic_navigation::CellLimits /*limits*/) override
+  std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
+    unsigned int /*n*/, const semantic_navigation::Region & /*region*/,
+    semantic_navigation::CellLimits /*limits*/, std::string /*orientation*/,
+    double /*requested_yaw*/) override
   {
-    if (region_list_.empty() || map_.data.empty()) {
-      return nav_msgs::msg::Goals();
+    if (region_list_.empty() || goal_sampler_.getMap().data.empty()) {
+      return {};
     } else {
-      nav_msgs::msg::Goals goals;
       geometry_msgs::msg::PoseStamped goal;
       goal.pose.position.x = 1.0;
       goal.pose.position.y = 0.0;
       goal.pose.position.z = 0.0;
-      goals.goals.push_back(goal);
-      return goals;
+      return {goal};
     }
   }
 
   void createFreeMap(int width, int height, double resolution)
   {
-    map_.info.width = width;
-    map_.info.height = height;
-    map_.info.resolution = resolution;
-    map_.data = std::vector<int8_t>(width * height, nav2_util::OCC_GRID_FREE);
+    nav_msgs::msg::OccupancyGrid map;
+    map.info.width = width;
+    map.info.height = height;
+    map.info.resolution = resolution;
+    map.data = std::vector<int8_t>(width * height, nav2_util::OCC_GRID_FREE);
+    goal_sampler_.setMap(map);
   }
 };
 
@@ -79,11 +80,9 @@ public:
     rclcpp::init(0, nullptr);
     // Create and configure the semantic node
     node_ = std::make_shared<SemanticNavigationTasksFixture>();
-    std::filesystem::path pkg_path =
-      ament_index_cpp::get_package_share_path("semantic_navigation_tasks");
+    auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
     nav2::declare_parameter_if_not_declared(
-      node_, "regions_filename",
-      rclcpp::ParameterValue(std::string(pkg_path) + "/test/regions_test.yaml"));
+      node_, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
     executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
     executor_->add_node(node_->get_node_base_interface());
   }
@@ -208,8 +207,9 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyRegion) {
   // Wait before checking the results
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-  // Check results
+  // Check results: an unknown region with full_map disabled is a rejected request
   EXPECT_EQ(resp->goals.goals.size(), 0);
+  EXPECT_FALSE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
@@ -246,8 +246,9 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsEmptyMap) {
   // Wait before checking the results
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-  // Check results
+  // Check results: no map received yet is a rejected request
   EXPECT_EQ(resp->goals.goals.size(), 0);
+  EXPECT_FALSE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
@@ -291,6 +292,7 @@ TEST_F(SemanticNavigationIntegrationTest, generateRandomGoalsRegion) {
   EXPECT_EQ(resp->goals.goals.size(), 1);
   EXPECT_DOUBLE_EQ(resp->goals.goals[0].pose.position.x, 1.0);
   EXPECT_DOUBLE_EQ(resp->goals.goals[0].pose.position.y, 0.0);
+  EXPECT_TRUE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {
@@ -327,6 +329,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRandomRegion) {
 
   // Check results
   EXPECT_FALSE(resp->region_name.empty());
+  EXPECT_TRUE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
@@ -366,6 +369,7 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameInside) {
 
   // Check results
   EXPECT_EQ(resp->region_name, "small1");
+  EXPECT_TRUE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
@@ -403,8 +407,9 @@ TEST_F(SemanticNavigationIntegrationTest, getRegionNameOutside) {
   // Wait before checking the results
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-  // Check results
+  // Check results: a point outside every region is a normal (successful) outcome
   EXPECT_EQ(resp->region_name, "unknown");
+  EXPECT_TRUE(resp->success);
 }
 
 TEST_F(SemanticNavigationIntegrationTest, listAllRegions) {
@@ -441,6 +446,219 @@ TEST_F(SemanticNavigationIntegrationTest, listAllRegions) {
 
   // Check results
   EXPECT_EQ(resp->region_names.size(), 4);
+  EXPECT_TRUE(resp->success);
+}
+
+// The connectivity graph built from regions_test.yaml (default auto_connect and
+// connectivity_threshold): small1 and big are connected (forced by the `add` override), small1
+// and small2 are not (auto-detected but then explicitly `remove`d), and "outside" is isolated.
+
+TEST_F(SemanticNavigationIntegrationTest, getAdjacentRegionsKnown) {
+  activate();
+
+  auto req = std::make_shared<semantic_navigation_msgs::srv::GetAdjacentRegions::Request>();
+  req->region_name = "small1";
+  auto client = node_->create_client<semantic_navigation_msgs::srv::GetAdjacentRegions>(
+    "get_adjacent_regions");
+  ASSERT_TRUE(client->wait_for_service());
+
+  auto result = client->async_call(req);
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::GetAdjacentRegions::Response>();
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
+    resp = result.get();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  ASSERT_EQ(resp->adjacent_regions.size(), 1u);
+  EXPECT_EQ(resp->adjacent_regions[0], "big");
+  EXPECT_TRUE(resp->success);
+}
+
+TEST_F(SemanticNavigationIntegrationTest, getAdjacentRegionsUnknown) {
+  activate();
+
+  auto req = std::make_shared<semantic_navigation_msgs::srv::GetAdjacentRegions::Request>();
+  req->region_name = "no_such_region";
+  auto client = node_->create_client<semantic_navigation_msgs::srv::GetAdjacentRegions>(
+    "get_adjacent_regions");
+  ASSERT_TRUE(client->wait_for_service());
+
+  auto result = client->async_call(req);
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::GetAdjacentRegions::Response>();
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
+    resp = result.get();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  EXPECT_FALSE(resp->success);
+}
+
+TEST_F(SemanticNavigationIntegrationTest, areRegionsConnectedTrue) {
+  activate();
+
+  auto req = std::make_shared<semantic_navigation_msgs::srv::AreRegionsConnected::Request>();
+  req->region_a = "small1";
+  req->region_b = "big";
+  auto client = node_->create_client<semantic_navigation_msgs::srv::AreRegionsConnected>(
+    "are_regions_connected");
+  ASSERT_TRUE(client->wait_for_service());
+
+  auto result = client->async_call(req);
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::AreRegionsConnected::Response>();
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
+    resp = result.get();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  EXPECT_TRUE(resp->connected);
+  EXPECT_TRUE(resp->success);
+}
+
+TEST_F(SemanticNavigationIntegrationTest, areRegionsConnectedFalse) {
+  activate();
+
+  auto req = std::make_shared<semantic_navigation_msgs::srv::AreRegionsConnected::Request>();
+  req->region_a = "small1";
+  req->region_b = "small2";
+  auto client = node_->create_client<semantic_navigation_msgs::srv::AreRegionsConnected>(
+    "are_regions_connected");
+  ASSERT_TRUE(client->wait_for_service());
+
+  auto result = client->async_call(req);
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::AreRegionsConnected::Response>();
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
+    resp = result.get();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  // Auto-detected from the geometry, then explicitly removed by the regions file
+  EXPECT_FALSE(resp->connected);
+  EXPECT_TRUE(resp->success);
+}
+
+TEST_F(SemanticNavigationIntegrationTest, areRegionsConnectedUnknown) {
+  activate();
+
+  auto req = std::make_shared<semantic_navigation_msgs::srv::AreRegionsConnected::Request>();
+  req->region_a = "small1";
+  req->region_b = "no_such_region";
+  auto client = node_->create_client<semantic_navigation_msgs::srv::AreRegionsConnected>(
+    "are_regions_connected");
+  ASSERT_TRUE(client->wait_for_service());
+
+  auto result = client->async_call(req);
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::AreRegionsConnected::Response>();
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
+    resp = result.get();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  EXPECT_FALSE(resp->success);
+}
+
+TEST_F(SemanticNavigationIntegrationTest, getRegionRouteFound) {
+  activate();
+
+  auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionRoute::Request>();
+  req->start_region = "small1";
+  req->goal_region = "big";
+  auto client = node_->create_client<semantic_navigation_msgs::srv::GetRegionRoute>(
+    "get_region_route");
+  ASSERT_TRUE(client->wait_for_service());
+
+  auto result = client->async_call(req);
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionRoute::Response>();
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
+    resp = result.get();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  ASSERT_EQ(resp->route.size(), 2u);
+  EXPECT_EQ(resp->route[0], "small1");
+  EXPECT_EQ(resp->route[1], "big");
+  EXPECT_TRUE(resp->success);
+}
+
+TEST_F(SemanticNavigationIntegrationTest, getRegionRouteNotFound) {
+  activate();
+
+  auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionRoute::Request>();
+  req->start_region = "small1";
+  req->goal_region = "small2";
+  auto client = node_->create_client<semantic_navigation_msgs::srv::GetRegionRoute>(
+    "get_region_route");
+  ASSERT_TRUE(client->wait_for_service());
+
+  auto result = client->async_call(req);
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionRoute::Response>();
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
+    resp = result.get();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  // No path between two disconnected, but known, regions is still a successful answer
+  EXPECT_TRUE(resp->route.empty());
+  EXPECT_TRUE(resp->success);
+}
+
+TEST_F(SemanticNavigationIntegrationTest, getRegionRouteUnknown) {
+  activate();
+
+  auto req = std::make_shared<semantic_navigation_msgs::srv::GetRegionRoute::Request>();
+  req->start_region = "small1";
+  req->goal_region = "no_such_region";
+  auto client = node_->create_client<semantic_navigation_msgs::srv::GetRegionRoute>(
+    "get_region_route");
+  ASSERT_TRUE(client->wait_for_service());
+
+  auto result = client->async_call(req);
+  auto resp = std::make_shared<semantic_navigation_msgs::srv::GetRegionRoute::Response>();
+  while (rclcpp::ok() &&
+    result.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+  {
+    executor_->spin_some();
+  }
+  if (result.valid()) {
+    resp = result.get();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+  EXPECT_FALSE(resp->success);
 }
 
 int main(int argc, char ** argv)
