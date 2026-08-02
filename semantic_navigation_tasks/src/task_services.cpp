@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #include <yaml-cpp/yaml.h>
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -428,7 +429,11 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
     request->n, request->region_name.c_str());
 
   // Get arguments
-  uint64_t n = request->n;
+  if (request->n <= 0) {
+    RCLCPP_ERROR(get_logger(), "The number of goals requested must be greater than zero");
+    return false;
+  }
+  unsigned int n = static_cast<unsigned int>(request->n);
   for (const auto & region : region_list_) {
     if (region.name == request->region_name) {
       current_region = region;
@@ -453,6 +458,12 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
 
   // Process bounding box
   auto limits = processBoundingBox(map_, current_region);
+  auto [cell_min_x, cell_max_x, cell_min_y, cell_max_y] = limits;
+  if (cell_min_x > cell_max_x || cell_min_y > cell_max_y) {
+    RCLCPP_ERROR(
+      get_logger(), "Invalid bounding box for region [%s]", request->region_name.c_str());
+    return false;
+  }
 
   // Generate response
   response->goals = generateRandomGoals(n, current_region, limits);
@@ -597,9 +608,13 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
   std::uniform_int_distribution<int> dist_y(cell_min_y, cell_max_y);       // define the range
   std::uniform_real_distribution<double> dist_pi(-M_PI, M_PI);
 
-  unsigned int count = 0;
-  while (goals.size() < n) {
-    count += 1;
+  // Bound the number of attempts so that an unreachable region (e.g. fully occupied, or
+  // degenerate after being clamped to the map) cannot hang the service indefinitely while it
+  // holds mutex_.
+  const unsigned int max_attempts = std::max<unsigned int>(1000u, n * 100u);
+  unsigned int attempts = 0;
+  while (goals.size() < n && attempts < max_attempts) {
+    ++attempts;
     int cell_x = dist_x(rng_);
     int cell_y = dist_y(rng_);
     double yaw = dist_pi(rng_);
@@ -622,6 +637,12 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
         tf2::getYaw(pose.pose.orientation));
       goals.push_back(pose);
     }
+  }
+
+  if (goals.size() < n) {
+    RCLCPP_WARN(
+      get_logger(), "Only %zu/%u goals could be generated after %u attempts",
+      goals.size(), n, attempts);
   }
 
   return goals;

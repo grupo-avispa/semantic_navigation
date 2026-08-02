@@ -236,10 +236,14 @@ protected:
   /**
    * @brief Generate random goals inside a region.
    *
+   * Sampling is bounded to a maximum number of attempts, so an unreachable region (e.g. fully
+   * occupied, or with a degenerate bounding box) returns fewer than @p n goals instead of
+   * blocking forever.
+   *
    * @param n Number of goals.
    * @param region Region of interest.
    * @param limits Limits of the cells.
-   * @return std::vector<geometry_msgs::msg::PoseStamped> Goals.
+   * @return std::vector<geometry_msgs::msg::PoseStamped> Goals (may contain fewer than @p n).
    */
   virtual std::vector<geometry_msgs::msg::PoseStamped> generateRandomGoals(
     unsigned int n, Region region, CellLimits limits);
