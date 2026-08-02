@@ -100,6 +100,19 @@ TEST(SemanticRegionTest, isPointAtLeastDistanceFromBorders) {
   EXPECT_FALSE(region.isPointAtLeastDistanceFromBorders(0.2, 0.7, 0.25));
 }
 
+TEST(SemanticRegionTest, isPointAtLeastDistanceFromBordersDegenerate) {
+  // A region with no points (e.g. loaded from a malformed `points: []` entry) must not crash
+  semantic_navigation::Region empty_region;
+  EXPECT_TRUE(empty_region.isPointAtLeastDistanceFromBorders(0.0, 0.0, 0.5));
+
+  // Neither should a region with a single point
+  semantic_navigation::Region single_point_region;
+  polygon_msgs::msg::Point2D point;
+  point.x = 0.0; point.y = 0.0;
+  single_point_region.polygon.points.push_back(point);
+  EXPECT_TRUE(single_point_region.isPointAtLeastDistanceFromBorders(1.0, 1.0, 0.5));
+}
+
 int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);

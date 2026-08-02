@@ -72,6 +72,13 @@ struct Region
    */
   bool isPointAtLeastDistanceFromBorders(float x, float y, float distance)
   {
+    // A degenerate polygon (0 or 1 points) has no borders to measure against. Returning true
+    // avoids the unsigned underflow of `size() - 1` below and the resulting out-of-bounds
+    // access to front()/back() on an empty vector.
+    if (polygon.points.size() < 2) {
+      return true;
+    }
+
     for (unsigned int i = 0; i < polygon.points.size() - 1; i++) {
       if (distanceToLine(
           x, y,
