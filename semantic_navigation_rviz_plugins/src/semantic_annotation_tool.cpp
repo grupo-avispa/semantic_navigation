@@ -89,7 +89,11 @@ void SemanticAnnotationTool::update_property()
 
 void SemanticAnnotationTool::activate()
 {
-  onInitialize();
+  // Reset the drawing state and reload the properties, but do not recreate ros_node_ or the
+  // publishers: onInitialize() already created them once when the tool was loaded, and RViz
+  // calls activate() again every time the tool is reselected in the toolbar.
+  new_polygon_ = true;
+  update_property();
   RCLCPP_INFO(ros_node_->get_logger(), "Semantic annotation tool started!");
 }
 
