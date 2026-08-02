@@ -13,21 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// C++
-#include <fstream>
-
-// Qt
-#include <QDir>
-
-// OGRE
+// OGRE, Qt and YAML: cpplint treats these as "C system" headers (they are not in its list of
+// known C++ standard headers), which must come before any C++ system header such as <fstream>
+// below, or it flags a build/include_order violation.
 #include <OgrePlane.h>
 #include <OgreSceneNode.h>
 #include <OgreSceneManager.h>
 #include <OgreEntity.h>
 #include <OgreViewport.h>
-
-// YAML
+#include <QDir>
 #include <yaml-cpp/yaml.h>
+
+// C++
+#include <fstream>
 
 // ROS
 #include "nav2_util/string_utils.hpp"
