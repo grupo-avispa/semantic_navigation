@@ -16,12 +16,12 @@
 #ifndef SEMANTIC_NAVIGATION_TASKS__REGION_HPP_
 #define SEMANTIC_NAVIGATION_TASKS__REGION_HPP_
 
-#include <math.h>
 #include <string>
 
 #include "geometry_msgs/msg/point.hpp"
 #include "polygon_utils/polygon_utils.hpp"
 #include "polygon_msgs/msg/polygon2_d.hpp"
+#include "semantic_navigation_tasks/geometry_utils.hpp"
 
 namespace semantic_navigation
 {
@@ -35,9 +35,9 @@ struct Region
   std::string name;  // Name of the region of interest
   polygon_msgs::msg::Polygon2D polygon;  // Polygon defining the region of interest
 
-  inline bool empty() {return polygon.points.empty();}
+  inline bool empty() const {return polygon.points.empty();}
   inline void clear() {return polygon.points.clear();}
-  inline int size() {return polygon.points.size();}
+  inline int size() const {return polygon.points.size();}
 
   inline geometry_msgs::msg::Point centroid() const
   {
@@ -70,10 +70,17 @@ struct Region
    * @param distance Minimum distance from the borders
    * @return bool if given point is inside polygon
    */
-  bool isPointAtLeastDistanceFromBorders(float x, float y, float distance)
+  bool isPointAtLeastDistanceFromBorders(float x, float y, float distance) const
   {
+    // A degenerate polygon (0 or 1 points) has no borders to measure against. Returning true
+    // avoids the unsigned underflow of `size() - 1` below and the resulting out-of-bounds
+    // access to front()/back() on an empty vector.
+    if (polygon.points.size() < 2) {
+      return true;
+    }
+
     for (unsigned int i = 0; i < polygon.points.size() - 1; i++) {
-      if (distanceToLine(
+      if (geometry_utils::pointToSegmentDistance(
           x, y,
           polygon.points[i].x, polygon.points[i].y,
           polygon.points[i + 1].x, polygon.points[i + 1].y) < distance)
@@ -82,7 +89,7 @@ struct Region
       }
     }
     // Check distance from the last point to the first point
-    if (distanceToLine(
+    if (geometry_utils::pointToSegmentDistance(
         x, y,
         polygon.points.back().x, polygon.points.back().y,
         polygon.points.front().x, polygon.points.front().y) < distance)
@@ -91,33 +98,6 @@ struct Region
     }
 
     return true;
-  }
-
-  double distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1)
-  {
-    double A = pX - x0;
-    double B = pY - y0;
-    double C = x1 - x0;
-    double D = y1 - y0;
-
-    double dot = A * C + B * D;
-    double len_sq = C * C + D * D;
-    double param = dot / len_sq;
-
-    double xx, yy;
-
-    if (param < 0) {
-      xx = x0;
-      yy = y0;
-    } else if (param > 1) {
-      xx = x1;
-      yy = y1;
-    } else {
-      xx = x0 + param * C;
-      yy = y0 + param * D;
-    }
-
-    return std::hypot(xx - pX, yy - pY);
   }
 };
 
