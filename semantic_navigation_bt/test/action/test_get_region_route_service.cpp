@@ -41,6 +41,7 @@ public:
     (void)request_header;
     (void)request;
     response->route = {"region1", "region2", "region3"};
+    response->success = true;
   }
 };
 

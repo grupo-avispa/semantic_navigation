@@ -44,6 +44,7 @@ public:
     (void)request_header;
     (void)request;
     response->region_name = "region_1";
+    response->success = true;
   }
 };
 
