@@ -238,6 +238,16 @@ nav2_util::CallbackReturn SemanticNavigationTasks::on_configure(const rclcpp_lif
   RCLCPP_INFO(
     get_logger(), "The parameter map_topic is set to: [%s]", map_topic_.c_str());
 
+  nav2_util::declare_parameter_if_not_declared(
+    this, "global_frame",
+    rclcpp::ParameterValue("map"), rcl_interfaces::msg::ParameterDescriptor()
+    .set__description(
+      "TF frame used as header.frame_id for published messages and goals. Independent of "
+      "map_topic, which may be remapped to a topic whose name does not match a TF frame."));
+  this->get_parameter("global_frame", global_frame_);
+  RCLCPP_INFO(
+    get_logger(), "The parameter global_frame is set to: [%s]", global_frame_.c_str());
+
   std::string regions_filename;
   nav2_util::declare_parameter_if_not_declared(
     this, "regions_filename",
@@ -543,7 +553,7 @@ bool SemanticNavigationTasks::generateRandomGoalsService(
 
   // Publish goals
   geometry_msgs::msg::PoseArray goals_array;
-  goals_array.header.frame_id = map_topic_;
+  goals_array.header.frame_id = global_frame_;
   goals_array.header.stamp = this->now();
   for (const auto & goal : response->goals) {
     goals_array.poses.push_back(goal.pose);
@@ -585,16 +595,16 @@ bool SemanticNavigationTasks::getRegionNameService(
     request->position.point.x, request->position.point.y,
     request->position.header.frame_id.c_str());
 
-  // If the request frame is different than the map frame, transform the point
+  // If the request frame is different than the global frame, transform the point
   geometry_msgs::msg::PointStamped point_in_map_frame;
-  if (request->position.header.frame_id != map_topic_) {
+  if (request->position.header.frame_id != global_frame_) {
     try {
       point_in_map_frame = tf2_buffer_->transform(
-        request->position, map_topic_, tf2::durationFromSec(transform_tolerance_));
+        request->position, global_frame_, tf2::durationFromSec(transform_tolerance_));
     } catch (tf2::TransformException & ex) {
       RCLCPP_ERROR(
         get_logger(), "Failed to transform point from frame [%s] to frame [%s]: %s",
-        request->position.header.frame_id.c_str(), map_topic_.c_str(), ex.what());
+        request->position.header.frame_id.c_str(), global_frame_.c_str(), ex.what());
       return false;
     }
   } else {
@@ -695,7 +705,7 @@ std::vector<geometry_msgs::msg::PoseStamped> SemanticNavigationTasks::generateRa
 
     // Set a random position and orientation for the goal
     geometry_msgs::msg::PoseStamped pose;
-    pose.header.frame_id = map_topic_;
+    pose.header.frame_id = global_frame_;
     pose.header.stamp = this->now();
     pose.pose.position.x = map_.info.origin.position.x + cell_x * map_.info.resolution;
     pose.pose.position.y = map_.info.origin.position.y + cell_y * map_.info.resolution;
@@ -793,7 +803,7 @@ polygon_msgs::msg::Polygon2DCollection SemanticNavigationTasks::createPolygons(
   const std::vector<Region> & list)
 {
   polygon_msgs::msg::Polygon2DCollection polygon_array;
-  polygon_array.header.frame_id = map_topic_;
+  polygon_array.header.frame_id = global_frame_;
   polygon_array.header.stamp = this->now();
 
   for (const auto & region : list) {
@@ -810,7 +820,7 @@ visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createNames(
   for (const auto & region : list) {
     // Create label
     visualization_msgs::msg::Marker label_marker;
-    label_marker.header.frame_id = map_topic_;
+    label_marker.header.frame_id = global_frame_;
     label_marker.header.stamp = this->now();
     label_marker.ns = "label_region";
     label_marker.id = names_array.markers.size();
@@ -849,7 +859,7 @@ visualization_msgs::msg::MarkerArray SemanticNavigationTasks::createEdges(
 
   // Draw a single line list with one segment per undirected edge, avoiding duplicates
   visualization_msgs::msg::Marker edge_marker;
-  edge_marker.header.frame_id = map_topic_;
+  edge_marker.header.frame_id = global_frame_;
   edge_marker.header.stamp = this->now();
   edge_marker.ns = "edges_region";
   edge_marker.id = 0;

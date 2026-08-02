@@ -381,6 +381,9 @@ protected:
   float inflation_radius_, border_;
   double connectivity_threshold_;
   std::string goals_topic_, polygons_topic_, names_topic_, edges_topic_, map_topic_;
+  // TF frame used as header.frame_id for published messages and goals, independent of the
+  // (potentially remapped) name of the map topic.
+  std::string global_frame_;
   std::vector<semantic_navigation::Region> region_list_;
   RegionGraph region_graph_;
   // Pseudo-random number generator, seeded once from hardware entropy in on_configure

@@ -123,6 +123,10 @@ ROS2 Service to generate 2D navigation goals as described above.
 
 	Topic of the map where the robot moves.
 
+* **`global_frame`** (string, default: "map")
+
+	TF frame used as `header.frame_id` for published messages and goals. Independent of `map_topic`, which may be remapped to a topic whose name is not a valid TF frame.
+
 * **`is_costmap`** (bool, default: false)
 
 	If the map argument is a costmap, you should also set the flag `is_costmap` to `true`. Then the inflation radius in the service call is ignored (a costmap is already inflated)
