@@ -43,6 +43,7 @@ ament_add_gtest(test_goal_sampler
 )
 target_link_libraries(test_goal_sampler
   ${library_name}
+  nav2_util::nav2_util_core
 )
 
 # Test for the region visualization markers (pure domain logic, no rclcpp::init needed)

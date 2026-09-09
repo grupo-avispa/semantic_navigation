@@ -14,14 +14,14 @@
 // limitations under the License.
 
 #include "gtest/gtest.h"
-#include "ament_index_cpp/get_package_share_directory.hpp"
+#include "ament_index_cpp/get_package_share_path.hpp"
 #include "semantic_navigation_tasks/regions_loader.hpp"
 
 // This whole test file exercises pure domain logic: it never calls rclcpp::init() and never
 // constructs a node, matching the "test the algorithm without a lifecycle node" goal.
 
 TEST(RegionsLoaderTest, loadsValidRegionsAndSkipsMalformedOnes) {
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   auto data = semantic_navigation::loadRegionsFile(pkg + "/test/regions_test.yaml");
 
   EXPECT_TRUE(data.success);
@@ -38,7 +38,7 @@ TEST(RegionsLoaderTest, loadsValidRegionsAndSkipsMalformedOnes) {
 }
 
 TEST(RegionsLoaderTest, parsesManualConnections) {
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   auto data = semantic_navigation::loadRegionsFile(pkg + "/test/regions_test.yaml");
 
   ASSERT_EQ(data.add_edges.size(), 1u);
@@ -50,7 +50,7 @@ TEST(RegionsLoaderTest, parsesManualConnections) {
 }
 
 TEST(RegionsLoaderTest, emptyFileFailsWithoutCrashing) {
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   auto data = semantic_navigation::loadRegionsFile(pkg + "/test/regions_test_empty.yaml");
 
   EXPECT_FALSE(data.success);

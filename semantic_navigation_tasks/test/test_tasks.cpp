@@ -14,7 +14,7 @@
 // limitations under the License.
 
 #include "gtest/gtest.h"
-#include "ament_index_cpp/get_package_share_directory.hpp"
+#include "ament_index_cpp/get_package_share_path.hpp"
 #include "tf2/utils.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -151,7 +151,7 @@ TEST(SemanticNavigationTasksTest, configure) {
   EXPECT_EQ(node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
   // Now, set a not valid regions filename
-  std::string pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  std::string pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   node->set_parameter(rclcpp::Parameter("regions_filename", pkg + "regions_test_empty.yaml"));
 
   // Configure the node
@@ -191,7 +191,7 @@ TEST(SemanticNavigationTasksTest, getRegionsFromFile) {
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
   // Load the regions from a file with right and wrong regions
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg + "/test/regions_test.yaml";
 
   // Get the regions
@@ -253,7 +253,7 @@ TEST(SemanticNavigationTasksTest, createPolygons) {
   node->activate();
 
   // Create the regions
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
@@ -295,7 +295,7 @@ TEST(SemanticNavigationTasksTest, createNames) {
   node->activate();
 
   // Create the regions
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
@@ -326,7 +326,7 @@ TEST(SemanticNavigationTasksTest, getConnectionsFromFile) {
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
   std::string pkg_path =
-    ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+    ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg_path + "/test/regions_test.yaml";
 
   // Read the connections section
@@ -358,7 +358,7 @@ TEST(SemanticNavigationTasksTest, createEdges) {
   // Build two adjacent regions and an isolated one
   std::vector<semantic_navigation::Region> regions;
   std::string pkg_path =
-    ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+    ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   node->getRegionsFromFile(pkg_path + "/test/regions_test.yaml", regions);
 
   // Connect small1 -- small2 in the graph
@@ -402,7 +402,7 @@ TEST(SemanticNavigationTasksTest, processBoundingBox) {
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
   // Set the regions
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg + "/test/regions_test.yaml";
 
   // Get the regions
@@ -519,7 +519,7 @@ TEST(SemanticNavigationTasksTest, isPointValid) {
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
   // Create the regions
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
@@ -580,7 +580,7 @@ TEST(SemanticNavigationTasksTest, orientationFromRequest) {
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
   // Create the regions
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
@@ -625,7 +625,7 @@ TEST(SemanticNavigationTasksTest, generateRandomGoals) {
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
   // Create the regions
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);
@@ -655,7 +655,7 @@ TEST(SemanticNavigationTasksTest, generateRandomGoalsUnreachableRegionTerminates
   auto node = std::make_shared<SemanticNavigationTasksFixture>();
 
   // Create the regions
-  auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+  auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
   std::string filename = pkg + "/test/regions_test.yaml";
   std::vector<semantic_navigation::Region> regions;
   node->getRegionsFromFile(filename, regions);

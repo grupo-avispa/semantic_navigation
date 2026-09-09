@@ -15,7 +15,7 @@
 
 #include "gtest/gtest.h"
 #include "rclcpp/rclcpp.hpp"
-#include "ament_index_cpp/get_package_share_directory.hpp"
+#include "ament_index_cpp/get_package_share_path.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "nav2_ros_common/lifecycle_node.hpp"
 #include "nav2_ros_common/node_utils.hpp"
@@ -80,7 +80,7 @@ public:
     rclcpp::init(0, nullptr);
     // Create and configure the semantic node
     node_ = std::make_shared<SemanticNavigationTasksFixture>();
-    auto pkg = ament_index_cpp::get_package_share_directory("semantic_navigation_tasks");
+    auto pkg = ament_index_cpp::get_package_share_path("semantic_navigation_tasks").string();
     nav2::declare_parameter_if_not_declared(
       node_, "regions_filename", rclcpp::ParameterValue(pkg + "/test/regions_test.yaml"));
     executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
