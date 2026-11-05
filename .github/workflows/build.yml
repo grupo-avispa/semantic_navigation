@@ -37,8 +37,12 @@ jobs:
           colcon-defaults: |
             {
               "build": {
-                "mixin": ["coverage-gcc", "coverage-pytest"],
-                "cmake-args": ["-DNAV2_WARNINGS_AS_ERRORS=OFF"]
+                "mixin": ["coverage-pytest"],
+                "cmake-args": [
+                  "-DCMAKE_C_FLAGS='--coverage'",
+                  "-DCMAKE_CXX_FLAGS='--coverage'",
+                  "-DNAV2_WARNINGS_AS_ERRORS=OFF"
+                ]
               },
               "test": {
                 "mixin": ["coverage-pytest"]
