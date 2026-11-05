@@ -38,7 +38,7 @@ jobs:
             {
               "build": {
                 "mixin": ["coverage-gcc", "coverage-pytest"],
-                "cmake-args": ["-DCMAKE_CXX_FLAGS=--coverage -Wno-error=null-dereference"]
+                "cmake-args": ["-DNAV2_WARNINGS_AS_ERRORS=OFF"]
               },
               "test": {
                 "mixin": ["coverage-pytest"]
