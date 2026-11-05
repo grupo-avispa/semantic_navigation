@@ -1,8 +1,8 @@
 # semantic_navigation
 
-![ROS2](https://img.shields.io/badge/ros2-rolling-blue?logo=ros&logoColor=white)
+![ROS2](https://img.shields.io/badge/ros2-lyrical-blue?logo=ros&logoColor=white)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build](https://github.com/grupo-avispa/semantic_navigation/actions/workflows/build.yml/badge.svg?branch=rolling)](https://github.com/grupo-avispa/semantic_navigation/actions/workflows/build.yml)
+[![Build](https://github.com/grupo-avispa/semantic_navigation/actions/workflows/build.yml/badge.svg?branch=lyrical)](https://github.com/grupo-avispa/semantic_navigation/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/grupo-avispa/semantic_navigation/graph/badge.svg?token=XmcX3ryMph)](https://codecov.io/gh/grupo-avispa/semantic_navigation)
 
 ## Overview
@@ -23,7 +23,7 @@ A ROS metapackage for semantic navigation. At the moment the included packages a
 
 **Author: Alberto Tudela<br />**
 
-The semantic_navigation package has been tested under [ROS2] Rolling on [Ubuntu] 26.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
+The semantic_navigation package has been tested under [ROS2] Lyrical on [Ubuntu] 26.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
 ## Installation
 
