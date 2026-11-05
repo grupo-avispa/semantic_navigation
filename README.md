@@ -31,7 +31,7 @@ The semantic_navigation package has been tested under [ROS2] Lyrical on [Ubuntu]
 
 #### Dependencies
 
-- [Robot Operating System (ROS) 2](https://docs.ros.org/en/jazzy/) (middleware for robotics),
+- [Robot Operating System (ROS) 2](https://docs.ros.org/en/lyrical/) (middleware for robotics),
 - [polygon_ros](https://github.com/MetroRobots/polygon_ros/) (Polygon visualization)
 
 #### Building
@@ -41,12 +41,12 @@ To build from source, clone the latest version from the main repository into you
 cd colcon_workspace/src
 git clone https://github.com/grupo-avispa/semantic_navigation.git
 cd ../
-rosdep install -i --from-path src --rosdistro jazzy -y
+rosdep install -i --from-path src --rosdistro lyrical -y
 colcon build --symlink-install
 ```
 
 [Ubuntu]: https://ubuntu.com/
-[ROS2]: https://docs.ros.org/en/jazzy/
+[ROS2]: https://docs.ros.org/en/lyrical/
 [Rviz2]: https://github.com/ros2/rviz
 [semantic_navigation_bt]: ./semantic_navigation_bt
 [semantic_navigation_msgs]: ./semantic_navigation_msgs
