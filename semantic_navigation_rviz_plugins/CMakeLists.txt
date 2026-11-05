@@ -79,7 +79,7 @@ find_package(yaml-cpp REQUIRED)
 if(TARGET Qt6::Core)
   set(QT_VERSION_MAJOR 6)
   set(QT_VERSION ${Qt6Core_VERSION})
-  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets StateMachine Test Concurrent)
+  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Test Concurrent)
 elseif(TARGET Qt5::Core)
   set(QT_VERSION_MAJOR 5)
   set(QT_VERSION ${Qt5Core_VERSION})
@@ -105,10 +105,6 @@ set(QT_LIBRARIES
   Qt${QT_VERSION_MAJOR}::Gui
   Qt${QT_VERSION_MAJOR}::Widgets
 )
-
-if(QT_VERSION_MAJOR EQUAL 6)
-  list(APPEND QT_LIBRARIES Qt6::StateMachine)
-endif()
 
 # ##########
 # # Build ##
