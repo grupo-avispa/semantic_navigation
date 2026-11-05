@@ -99,7 +99,7 @@ foreach(bt_plugin ${plugin_libs})
 
   if("$ENV{ROS_DISTRO}" STREQUAL "humble" OR "$ENV{ROS_DISTRO}" STREQUAL "jazzy")
     ament_target_dependencies(${bt_plugin} PUBLIC nav2_behavior_tree)
-  elseif("$ENV{ROS_DISTRO}" STREQUAL "rolling")
+  else()
     target_link_libraries(${bt_plugin}
       PUBLIC
       nav2_behavior_tree::nav2_behavior_tree
