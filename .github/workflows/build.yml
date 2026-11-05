@@ -6,7 +6,7 @@ name: Build
 on:
   push:
     branches:
-      - rolling
+      - lyrical
   pull_request:
   workflow_dispatch:
 
@@ -14,13 +14,13 @@ jobs:
   build:
     runs-on: ubuntu-26.04
     container:
-      image: ros:rolling
+      image: ros:lyrical
     steps:
       - name: Install global dependencies
         run: |
           apt update && apt install --no-install-recommends -y \
             python3-pip python3-colcon-coveragepy-result \
-            ros-rolling-tinyxml2-vendor
+            python3-colcon-lcov-result lcov
       - name: Checkout Repository
         uses: actions/checkout@v7
       - name: Install dependencies
@@ -32,16 +32,14 @@ jobs:
             semantic_navigation_msgs
             semantic_navigation_rviz_plugins
             semantic_navigation_tasks
-          target-ros2-distro: rolling
-          vcs-repo-file-url: ./.github/repos.repos
+          target-ros2-distro: lyrical
           colcon-defaults: |
             {
               "build": {
                 "mixin": ["coverage-pytest"],
                 "cmake-args": [
                   "-DCMAKE_C_FLAGS='--coverage'",
-                  "-DCMAKE_CXX_FLAGS='--coverage'",
-                  "-DNAV2_WARNINGS_AS_ERRORS=OFF"
+                  "-DCMAKE_CXX_FLAGS='--coverage'"
                 ]
               },
               "test": {
