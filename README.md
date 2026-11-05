@@ -23,7 +23,7 @@ A ROS metapackage for semantic navigation. At the moment the included packages a
 
 **Author: Alberto Tudela<br />**
 
-The semantic_navigation package has been tested under [ROS2] Rolling on [Ubuntu] 24.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
+The semantic_navigation package has been tested under [ROS2] Rolling on [Ubuntu] 26.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
 ## Installation
 
